@@ -6,6 +6,9 @@
     <img src="assets/notarized-badge.png" width="15" alt="">
     <strong>Signed &amp; notarized by Apple</strong>
   </p>
+  <p>
+    <a href="https://www.buymeacoffee.com/zinc75"><img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?logo=buymeacoffee&logoColor=000000" alt="Buy me a coffee"></a>
+  </p>
 
 </div>
 
@@ -26,6 +29,12 @@ Tools are built for Apple Silicon and Intel, and get a SwiftUI application where
 ## About this repository
 
 Each tool keeps its original sources untouched in `upstream/`, with the changes needed for macOS as patches in `patches/`. Fixes that are not specific to this repository are sent to the original authors.
+
+## Support
+
+Jack Apps Collection is free and open source. If it saves you time, you can buy me a coffee: it helps pay the Apple Developer account ($99 a year) that keeps the installers signed and notarized.
+
+[![Buy me a coffee](https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=&slug=zinc75&button_colour=FFDD00&font_colour=000000&font_family=Lato&outline_colour=000000&coffee_colour=ffffff)](https://www.buymeacoffee.com/zinc75)
 
 ## Licence
 

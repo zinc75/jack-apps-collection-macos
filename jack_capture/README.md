@@ -11,6 +11,7 @@
   ![macOS](https://img.shields.io/badge/macOS-15.0%2B-lightgrey?logo=apple)
   ![Architectures](https://img.shields.io/badge/arm64%20%7C%20x86__64-universal-blue)
   ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
+  [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?logo=buymeacoffee&logoColor=000000)](https://www.buymeacoffee.com/zinc75)
 
   <img src="screenshots/recording.png" width="760" alt="Jack Capture during a recording">
 
@@ -55,6 +56,12 @@ Download `JackCapture-0.9.73-macOS.pkg` from the [Releases](https://github.com/z
 It needs macOS 15 or later, and [JACK](https://jackaudio.org/downloads/) installed.
 
 To build from source instead, see [`swiftui/README.md`](swiftui/README.md).
+
+## Support
+
+Jack Capture is free and open source. If it saves you time, you can buy me a coffee: it helps pay the Apple Developer account ($99 a year) that keeps the installers signed and notarized.
+
+[![Buy me a coffee](https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=&slug=zinc75&button_colour=FFDD00&font_colour=000000&font_family=Lato&outline_colour=000000&coffee_colour=ffffff)](https://www.buymeacoffee.com/zinc75)
 
 ## Upstream
 
