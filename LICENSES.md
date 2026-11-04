@@ -5,6 +5,14 @@ Each tool keeps the licence of its upstream. A patch to a file is under the lice
 | Component | Licence (from the files) | Notes |
 |---|---|---|
 | jack_capture 0.9.73+ | GPL-2.0-or-later | `COPYING` is the GPL v2; source headers: "or any later version" |
+| libsndfile 1.2.2 | LGPL-2.1-or-later | `COPYING`, header of `src/sndfile.c` |
+| libogg 1.3.6 | BSD-3-Clause | |
+| libvorbis 1.3.7 | BSD-3-Clause | |
+| FLAC 1.5.0 | BSD-3-Clause (libraries) | the `flac` and `metaflac` programs are GPL-2.0-or-later and are not built here |
+| Opus 1.6.1 | BSD-3-Clause | |
+| LAME 4.0 | LGPL-2.0-or-later | `COPYING` is the LGPL v2; header says "or any later version" |
+| mpg123 1.33.7 | LGPL-2.1 | |
+| liblo 0.36 | LGPL-2.1-or-later | `COPYING` is the LGPL v2.1; header says "any later version" |
 
 ## New code
 
