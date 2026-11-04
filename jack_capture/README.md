@@ -57,6 +57,17 @@ It needs macOS 15 or later, and [JACK](https://jackaudio.org/downloads/) install
 
 To build from source instead, see [`swiftui/README.md`](swiftui/README.md).
 
+## Uninstall
+
+There is no uninstaller. To remove what the package installed:
+
+```
+sudo rm -rf "/Applications/Jack Apps Collection/Jack Capture.app" /usr/local/bin/jack_capture /usr/local/share/doc/jack_capture
+sudo pkgutil --forget io.github.zinc75.jackappscollection.jackcapture.pkg
+```
+
+The settings of the application are in `~/Library/Preferences/io.github.zinc75.jackappscollection.jackcapture.plist`; `defaults delete io.github.zinc75.jackappscollection.jackcapture` removes them. Your recordings are not touched.
+
 ## Support
 
 Jack Capture is free and open source. If it saves you time, you can buy me a coffee: it helps pay the Apple Developer account ($99 a year) that keeps the installers signed and notarized.
