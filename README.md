@@ -18,9 +18,9 @@ Tools are built for Apple Silicon and Intel, and get a SwiftUI application where
 
 ## Applications
 
-| | | | |
+| Icon | Name | Description | Notarized package |
 |---|---|---|---|
-| <a href="jack_capture/"><img src="jack_capture/screenshots/icon.png" width="64" alt="Jack Capture icon"></a> | [Jack Capture](jack_capture/) | Records JACK audio to a file. An interface for `jack_capture` by Kjetil Matheussen ([upstream](https://github.com/kmatheussen/jack_capture)). | <img src="assets/notarized-badge.png" width="15" alt=""> [Download 0.9.73](https://github.com/zinc75/jack-apps-collection-macos/releases/download/jack_capture-v0.9.73-macOS/JackCapture-0.9.73-macOS.pkg) |
+| <a href="jack_capture/"><img src="jack_capture/screenshots/icon.png" width="64" alt="Jack Capture icon"></a> | [Jack Capture](jack_capture/) | Records JACK audio to a file. An interface for `jack_capture` by Kjetil Matheussen ([upstream](https://github.com/kmatheussen/jack_capture)). | [Download 0.9.73](https://github.com/zinc75/jack-apps-collection-macos/releases/download/jack_capture-v0.9.73-macOS/JackCapture-0.9.73-macOS.pkg) |
 
 <div align="center">
   <a href="jack_capture/"><img src="jack_capture/screenshots/recording.png" width="640" alt="Jack Capture recording"></a>
