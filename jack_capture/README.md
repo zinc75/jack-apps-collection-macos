@@ -23,6 +23,14 @@ Choose which JACK outputs feed each channel of the file, check the levels, press
 
 Jack Capture is an unofficial interface. It is part of Jack Apps Collection for macOS.
 
+## Install
+
+Download `JackCapture-0.9.73-macOS.pkg` from the [Releases](https://github.com/zinc75/jack-apps-collection-macos/releases) page and open it. The package is signed and notarized by Apple, so it opens without any Gatekeeper warning. It installs the application in `/Applications/Jack Apps Collection/` and the `jack_capture` program in `/usr/local/bin`.
+
+It needs macOS 15 or later, and [JACK](https://jackaudio.org/downloads/) installed.
+
+To build from source instead, see [`swiftui/README.md`](swiftui/README.md).
+
 ## Choose the sources
 
 A matrix connects each channel of the file to a JACK output. Applications show their own icon when JackMoebius or JACK metadata identifies them. A source that is not running yet can be chosen too: it is connected when it appears. Before a recording starts, the application warns if a channel has no source or a chosen source is missing.
@@ -48,14 +56,6 @@ The Recording page previews the input levels while it waits (this can be turned 
 File format and bit depth, folder and automatic numbering, scheduled stop, pre-recording (timemachine), time file, split into several files, memory buffer, OSC control and JACK client name. The generated command line can be shown at any time, and settings are kept between launches.
 
 The interface is in French, English, German, Italian and Spanish. The German, Italian and Spanish translations have not been reviewed by native speakers. It needs macOS 15 or later.
-
-## Install
-
-Download `JackCapture-0.9.73-macOS.pkg` from the [Releases](https://github.com/zinc75/jack-apps-collection-macos/releases) page and open it. The package is signed and notarized by Apple, so it opens without any Gatekeeper warning. It installs the application in `/Applications/Jack Apps Collection/` and the `jack_capture` program in `/usr/local/bin`.
-
-It needs macOS 15 or later, and [JACK](https://jackaudio.org/downloads/) installed.
-
-To build from source instead, see [`swiftui/README.md`](swiftui/README.md).
 
 ## Uninstall
 
