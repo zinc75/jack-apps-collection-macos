@@ -19,6 +19,7 @@ Each tool keeps the licence of its upstream. A patch to a file is under the lice
 - Everything derived from an existing tool (patches, build scripts, `swiftui/` front ends, ported engines) has the licence of that tool; scripts state it in an `SPDX-License-Identifier` line.
 - Documentation: MIT (`LICENSES/MIT.txt`).
 - Code that is not derived from a tool has a `LICENSE` file in its directory.
+- `shared/`: Swift packages by Éric Bavu, under MIT (each has a `LICENSE` file), so that front ends of any licence can use them. A front end that uses them keeps the licence of its tool: MIT code can be included in GPL code, not the other way round.
 - There is deliberately no `LICENSE` file at the root: it would suggest that one licence covers the whole repository.
 
 ## Combining
