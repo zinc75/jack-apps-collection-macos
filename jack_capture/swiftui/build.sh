@@ -68,7 +68,7 @@ for lang in sorted(langs):
     print(f"      {lang}: {len(lines)} strings")
 PY
 
-echo "[4/5] Icon and helper"
+echo "[4/5] Icon, helper and licences"
 if [ -d Resources/Assets.xcassets ]; then
   tmp=$(mktemp -d)
   xcrun actool Resources/Assets.xcassets --compile "$APP/Contents/Resources" --platform macosx \
@@ -85,6 +85,51 @@ else
   rmdir "$APP/Contents/Helpers"
   echo "      no ../build/jack_capture: run ../build_universal.sh first to embed the program"
 fi
+
+echo "      licence texts"
+# The GPL of jack_capture, the licences of the libraries linked statically into it, and where the source is.
+python3 -I - "$here/.." "$APP/Contents/Resources/Licenses" <<'PY'
+import pathlib, re, shutil, sys
+tool = pathlib.Path(sys.argv[1]).resolve()
+libs = tool.parent / "libs"
+out = pathlib.Path(sys.argv[2]); out.mkdir(parents=True, exist_ok=True)
+REPO = "https://github.com/zinc75/jack-apps-collection-macos"
+UPSTREAM = "https://github.com/kmatheussen/jack_capture"
+
+shutil.copyfile(tool / "upstream" / "COPYING", out / "jack_capture-COPYING.txt")
+
+# (folder in libs/, name, licence, licence files)
+LIBS = [
+    ("libsndfile", "libsndfile", "LGPL-2.1-or-later", ["COPYING"]),
+    ("libogg", "libogg", "BSD-3-Clause", ["COPYING"]),
+    ("libvorbis", "libvorbis", "BSD-3-Clause", ["COPYING"]),
+    ("flac", "FLAC (libraries)", "BSD-3-Clause", ["COPYING.Xiph"]),
+    ("opus", "Opus", "BSD-3-Clause", ["COPYING"]),
+    ("lame", "LAME", "LGPL-2.0-or-later", ["COPYING"]),
+    ("mpg123", "mpg123", "LGPL-2.1", ["COPYING"]),
+    ("liblo", "liblo", "LGPL-2.1-or-later", ["COPYING"]),
+]
+rule = "=" * 72
+parts = ["The jack_capture program is linked statically with the libraries below. Their licence texts follow.\n"
+         "The source of the exact versions used is at the addresses given, and in " + REPO + "\n"
+         "(libs/<name>/upstream/), with the scripts that build them (libs/<name>/build_universal.sh).\n"]
+for folder, name, licence, files in LIBS:
+    readme = (libs / folder / "README.md").read_text(encoding="utf-8")
+    version = re.search(r"^\| Version \| version ([^ (|]+)", readme, re.M).group(1)
+    source = re.search(r"^\| Source \| (\S+)", readme, re.M).group(1)
+    parts.append(f"\n{rule}\n{name} {version}, {licence}\nSource: {source}\n{rule}\n")
+    for f in files:
+        parts.append("\n" + (libs / folder / "upstream" / f).read_text(encoding="utf-8", errors="replace").rstrip() + "\n")
+(out / "THIRD-PARTY-LICENSES.txt").write_text("".join(parts), encoding="utf-8")
+
+(out / "SOURCE.txt").write_text(
+    "Jack Capture, macOS Edition\n\n"
+    "This program is free software, under the GNU General Public License, version 2 or (at your option) any later\n"
+    "version. The licence is in jack_capture-COPYING.txt.\n\n"
+    f"Source code of this edition (patches, build scripts, SwiftUI application and libraries): {REPO}\n"
+    f"jack_capture as published by Kjetil Matheussen: {UPSTREAM}\n"
+    "The libraries linked statically into the program are listed in THIRD-PARTY-LICENSES.txt.\n", encoding="utf-8")
+PY
 
 echo "[5/5] Ad hoc signature"
 [ -d "$APP/Contents/Helpers" ] && codesign --force -s - "$APP/Contents/Helpers/jack_capture"
