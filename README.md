@@ -20,7 +20,7 @@ Tools are built for Apple Silicon and Intel, and get a SwiftUI application where
 
 | | | |
 |---|---|---|
-| <img src="jack_capture/screenshots/icon.png" width="64" alt="Jack Capture icon"> | [Jack Capture](jack_capture/) | Records JACK audio to a file. An interface for `jack_capture` by Kjetil Matheussen. |
+| <img src="jack_capture/screenshots/icon.png" width="64" alt="Jack Capture icon"> | [Jack Capture](jack_capture/) | Records JACK audio to a file. An interface for `jack_capture` by Kjetil Matheussen ([upstream](https://github.com/kmatheussen/jack_capture)). |
 
 <div align="center">
   <img src="jack_capture/screenshots/recording.png" width="640" alt="Jack Capture recording">
