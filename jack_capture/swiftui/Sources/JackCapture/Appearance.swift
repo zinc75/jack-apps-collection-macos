@@ -2,21 +2,20 @@
 
 import SwiftUI
 
-/// The look of the application: the one of the system, or light or dark whatever the system says. Dark all the
-/// time is how JackMate looks, and people who keep the system in light may want the Jack apps to match.
-/// It is kept between two launches and applies to every window, the matrix included.
+/// The look of the application: dark for everybody, whatever the system says (it is how the Jack apps and JackMate look), and
+/// light only by a click on the sun in the toolbar. Kept between two launches and applied to every window, the matrix included.
+/// (The same in every application of the collection; to move to shared/ when a third application needs it.)
 enum AppearanceChoice: String, CaseIterable {
-    case system, light, dark
+    case light, dark
 
     static let key = "appearance"
 
     static var saved: AppearanceChoice {
-        UserDefaults.standard.string(forKey: key).flatMap(AppearanceChoice.init(rawValue:)) ?? .system
+        UserDefaults.standard.string(forKey: key).flatMap(AppearanceChoice.init(rawValue:)) ?? .dark
     }
 
     var nsAppearance: NSAppearance? {
         switch self {
-        case .system: return nil
         case .light: return NSAppearance(named: .aqua)
         case .dark: return NSAppearance(named: .darkAqua)
         }
@@ -25,16 +24,15 @@ enum AppearanceChoice: String, CaseIterable {
     func apply() { NSApp.appearance = nsAppearance }
 }
 
-/// A sun or a moon in the toolbar: it shows the look a click goes to. A right click offers the three choices, among
-/// them the system's.
+/// A sun or a moon in the toolbar: it shows the look a click goes to.
 struct AppearanceButton: View {
     /// On macOS 26 the button draws the glass disc itself, as it is kept out of the capsule of its neighbours.
     var ownGlass = false
-    @AppStorage(AppearanceChoice.key) private var stored = AppearanceChoice.system.rawValue
+    @AppStorage(AppearanceChoice.key) private var stored = AppearanceChoice.dark.rawValue
     @Environment(\.colorScheme) private var scheme
 
     private var choice: Binding<AppearanceChoice> {
-        Binding(get: { AppearanceChoice(rawValue: stored) ?? .system }, set: { stored = $0.rawValue })
+        Binding(get: { AppearanceChoice(rawValue: stored) ?? .dark }, set: { stored = $0.rawValue })
     }
 
     var body: some View {
@@ -48,14 +46,6 @@ struct AppearanceButton: View {
         .buttonStyle(.plain)
         .help(scheme == .dark ? "Passer en mode clair" : "Passer en mode sombre")
         .accessibilityLabel(scheme == .dark ? "Passer en mode clair" : "Passer en mode sombre")
-        .contextMenu {
-            Picker("Apparence", selection: choice) {
-                Text("Automatique (réglage du système)").tag(AppearanceChoice.system)
-                Text("Clair").tag(AppearanceChoice.light)
-                Text("Sombre").tag(AppearanceChoice.dark)
-            }
-            .pickerStyle(.inline)
-        }
         .onChange(of: stored) { choice.wrappedValue.apply() }
     }
 }
