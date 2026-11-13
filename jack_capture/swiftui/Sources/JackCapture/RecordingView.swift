@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 import SwiftUI
+import AppearanceKit
 import MatrixKit
 import MeterKit
 import JackCaptureKit
@@ -63,7 +64,7 @@ struct RecordingView: View {
         VStack(spacing: 12) {
             Toggle("Prévisualiser les niveaux avant l'enregistrement",
                    isOn: Binding(get: { model.settings.monitorsLevels }, set: { model.settings.monitorsLevels = $0 }))
-                .toggleStyle(.checkbox)
+                .toggleStyle(.checkbox).accentTint()
                 .help("Un client JACK de mesure, relié aux sources choisies, en prévisualise les niveaux tant que cette page attend. Il disparaît du graphe dès qu'un enregistrement commence.")
             if model.settings.monitorsLevels {
                 Card {
@@ -274,7 +275,7 @@ struct RecordingView: View {
             HStack {
                 Button("Afficher dans le Finder") {
                     if let url = model.recordedURL { NSWorkspace.shared.activateFileViewerSelecting([url]) }
-                }.buttonStyle(.borderedProminent)
+                }.buttonStyle(.borderedProminent).accentTint()
                 Button("Nouvel enregistrement") { model.newRecording() }
             }
         }

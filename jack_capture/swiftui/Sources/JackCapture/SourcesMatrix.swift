@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 import SwiftUI
+import AppearanceKit
 import MatrixKit
 import JackCaptureKit
 
@@ -122,7 +123,7 @@ struct SourcesMatrix: View {
                 Spacer()
                 // A check box here: a switch next to the matrix upsets the layout of the whole window.
                 Toggle("Connecter automatiquement", isOn: Binding(get: { model.settings.autoConnect }, set: { model.settings.autoConnect = $0 }))
-                    .toggleStyle(.checkbox)
+                    .toggleStyle(.checkbox).accentTint()
                     .disabled(model.phase.isLocked)
                     .help("Relie les voies aux sources choisies au lancement. Désactivé, les voies restent à relier dans le patchbay.")
                 Button { graph.refresh() } label: { Image(systemName: "arrow.clockwise") }
@@ -441,7 +442,7 @@ struct SourcesMatrix: View {
                 Toggle(isOn: showInputsBinding(client)) {
                     Text("Afficher aussi les entrées").font(.caption).foregroundStyle(.secondary)
                 }
-                .toggleStyle(.checkbox)
+                .toggleStyle(.checkbox).accentTint()
                 .help("Afficher aussi les ports d'entrée de ce client : jack_capture prend ce qui leur est relié au lancement.")
                 .padding(.trailing, 16)
                 .frame(width: portWidth, height: entry.height, alignment: .trailing)

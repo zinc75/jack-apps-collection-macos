@@ -61,13 +61,6 @@ struct ContentView: View {
             }
         }
         .task {
-            switch ProcessInfo.processInfo.environment["JACKCAPTURE_APPEARANCE"] {
-            case "light": NSApp.appearance = NSAppearance(named: .aqua)
-            case "dark": NSApp.appearance = NSAppearance(named: .darkAqua)
-            default: break
-            }
-        }
-        .task {
             // Development aid: JACKCAPTURE_AUTOREC=<seconds> records for that long without touching the interface;
             // JACKCAPTURE_AUTOSRC="a:1+b:1,a:2" sets the sources (channels separated by ",", sources by "+").
             let env = ProcessInfo.processInfo.environment
@@ -121,18 +114,10 @@ struct ContentView: View {
     }
 }
 
-/// Toolbar items: the JACK status and the look of the application, each on its own capsule.
+/// Toolbar items: the JACK status.
 struct MainToolbar: ToolbarContent {
     var body: some ToolbarContent {
         ToolbarItem(placement: .primaryAction) { JackStatusPill() }
-        // On macOS 26 neighbouring items share one glass capsule: the button leaves it and takes a capsule of its own.
-        if #available(macOS 26, *) {
-            ToolbarSpacer(.fixed, placement: .primaryAction)
-            ToolbarItem(placement: .primaryAction) { AppearanceButton(ownGlass: true) }
-                .sharedBackgroundVisibility(.hidden)
-        } else {
-            ToolbarItem(placement: .primaryAction) { AppearanceButton() }
-        }
     }
 }
 

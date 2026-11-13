@@ -3,11 +3,14 @@
 import SwiftUI
 import MatrixKit
 import JackCaptureKit
+import AppearanceKit
 
 /// Removes the menus that the system adds by itself and that have nothing left in them (Format, once its commands are gone),
 /// and holds back the quitting while a file is being written.
 final class AppDelegate: NSObject, NSApplicationDelegate {
     static var model: RecorderModel?
+    /// The look chosen by the user; given by the application before the first window, applied at launch.
+    static var appearance: AppearanceSettings?
     private var pending = false
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
@@ -29,7 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        AppearanceChoice.saved.apply()
+        Self.appearance?.applyAppearance()
         prune()
         NotificationCenter.default.addObserver(forName: NSMenu.didAddItemNotification, object: nil, queue: .main) { [weak self] _ in
             self?.schedule()
@@ -60,6 +63,7 @@ struct JackCaptureApp: App {
 
     /// The settings of the last session come back; a development run that forces settings does not keep them.
     @State private var model: RecorderModel
+    @State private var appearance: AppearanceSettings
 
     private static var keepsSettings: Bool {
         #if DEBUG
@@ -77,12 +81,31 @@ struct JackCaptureApp: App {
         #if DEBUG
         if ProcessInfo.processInfo.environment["JACKCAPTURE_FRESH"] != nil { model.pretendFirstLaunch() }
         #endif
+
+        // The colour of the application is a red a little deeper than the one of the system, so that it is not taken for the red of
+        // the record button or of an alert; the look is dark until the user says otherwise.
+        var defaults = UserDefaults.standard
+        #if DEBUG
+        // Development aids: JACKCAPTURE_APPEARANCE=dark|system|light and JACKCAPTURE_ACCENT=app|system|blue|purple|pink|red|orange|green
+        // set the look of the run, in a store of their own that is not kept.
+        let environment = ProcessInfo.processInfo.environment
+        if environment["JACKCAPTURE_APPEARANCE"] != nil || environment["JACKCAPTURE_ACCENT"] != nil {
+            defaults = UserDefaults(suiteName: "jackcapture.debug.\(UUID().uuidString)") ?? defaults
+            if let value = environment["JACKCAPTURE_APPEARANCE"] { defaults.set(value, forKey: AppearanceSettings.modeKey) }
+            if let value = environment["JACKCAPTURE_ACCENT"] { defaults.set(value, forKey: AppearanceSettings.accentKey) }
+        }
+        #endif
+        let appearance = AppearanceSettings(appAccent: .red, appColor: Color(red: 0.90, green: 0.17, blue: 0.24), defaults: defaults)
+        AppDelegate.appearance = appearance
+        _appearance = State(initialValue: appearance)
     }
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environment(model)
+                .environment(appearance)
+                .appAccent(appearance)
                 // The window is never smaller than 940 x 850 (the toolbar adds 52 points to the height below).
                 .frame(minWidth: 940, minHeight: 798)
         }
@@ -109,6 +132,10 @@ struct JackCaptureApp: App {
                 Button("Affichage") { model.view = .display }.keyboardShortcut("6", modifiers: .command)
             }
             CommandGroup(replacing: .help) {}
+            // The settings of the system convention (command comma) are the page "Affichage".
+            CommandGroup(replacing: .appSettings) {
+                Button("Réglages…") { model.view = .display }.keyboardShortcut(",", modifiers: .command)
+            }
         }
         .commands {
             CommandGroup(replacing: .appInfo) {

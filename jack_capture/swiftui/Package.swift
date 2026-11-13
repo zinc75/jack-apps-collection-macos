@@ -13,6 +13,8 @@ let package = Package(
         .package(path: "../../shared/MatrixKit"),
         // Level meters (model, ballistics, bars), MIT, shared with the other tools; the scales stay in the tools.
         .package(path: "../../shared/MeterKit"),
+        // The look (dark, system, light) and the accent, MIT, shared with the other tools.
+        .package(path: "../../shared/AppearanceKit"),
     ],
     targets: [
         // Logic without any UI: settings, command line, file names, recorder state. Unit tested.
@@ -23,7 +25,12 @@ let package = Package(
         // The SwiftUI application. As in JackMate, UI code is main-actor isolated by default.
         .executableTarget(
             name: "JackCapture",
-            dependencies: ["JackCaptureKit", .product(name: "MatrixKit", package: "MatrixKit"), .product(name: "MeterKit", package: "MeterKit")],
+            dependencies: [
+                "JackCaptureKit",
+                .product(name: "MatrixKit", package: "MatrixKit"),
+                .product(name: "MeterKit", package: "MeterKit"),
+                .product(name: "AppearanceKit", package: "AppearanceKit"),
+            ],
             swiftSettings: [.unsafeFlags(["-Xfrontend", "-default-isolation", "-Xfrontend", "MainActor"])]
         ),
         .testTarget(name: "JackCaptureKitTests", dependencies: ["JackCaptureKit", .product(name: "MeterKit", package: "MeterKit")]),

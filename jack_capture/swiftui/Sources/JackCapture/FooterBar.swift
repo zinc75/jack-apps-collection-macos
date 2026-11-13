@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 import SwiftUI
+import AppearanceKit
 import MatrixKit
 import JackCaptureKit
 
@@ -130,7 +131,7 @@ struct ConfigureButton: View {
 
     var body: some View {
         Button("Configurer l'enregistrement") { model.view = .channels }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.borderedProminent).accentTint()
             .controlSize(.large)
             .help("Choisir les sources, puis le dossier, avant le premier enregistrement.")
     }

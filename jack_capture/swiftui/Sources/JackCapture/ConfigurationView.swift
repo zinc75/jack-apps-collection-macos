@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 import SwiftUI
+import AppearanceKit
 import MatrixKit
 import JackCaptureKit
 
@@ -239,6 +240,7 @@ struct ConfigurationView: View {
     /// The section of the settings shown: each one is a page of its own.
     let section: MainView
     @Environment(RecorderModel.self) private var model
+    @Environment(AppearanceSettings.self) private var appearance
     @State private var limitNote: String?
     @State private var noteTask: Task<Void, Never>?
     @State private var nextName = ""
@@ -269,7 +271,7 @@ SettingsGroup("Fichier") {
                     }
                     OptionRow("Numéroter automatiquement",
                               "Ajoute un numéro pour ne jamais écraser un enregistrement existant.") {
-                        Toggle("", isOn: $model.settings.numbering).labelsHidden().toggleStyle(.switch)
+                        Toggle("", isOn: $model.settings.numbering).labelsHidden().toggleStyle(.switch).accentTint()
                     }
                     OptionRow("Format", model.settings.format.summary) {
                         MenuField(selection: formatBinding, options: CaptureFormat.allCases) { Text(verbatim: $0.displayName) }
@@ -284,7 +286,7 @@ SettingsGroup("Fichier") {
                         }
                     } else if model.settings.format == .ogg {
                         OptionRow("Qualité", "De 0 (petit fichier) à 100 (haute qualité).") {
-                            Slider(value: oggQualityBinding, in: 0...100, step: 5).frame(width: 140)
+                            Slider(value: oggQualityBinding, in: 0...100, step: 5).accentTint().frame(width: 140)
                             Text("\(model.settings.oggQuality)").monospacedDigit().frame(width: 28, alignment: .trailing)
                         }
                     }
@@ -296,7 +298,7 @@ SettingsGroup("Démarrage et arrêt") {
                         MenuField(selection: $model.settings.startMode, options: StartMode.allCases) { Text($0.label) }
                     }
                     OptionRow("Arrêt programmé", "Arrête et ferme le fichier après une durée donnée.") {
-                        Toggle("", isOn: $model.settings.scheduledStop).labelsHidden().toggleStyle(.switch)
+                        Toggle("", isOn: $model.settings.scheduledStop).labelsHidden().toggleStyle(.switch).accentTint()
                     }
                     if model.settings.scheduledStop {
                         OptionRow("Durée", "Durée de l'enregistrement, en minutes et secondes.") {
@@ -305,7 +307,7 @@ SettingsGroup("Démarrage et arrêt") {
                     }
                     OptionRow("Préenregistrement (timemachine)",
                               "L'écoute tourne en permanence, sans fichier. Au lancement de l'enregistrement, le fichier commence par les dernières secondes déjà écoulées, pour ne pas rater le début.") {
-                        Toggle("", isOn: $model.settings.timemachine).labelsHidden().toggleStyle(.switch)
+                        Toggle("", isOn: $model.settings.timemachine).labelsHidden().toggleStyle(.switch).accentTint()
                     }
                     if model.settings.timemachine {
                         OptionRow("Secondes conservées", "Durée déjà écoulée que le fichier reprend au début.") {
@@ -318,11 +320,11 @@ SettingsGroup("Démarrage et arrêt") {
 SettingsGroup("Avancé") {
                     OptionRow("Fichier de temps",
                               "Écrit à côté de l'enregistrement un petit fichier texte avec l'heure exacte du premier échantillon, pour caler plusieurs enregistrements.") {
-                        Toggle("", isOn: $model.settings.writesTimeFile).labelsHidden().toggleStyle(.switch)
+                        Toggle("", isOn: $model.settings.writesTimeFile).labelsHidden().toggleStyle(.switch).accentTint()
                     }
                     OptionRow("Découper en plusieurs fichiers",
                               "Ferme le fichier et en ouvre un nouveau à intervalles réguliers, sans perdre un échantillon.") {
-                        Toggle("", isOn: $model.settings.rotatesFiles).labelsHidden().toggleStyle(.switch)
+                        Toggle("", isOn: $model.settings.rotatesFiles).labelsHidden().toggleStyle(.switch).accentTint()
                     }
                     if model.settings.rotatesFiles {
                         OptionRow("Durée de chaque fichier", "En minutes et secondes.") {
@@ -335,7 +337,7 @@ SettingsGroup("Avancé") {
                     }
                     OptionRow("Contrôle par OSC",
                               "Permet de piloter l'enregistrement depuis un autre logiciel, par messages OSC.") {
-                        Toggle("", isOn: $model.settings.oscEnabled).labelsHidden().toggleStyle(.switch)
+                        Toggle("", isOn: $model.settings.oscEnabled).labelsHidden().toggleStyle(.switch).accentTint()
                     }
                     if model.settings.oscEnabled {
                         OptionRow("Port OSC", "Port UDP sur lequel jack_capture écoute.") {
@@ -354,13 +356,19 @@ SettingsGroup("Avancé") {
             .disabled(model.phase.isLocked)
             if section == .display {
 SettingsGroup("Affichage") {
+                OptionRow("Apparence", "Sombre par défaut ; Système suit le réglage de macOS.") {
+                    AppearanceModePicker(settings: appearance)
+                }
+                OptionRow("Couleur d'accent") {
+                    AccentSwatches(settings: appearance)
+                }
                 OptionRow("Vumètres",
                           "Mesure le niveau de chaque voie et l'affiche pendant l'enregistrement. À désactiver si la machine est chargée, surtout avec beaucoup de voies. Sans effet sur le fichier.") {
-                    Toggle("", isOn: $model.settings.metersEnabled).labelsHidden().toggleStyle(.switch)
+                    Toggle("", isOn: $model.settings.metersEnabled).labelsHidden().toggleStyle(.switch).accentTint()
                 }
                 OptionRow("Vumètres avant l'enregistrement",
                           "Prévisualise les niveaux des sources choisies tant que la page Enregistrement attend, par un client JACK de mesure (« Jack Capture levels ») relié à ces sources. Il disparaît du graphe dès qu'un enregistrement commence.") {
-                    Toggle("", isOn: $model.settings.monitorsLevels).labelsHidden().toggleStyle(.switch)
+                    Toggle("", isOn: $model.settings.monitorsLevels).labelsHidden().toggleStyle(.switch).accentTint()
                 }
             }
 }
