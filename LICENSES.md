@@ -5,6 +5,7 @@ Each tool keeps the licence of its upstream. A patch to a file is under the lice
 | Component | Licence (from the files) | Notes |
 |---|---|---|
 | jack_capture 0.9.73+ | GPL-2.0-or-later | `COPYING` is the GPL v2; source headers: "or any later version" |
+| klick 0.13.0-pre | GPL-2.0-or-later | `COPYING` is the GPL v2; source headers: "or (at your option) any later version" |
 | libsndfile 1.2.2 | LGPL-2.1-or-later | `COPYING`, header of `src/sndfile.c` |
 | libogg 1.3.6 | BSD-3-Clause | |
 | libvorbis 1.3.7 | BSD-3-Clause | |
@@ -13,6 +14,9 @@ Each tool keeps the licence of its upstream. A patch to a file is under the lice
 | LAME 4.0 | LGPL-2.0-or-later | `COPYING` is the LGPL v2; header says "or any later version" |
 | mpg123 1.33.7 | LGPL-2.1 | |
 | liblo 0.36 | LGPL-2.1-or-later | `COPYING` is the LGPL v2.1; header says "any later version" |
+| libsamplerate 0.2.2 | BSD-2-Clause | |
+| Rubber Band 4.0.0 | GPL-2.0-or-later | `COPYING`, header of the source files; the authors also sell a commercial licence, not used here |
+| Boost 1.92.0 (headers) | BSL-1.0 | only the headers klick needs, `LICENSE_1_0.txt` |
 
 ## New code
 
