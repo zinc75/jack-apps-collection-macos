@@ -17,7 +17,7 @@ mkdir -p "$out/tests"; out=$(cd "$out" && pwd)
 jack_prefix=${JACK_PREFIX:-/usr/local}
 boost=$(cd "$here/../../libs/boost/upstream" && pwd)
 api_engine=$(cd "$klick/swiftui/Sources/CKlickEngine/include" && pwd)
-api_jack=$(cd "$here/../swiftui/Sources/CKlickJack/include" && pwd)
+api_jack=$(cd "$here/../swift/Sources/CKlickJack/include" && pwd)
 engine_lib=$klick/build/libklickengine.a
 [ -f "$engine_lib" ] || { echo "error: $engine_lib is missing, run klick/engine/build_engine.sh first" >&2; exit 1; }
 for p in "$klick"/patches/*.patch; do

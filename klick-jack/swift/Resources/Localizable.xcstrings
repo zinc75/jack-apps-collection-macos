@@ -1,0 +1,398 @@
+{
+  "sourceLanguage": "fr",
+  "version": "1.0",
+  "strings": {
+    "Aucun port d'entrée dans le serveur JACK.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No input port in the JACK server."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein Eingangsport im JACK-Server."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nessuna porta d'ingresso nel server JACK."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ningún puerto de entrada en el servidor JACK."
+          }
+        }
+      }
+    },
+    "Ce que JACK annonce pour la sortie, une fois reliée : les lampes en tiennent compte.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What JACK reports for the output once it is connected: the lamps take it into account."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was JACK für den Ausgang meldet, sobald er verbunden ist: die Lampen berücksichtigen es."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quello che JACK indica per l'uscita una volta collegata: le spie ne tengono conto."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lo que JACK indica para la salida una vez conectada: las luces lo tienen en cuenta."
+          }
+        }
+      }
+    },
+    "Celle du serveur JACK : Klick joue à ce rythme, sans conversion.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The rate of the JACK server: Klick plays at it, with no conversion."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Rate des JACK-Servers: Klick spielt damit, ohne Umrechnung."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La frequenza del server JACK: Klick suona a questa frequenza, senza conversione."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La frecuencia del servidor JACK: Klick toca a ella, sin conversión."
+          }
+        }
+      }
+    },
+    "Client": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Client"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Client"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Client"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cliente"
+          }
+        }
+      }
+    },
+    "Connexion automatique": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto-connect"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatisch verbinden"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connessione automatica"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conexión automática"
+          }
+        }
+      }
+    },
+    "Connexions": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connections"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbindungen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collegamenti"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conexiones"
+          }
+        }
+      }
+    },
+    "JACK : Klick joue dans le serveur JACK ; ses connexions se font ci-dessous ou dans un patchbay.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JACK: Klick plays into the JACK server; connect its output below or in a patchbay."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JACK: Klick spielt in den JACK-Server; Verbindungen unten oder in einem Patchbay herstellen."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JACK: Klick suona nel server JACK; i collegamenti si fanno qui sotto o in un patchbay."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JACK: Klick suena en el servidor JACK; las conexiones se hacen abajo o en un patchbay."
+          }
+        }
+      }
+    },
+    "Le nom de la sortie de Klick dans le serveur JACK.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The name of the output of Klick in the JACK server."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Name des Klick-Ausgangs im JACK-Server."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il nome dell'uscita di Klick nel server JACK."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El nombre de la salida de Klick en el servidor JACK."
+          }
+        }
+      }
+    },
+    "Le serveur JACK n'est pas démarré.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The JACK server is not running."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der JACK-Server läuft nicht."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il server JACK non è avviato."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El servidor JACK no está en marcha."
+          }
+        }
+      }
+    },
+    "Le serveur JACK s'est arrêté.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The JACK server has stopped."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der JACK-Server wurde beendet."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il server JACK si è fermato."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El servidor JACK se ha detenido."
+          }
+        }
+      }
+    },
+    "Relie la sortie aux deux premières sorties du matériel quand le moteur démarre.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connects the output to the first two hardware outputs when the engine starts."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbindet den Ausgang beim Start der Engine mit den ersten beiden Hardware-Ausgängen."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collega l'uscita alle prime due uscite hardware quando il motore parte."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conecta la salida a las dos primeras salidas del hardware al arrancar el motor."
+          }
+        }
+      }
+    },
+    "Reliez la sortie de Klick aux ports de votre choix.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect the output of Klick to the ports you want."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbinden Sie den Ausgang von Klick mit den gewünschten Ports."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collega l'uscita di Klick alle porte che vuoi."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conecta la salida de Klick a los puertos que quieras."
+          }
+        }
+      }
+    },
+    "Taille des blocs du serveur JACK : plus elle est petite, moins il y a de retard.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Size of the blocks of the JACK server: the smaller, the less delay."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Größe der Blöcke des JACK-Servers: je kleiner, desto weniger Verzögerung."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dimensione dei blocchi del server JACK: più piccola, meno ritardo."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tamaño de los bloques del servidor JACK: cuanto menor, menos retardo."
+          }
+        }
+      }
+    },
+    "libjack est introuvable : installez JACK.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "libjack not found: install JACK."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "libjack nicht gefunden: JACK installieren."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "libjack non trovata: installa JACK."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "libjack no encontrada: instala JACK."
+          }
+        }
+      }
+    }
+  }
+}
