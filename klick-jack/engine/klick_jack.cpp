@@ -8,6 +8,8 @@
 #include "klick_jack.h"
 
 #include "audio_interface_jack_dl.hh"
+#include "klick_engine_extension.hh"
+#include "transport_driver.hh"
 
 #include <cstring>
 #include <exception>
@@ -44,6 +46,18 @@ AudioInterfaceJackDl * jack(KlickEngine const * e)
 {
     char const * id = klick_engine_backend_id(e);
     return id && !std::strcmp(id, "jack") ? as_jack(klick_engine_backend_audio(e)) : NULL;
+}
+
+// The transport driver of an engine on JACK: given to the engine when it is made.
+klickjack::TransportDriver * driver(KlickEngine const * e)
+{
+    return jack(e) ? dynamic_cast<klickjack::TransportDriver *>(klick_engine_extension(e)) : NULL;
+}
+
+void jack_attach(void * a, KlickEngine * e)
+{
+    AudioInterfaceTransport * transport = dynamic_cast<AudioInterfaceTransport *>(static_cast<AudioInterface *>(a));
+    if (transport) klick_engine_set_extension(e, new klickjack::TransportDriver(*transport));
 }
 
 // The functions of the backend (klick_engine.h). start may throw: the engine catches it when it is made.
@@ -86,6 +100,7 @@ int klick_jack_backend(char const * client_name, KlickBackend * backend, char * 
         backend->destroy = jack_destroy;
         backend->output_latency = jack_latency;
         backend->is_shutdown = jack_is_shutdown;
+        backend->attach = jack_attach;
         return 1;
     } catch (std::exception const & ex) {
         set_error(error, error_size, ex.what());
@@ -171,6 +186,31 @@ int klick_jack_autoconnect(KlickEngine * e)
 {
     AudioInterfaceJackDl * j = jack(e);
     return j ? j->autoconnect() : 0;
+}
+
+void klick_jack_set_transport_follow(KlickEngine * e, int follow)
+{
+    if (klickjack::TransportDriver * d = driver(e)) d->set_follow(follow != 0);
+}
+
+int klick_jack_set_timebase_master(KlickEngine * e, int on, char * error, size_t error_size)
+{
+    klickjack::TransportDriver * d = driver(e);
+    if (!d) { if (!on) return 1; set_error(error, error_size, "no transport"); return 0; }
+    try {
+        d->set_timebase_master(on != 0);
+        return 1;
+    } catch (std::exception const & ex) {
+        set_error(error, error_size, ex.what());
+        return 0;
+    }
+}
+
+void klick_jack_transport_info(KlickEngine const * e, KlickJackTransportInfo * info)
+{
+    klickjack::TransportDriver * d = driver(e);
+    klickjack::TransportDriver::Info i = d ? d->info() : klickjack::TransportDriver::Info();
+    info->state = i.state; info->external = i.external; info->tempo = i.tempo; info->beats = i.beats; info->denom = i.denom;
 }
 
 }

@@ -43,6 +43,9 @@ public final class JackBackend: AudioBackend {
     /// JackMoebius daemon knows it for the CoreAudio applications it exposes; read again as clients appear.
     public private(set) var bundles: [String: String] = [:]
 
+    /// What the JACK transport does to what plays, read at each turn of the display loop of the player.
+    public private(set) var transport = TransportInfo()
+
     @ObservationIgnored private var pendingAutoconnect = false
     @ObservationIgnored private var askingDaemon = false
     @ObservationIgnored private var daemonAttempts = 0
@@ -91,6 +94,7 @@ public final class JackBackend: AudioBackend {
         }
         #endif
         player.engine.setTransportFollow(Self.followsTransport(host.settings))   // read by the engine when it starts
+        if player.didUpdate == nil { player.didUpdate = { [weak self, weak player] in if let self, let player { self.readTransport(player) } } }
         let master = Self.isTimebaseMaster(host.settings)
         if master != timebaseApplied {   // once for each engine (the engine is new after a change of backend or of server)
             timebaseApplied = master
@@ -131,13 +135,22 @@ public final class JackBackend: AudioBackend {
     private var debugOptionsApplied = false
     #endif
 
-    public func armsWithTransport(_ settings: ClickSettings) -> Bool { Self.followsTransport(settings) }
+    public func startsByItself(_ settings: ClickSettings) -> Bool { Self.followsTransport(settings) }
+
+    /// The tempo of another client that is the timebase master, while the metronome follows the transport and takes it.
+    public var imposedTempo: Double? { transport.state != .off && transport.hasExternalMaster ? transport.tempo : nil }
+
+    /// Reads the transport into `transport`, when it changed: the player calls it at each turn of its display loop, and when it stops.
+    func readTransport(_ player: Player) {
+        let info = player.isPlaying ? player.engine.transportInfo : TransportInfo()
+        if info != transport { transport = info }
+    }
 
     /// Turns the following of the transport on or off: the metronome waits for the transport, and plays with it.
     public func setFollowsTransport(_ on: Bool, model: AppModel) {
         model.settings.setOption(Self.transportKey, on ? "1" : nil, backend: "jack")
         model.player.engine.setTransportFollow(on)
-        model.transportOptionChanged()
+        model.startModeChanged()
     }
 
     /// Becomes the timebase master of the transport, replacing the one there is (as klick does), or gives it up.

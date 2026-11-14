@@ -32,10 +32,10 @@ for arch in $UB_ARCHS; do
   prefix=$UB_OUT/$arch
   work=$UB_WORK/$arch; mkdir -p "$work"
   objects=()
-  for f in jack_api audio_interface_jack_dl klick_jack; do
+  for f in jack_api audio_interface_jack_dl transport_driver klick_jack; do
     cc=$here/$f.cc; [ -f "$cc" ] || cc=$here/$f.cpp
     ub_env "$arch" clang++ -arch "$arch" -std=c++11 -O2 -Wall -Wextra -DNDEBUG \
-      -I"$here" -I"$api_engine" -I"$api_jack" -I"$src/src" -I"$jack_prefix/include" -I"$boost" -I"$prefix/include" \
+      -I"$here" -I"$klick/engine" -I"$api_engine" -I"$api_jack" -I"$src/src" -I"$jack_prefix/include" -I"$boost" -I"$prefix/include" \
       -c "$cc" -o "$work/$f.o"
     objects+=("$work/$f.o")
   done

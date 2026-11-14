@@ -51,6 +51,21 @@ int klick_jack_disconnect(KlickEngine *, const char *port, char *error, size_t e
 /* Connects the output to the first two hardware outputs; returns how many are connected. */
 int klick_jack_autoconnect(KlickEngine *);
 
+/* Follow the JACK transport: what starts waits for the transport to roll (the metronome from its first beat, a tempo map at the
+ * position of the transport), plays while it rolls and stops with it, until the engine is stopped. There is no count-in then. Read at
+ * each start. Off by default. */
+void klick_jack_set_transport_follow(KlickEngine *, int follow);
+
+/* Be the timebase master of the transport (bars, beats and tempo for the other clients), replacing the one there is; 0 gives it up.
+ * Returns 0 (with a message) when the master cannot be taken. */
+int klick_jack_set_timebase_master(KlickEngine *, int on, char *error, size_t error_size);
+
+/* What the transport does to the engine, for the display: state 0 not following (or stopped), 1 waiting for the transport to roll,
+ * 2 rolling; external is 1 when another client is the timebase master, with its tempo (quarter notes per minute) and meter, which
+ * the simple metronome takes (a tempo map keeps its own). */
+typedef struct KlickJackTransportInfo { int32_t state; int32_t external; float tempo; int32_t beats; int32_t denom; } KlickJackTransportInfo;
+void klick_jack_transport_info(const KlickEngine *, KlickJackTransportInfo *info);
+
 #ifdef __cplusplus
 }
 #endif

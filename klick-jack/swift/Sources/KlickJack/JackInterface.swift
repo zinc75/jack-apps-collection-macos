@@ -21,6 +21,8 @@ public struct JackInterface: BackendInterface {
     public func outputSections(model: AppModel) -> AnyView { AnyView(JackSections()) }
 
     public func pillMenu(model: AppModel, close: @escaping () -> Void) -> AnyView { AnyView(JackPillMenu(close: close)) }
+
+    public func statusView(_ place: BackendStatusPlace, model: AppModel) -> AnyView { AnyView(TransportStatusView(place: place)) }
 }
 
 private struct JackSections: View {
