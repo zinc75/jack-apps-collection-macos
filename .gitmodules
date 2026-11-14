@@ -1,0 +1,3 @@
+[submodule "klick/klick-tempo"]
+	path = klick/klick-tempo
+	url = git@github.com:zinc75/klick-tempo.git
