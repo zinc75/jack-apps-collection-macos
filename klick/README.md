@@ -19,7 +19,7 @@
 
 ---
 
-A metronome with tempo maps that plays into your JACK server, and that can follow the JACK transport. Pick the engine on the Output page: CoreAudio, for the output of the Mac, or JACK. The application embeds the engine of `klick`, built here for macOS (arm64 and x86_64) with patches that are also sent upstream, and installs the `klick` command-line program too.
+A metronome with tempo maps that plays into your JACK server, and that can follow the JACK transport. Pick the engine on the Output page: CoreAudio, for the output of the Mac, or JACK. The application embeds the engine of `klick`, built here for macOS (arm64 and x86_64) with a few small patches, and installs the `klick` command-line program too.
 
 Klick is an unofficial interface. It is part of Jack Apps Collection for macOS. The same application without JACK is [Klick Tempo](https://github.com/zinc75/klick-tempo), for musicians who do not use JACK.
 
