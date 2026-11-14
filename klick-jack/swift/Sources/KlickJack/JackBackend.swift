@@ -83,6 +83,13 @@ public final class JackBackend: AudioBackend {
         let list = Self.portList(handle)
         if list != ports { ports = list }
         resolveBundles()
+        #if DEBUG
+        // Development aid: KLICK_FOLLOW=1 turns the following of the transport on (nothing is kept with KLICK_FRESH=1).
+        if !debugOptionsApplied, ProcessInfo.processInfo.environment["KLICK_FOLLOW"] != nil {
+            debugOptionsApplied = true
+            host.settings.setOption(Self.transportKey, "1", backend: "jack")
+        }
+        #endif
         player.engine.setTransportFollow(Self.followsTransport(host.settings))   // read by the engine when it starts
         let master = Self.isTimebaseMaster(host.settings)
         if master != timebaseApplied {   // once for each engine (the engine is new after a change of backend or of server)
@@ -120,6 +127,9 @@ public final class JackBackend: AudioBackend {
 
     /// What the engine was told about the timebase master since it was made.
     private var timebaseApplied = false
+    #if DEBUG
+    private var debugOptionsApplied = false
+    #endif
 
     public func armsWithTransport(_ settings: ClickSettings) -> Bool { Self.followsTransport(settings) }
 
