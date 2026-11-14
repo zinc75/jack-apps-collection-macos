@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-License-Identifier: MIT
 
 import Foundation
 import Darwin
@@ -6,27 +6,30 @@ import Darwin
 /// The JackMoebius daemon, asked which application stands behind each client. JackMoebius makes a JACK client for the
 /// CoreAudio applications it exposes; the daemon knows their bundle identifiers (`key`) and the names of their clients
 /// (`name`). It listens on a Unix socket: one JSON line in ("{"command":"apps"}"), one JSON line out, then it closes.
-/// Read only; nothing happens when the daemon is not there.
-enum JackMoebiusDaemon {
-    nonisolated static var socketPath: String {
+/// Read only; nothing happens when the daemon is not there. Shared by the applications of the collection that show the clients of a
+/// JACK server (Jack Capture, Klick).
+public enum JackMoebiusDaemon {
+    public nonisolated static var socketPath: String {
         #if DEBUG
-        if let forced = ProcessInfo.processInfo.environment["JACKCAPTURE_MOEBIUS_SOCKET"] { return forced }
+        // Development aid: a socket of a fake daemon (JACKAPPS_MOEBIUS_SOCKET; JACKCAPTURE_MOEBIUS_SOCKET as before).
+        let environment = ProcessInfo.processInfo.environment
+        if let forced = environment["JACKAPPS_MOEBIUS_SOCKET"] ?? environment["JACKCAPTURE_MOEBIUS_SOCKET"] { return forced }
         #endif
         return "/tmp/jackmoebius.sock"
     }
 
-    nonisolated static var isPresent: Bool { FileManager.default.fileExists(atPath: socketPath) }
+    public nonisolated static var isPresent: Bool { FileManager.default.fileExists(atPath: socketPath) }
 
     /// The bundle identifier of each application the daemon knows, by the name of its JACK client.
     /// Blocking (at most 2 s): call it away from the main actor.
-    nonisolated static func applicationKeys() -> [String: String] {
+    public nonisolated static func applicationKeys() -> [String: String] {
         guard let reply = request(command: "apps") else { return [:] }
         return parseApps(reply)
     }
 
     /// Reads the data of an `apps` reply: a list of rows with `key` and `name` (other fields are ignored: the
     /// daemon may add some). Applications without a resolvable bundle (`path:…`) have no icon to give.
-    nonisolated static func parseApps(_ data: Any?) -> [String: String] {
+    public nonisolated static func parseApps(_ data: Any?) -> [String: String] {
         guard let rows = data as? [[String: Any]] else { return [:] }
         var keys: [String: String] = [:]
         for row in rows {
@@ -37,14 +40,14 @@ enum JackMoebiusDaemon {
     }
 
     /// The key for a client name: the exact name, else the same name in another case ("REAPER" for "Reaper").
-    nonisolated static func key(forClient name: String, in keys: [String: String]) -> String? {
+    public nonisolated static func key(forClient name: String, in keys: [String: String]) -> String? {
         if let exact = keys[name] { return exact }
         let lower = name.lowercased()
         return keys.first { $0.key.lowercased() == lower }?.value
     }
 
     /// One request, one reply: the `data` of a reply whose status is "ok".
-    nonisolated static func request(command: String) -> Any? {
+    public nonisolated static func request(command: String) -> Any? {
         let fd = socket(AF_UNIX, SOCK_STREAM, 0)
         guard fd >= 0 else { return nil }
         defer { close(fd) }
