@@ -21,14 +21,21 @@ Tools are built for Apple Silicon and Intel, and get a SwiftUI application where
 | Icon | Name | Description | Notarized package |
 |---|---|---|---|
 | <a href="jack_capture/"><img src="jack_capture/screenshots/icon.png" width="64" alt="Jack Capture icon"></a> | [Jack Capture](jack_capture/) | Records JACK audio to a file. An interface for `jack_capture` by Kjetil Matheussen ([upstream](https://github.com/kmatheussen/jack_capture)). | [Download 0.9.73](https://github.com/zinc75/jack-apps-collection-macos/releases/download/jack_capture-v0.9.73-macOS-2/JackCapture-0.9.73-macOS-2.pkg) |
+| <a href="klick/"><img src="klick/screenshots/icon.png" width="64" alt="Klick icon"></a> | [Klick](klick/) | A metronome with tempo maps that plays in JACK and can follow the JACK transport. An interface for `klick` by Dominic Sacré ([upstream](https://github.com/dsacre/klick)). The same application without JACK is [Klick Tempo](https://github.com/zinc75/klick-tempo). | [Download 0.13.0](https://github.com/zinc75/jack-apps-collection-macos/releases) |
 
 <div align="center">
   <a href="jack_capture/"><img src="jack_capture/screenshots/recording.png" width="640" alt="Jack Capture recording"></a>
 </div>
 
+<div align="center">
+  <a href="klick/"><img src="klick/screenshots/live.png" width="640" alt="Klick driven by the JACK transport"></a>
+</div>
+
 ## About this repository
 
 Each tool keeps its original sources untouched in `upstream/`, with the changes needed for macOS as patches in `patches/`. Fixes that are not specific to this repository are sent to the original authors.
+
+The core of Klick is the [klick-tempo](https://github.com/zinc75/klick-tempo) repository, included as a Git submodule: clone with `git clone --recurse-submodules`.
 
 ## Support
 
