@@ -27,7 +27,7 @@ Klick is an unofficial interface. It is part of Jack Apps Collection for macOS. 
 
 Download `Klick-0.13.0-macOS.pkg` from the [Releases](https://github.com/zinc75/jack-apps-collection-macos/releases) page and open it. The package is signed and notarized by Apple, so it opens without any Gatekeeper warning. It installs the application in `/Applications/Jack Apps Collection/` and the `klick` program in `/usr/local/bin`.
 
-It needs macOS 15 or later, and [JACK](https://jackaudio.org/downloads/) installed to use the JACK engine. To build from source instead, see the header of `swift/build.sh` and [`klick-tempo/klick/swiftui/README.md`](klick-tempo/klick/swiftui/README.md).
+It needs macOS 15 or later, and [JACK](https://jackaudio.org/downloads/) installed to use the JACK engine. To build from source instead, see [`swift/README.md`](swift/README.md).
 
 ## Play in JACK
 
@@ -122,6 +122,6 @@ Tested on macOS, on arm64 and on x86_64 (under Rosetta), against a JACK server o
 ## Layout
 
 - `klick-tempo/`: the [Klick Tempo](https://github.com/zinc75/klick-tempo) repository, as a Git submodule: the engine of `klick` with its patches, the core of the application, and the libraries. Clone with `--recurse-submodules`.
-- `engine/`: the JACK backend of the engine, loaded at run time (nothing is linked against libjack), with its tests.
-- `swift/`: the Klick application: the JACK page and options on top of the core of Klick Tempo, with its tests and build script.
+- [`engine/`](engine/): the JACK backend of the engine, loaded at run time (nothing is linked against libjack), with its tests.
+- [`swift/`](swift/): the Klick application: the JACK page and options on top of the core of Klick Tempo, with its tests and build script.
 - `screenshots/`: the images of this README.
