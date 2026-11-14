@@ -14,6 +14,7 @@ let package = Package(
     platforms: [.macOS("15.0")],
     products: [
         .library(name: "KlickJack", targets: ["KlickJack"]),
+        .executable(name: "KlickCollection", targets: ["KlickCollection"]),
     ],
     dependencies: [
         // The core of the application of the family: the window, the model and the engine of klick. A local path, so that the unsafe
@@ -21,6 +22,8 @@ let package = Package(
         .package(path: "../../klick/swiftui"),
         .package(path: "../../shared/MatrixKit"),
         .package(path: "../../shared/AppearanceKit"),
+        // The JackMoebius daemon client (which application stands behind a client: its icon), MIT, shared with Jack Capture.
+        .package(path: "../../shared/JackBridge"),
     ],
     targets: [
         // The C interface of the JACK backend (klick_jack.h) and the link settings of its static library.
@@ -44,8 +47,21 @@ let package = Package(
                 .product(name: "CKlickEngine", package: "swiftui"),
                 .product(name: "MatrixKit", package: "MatrixKit"),
                 .product(name: "AppearanceKit", package: "AppearanceKit"),
+                .product(name: "JackBridge", package: "JackBridge"),
             ],
             swiftSettings: [.unsafeFlags(["-Xfrontend", "-default-isolation", "-Xfrontend", "MainActor"])]
+        ),
+        // The application of the collection: the core of Klick with the JACK backend added to CoreAudio. Its name, its colour and the
+        // backends it offers; nothing else.
+        // (Named differently from the target and the product of the core: names are unique in the package graph. The bundle makes it
+        // "Klick" again, see build.sh.)
+        .executableTarget(
+            name: "KlickCollection",
+            dependencies: [
+                "KlickJack",
+                .product(name: "KlickUI", package: "swiftui"),
+                .product(name: "AppearanceKit", package: "AppearanceKit"),
+            ]
         ),
         .testTarget(
             name: "KlickJackTests",

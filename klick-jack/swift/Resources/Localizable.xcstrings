@@ -30,18 +30,18 @@
         }
       }
     },
-    "Ce que JACK annonce pour la sortie, une fois reliée : les lampes en tiennent compte.": {
+    "Ce que JACK annonce pour la sortie, une fois reliée : les voyants en tiennent compte.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "What JACK reports for the output once it is connected: the lamps take it into account."
+            "value": "What JACK reports for the output once it is connected: the beat lights take it into account."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Was JACK für den Ausgang meldet, sobald er verbunden ist: die Lampen berücksichtigen es."
+            "value": "Was JACK für den Ausgang meldet, sobald er verbunden ist: die Leuchtanzeigen berücksichtigen es."
           }
         },
         "it": {
@@ -53,7 +53,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lo que JACK indica para la salida una vez conectada: las luces lo tienen en cuenta."
+            "value": "Lo que JACK indica para la salida una vez conectada: los indicadores lo tienen en cuenta."
           }
         }
       }

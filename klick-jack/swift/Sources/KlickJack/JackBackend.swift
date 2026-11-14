@@ -2,6 +2,7 @@
 // Licence of the program this interface drives (klick).
 import Foundation
 import Observation
+import JackBridge
 import CKlickEngine
 import CKlickJack
 import KlickEngine
@@ -21,6 +22,9 @@ public final class JackBackend: AudioBackend {
     public let id = "jack"
     public let name = "JACK"
 
+    /// The shared input of JackMoebius (the system box that CoreAudio applications play into): JackMate shows the picto of JackMoebius for it.
+    public static let jackMoebiusClient = "JackMoebius"
+
     /// The name Klick gives itself in the server (JACK renames it if it is taken).
     public static let clientName = "Klick"
     /// The setting of the connection at start (`ClickSettings.backendOptions`, backend "jack"): on unless it is "0".
@@ -31,8 +35,15 @@ public final class JackBackend: AudioBackend {
     /// The name of the output port of Klick in the server ("Klick:out"), known once the engine is made.
     public private(set) var portName = ""
 
+    /// The application behind each client of the server (its bundle identifier), for the real icon instead of two letters. The
+    /// JackMoebius daemon knows it for the CoreAudio applications it exposes; read again as clients appear.
+    public private(set) var bundles: [String: String] = [:]
+
     @ObservationIgnored private var pendingAutoconnect = false
     @ObservationIgnored private var shutdownReported = false
+    @ObservationIgnored private var askingDaemon = false
+    @ObservationIgnored private var daemonAttempts = 0
+    @ObservationIgnored private var clientsSeen: Set<String> = []
 
     public init() {}
 
@@ -68,6 +79,7 @@ public final class JackBackend: AudioBackend {
         }
         let list = Self.portList(handle)
         if list != ports { ports = list }
+        resolveBundles()
         let name = Self.text { klick_jack_port_name(handle, $0, $1) }
         if name != portName { portName = name }
         if player.isBackendShutdown, !shutdownReported {
@@ -109,6 +121,31 @@ public final class JackBackend: AudioBackend {
         if ok == 0 { return String(cString: error) }
         ports = Self.portList(handle)
         return nil
+    }
+
+    // MARK: the applications behind the clients
+
+    /// Asks the daemon which application stands behind the clients that have none yet: up to three times for a set of clients (the
+    /// box of an application may appear in the server a moment before the daemon lists it). The daemon is asked away from the main
+    /// actor; nothing happens when it is not there.
+    private func resolveBundles() {
+        let clients = Set(ports.filter { !$0.isPhysical }.map(\.client))
+        if clients != clientsSeen {
+            clientsSeen = clients
+            daemonAttempts = 0
+        }
+        let missing = clients.filter { bundles[$0] == nil }
+        guard !askingDaemon, !missing.isEmpty, daemonAttempts < 3, JackMoebiusDaemon.isPresent else { return }
+        askingDaemon = true
+        daemonAttempts += 1
+        Task { [weak self] in
+            let keys = await Task.detached(priority: .utility) { JackMoebiusDaemon.applicationKeys() }.value
+            guard let self else { return }
+            askingDaemon = false
+            var found = bundles
+            for name in missing { if let id = JackMoebiusDaemon.key(forClient: name, in: keys) { found[name] = id } }
+            if found != bundles { bundles = found }
+        }
     }
 
     // MARK: reading the C interface

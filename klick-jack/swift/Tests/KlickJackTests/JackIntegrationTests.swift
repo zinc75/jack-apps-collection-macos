@@ -90,6 +90,23 @@ final class JackIntegrationTests: XCTestCase {
         model.stop()
     }
 
+    /// Another client with input ports (jack_capture, started by run_tests.sh) is listed with its ports, and the fake daemon says that
+    /// it stands for Terminal: its icon comes from there. The hardware is the loudspeaker, not an application.
+    func testTheIconOfAClientComesFromTheDaemon() async throws {
+        let other = try XCTUnwrap(ProcessInfo.processInfo.environment["KLICK_TEST_JACK_OTHER"], "run_tests.sh starts another client")
+        let (model, backend) = try makeModel()
+        for _ in 0..<50 {
+            model.refreshOutput()
+            if backend.bundles[other] != nil { break }
+            try await Task.sleep(for: .milliseconds(100))
+        }
+        let groups = JackClientPorts.grouped(backend.ports)
+        XCTAssertTrue(groups.contains { $0.name == other }, "the other client is listed")
+        XCTAssertEqual(backend.bundles[other], "com.apple.Terminal")
+        XCTAssertNil(backend.bundles["system"], "the hardware has no application")
+        XCTAssertTrue(groups.first?.isPhysical ?? false, "the hardware comes first")
+    }
+
     func testSwitchingAwayFromJackAndBack() throws {
         let (model, backend) = try makeModel()
         model.refreshOutput()

@@ -44,7 +44,7 @@ private struct JackSections: View {
                 Text(verbatim: kHz(Double(model.player.sampleRate)))
             }
             Divider()
-            OutputRow(title: "Latence annoncée", detail: Text("Ce que JACK annonce pour la sortie, une fois reliée : les lampes en tiennent compte.")) {
+            OutputRow(title: "Latence annoncée", detail: Text("Ce que JACK annonce pour la sortie, une fois reliée : les voyants en tiennent compte.")) {
                 Text(verbatim: "\(Int(model.output.latencyMilliseconds.rounded())) ms")
             }
             Divider()
@@ -64,13 +64,15 @@ private struct JackSections: View {
     }
 }
 
-/// The input ports of the server, by client; a point lit is a port the output of Klick is connected to. One output, so a list and not a
-/// matrix; the client badges and the points are those of the matrix of the other tools.
+/// The input ports of the server, by client; a box checked is a port the output of Klick is connected to. One output, so a list and not a
+/// matrix; the client badges (the real icon of an application when it is known, the loudspeaker of the hardware as in JackMate) are those
+/// of the matrix of the other tools.
 private struct PortList: View {
     @Environment(AppModel.self) private var model
     @State private var failure: String?
 
     private var groups: [JackClientPorts] { JackClientPorts.grouped((model.backend as? JackBackend)?.ports ?? []) }
+    private var bundles: [String: String] { (model.backend as? JackBackend)?.bundles ?? [:] }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -82,17 +84,21 @@ private struct PortList: View {
             ForEach(Array(groups.enumerated()), id: \.element.id) { index, group in
                 if index > 0 { Divider() }
                 HStack(spacing: 8) {
-                    BadgeView(client: group.name, size: 22)
+                    BadgeView(client: group.name, isPlayback: group.isPhysical, isJackMoebiusMaster: group.name == JackBackend.jackMoebiusClient, size: 22,
+                              bundleID: bundles[group.name])
                     Text(verbatim: group.name).fontWeight(.medium)
                     Spacer()
                 }
                 .padding(.top, 8)
+                // A check box per port, its name as the label: the name and the box are one control, close together; the box in the colour of the application.
                 ForEach(group.ports) { port in
-                    HStack {
-                        Text(verbatim: port.shortName).font(.callout).padding(.leading, 30)
-                        Spacer()
-                        LED(isOn: port.isConnected) { toggle(port) }
+                    Toggle(isOn: Binding(get: { port.isConnected }, set: { _ in toggle(port) })) {
+                        Text(verbatim: port.shortName).font(.callout)
                     }
+                    .toggleStyle(.checkbox)
+                    .accentTint()
+                    .padding(.leading, 30)
+                    .padding(.vertical, 3)
                 }
             }
             if let failure {

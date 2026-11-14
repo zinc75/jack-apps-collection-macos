@@ -1,0 +1,4 @@
+
+JACK is not part of this application. When the JACK output is chosen, Klick loads the libjack of the JACK that is installed on
+the Mac (https://jackaudio.org, libjack is under the GNU LGPL, version 2.1) and talks to the JACK server through it.
+The source code of the JACK backend is in the same repository (klick-jack/).
