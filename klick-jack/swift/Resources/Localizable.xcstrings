@@ -63,13 +63,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The rate of the JACK server: Klick plays at it, with no conversion."
+            "value": "The rate of the JACK server: Klick plays at that rate, with no conversion."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Die Rate des JACK-Servers: Klick spielt damit, ohne Umrechnung."
+            "value": "Die Rate des JACK-Servers: Klick spielt mit dieser Rate, ohne Umrechnung."
           }
         },
         "it": {
@@ -81,7 +81,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "La frecuencia del servidor JACK: Klick toca a ella, sin conversión."
+            "value": "La frecuencia del servidor JACK: Klick suena a esa frecuencia, sin conversión."
           }
         }
       }
@@ -411,7 +411,7 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Il metronomo (o la mappa dei tempi) attende il transport JACK, suona finché scorre e si ferma con lui: il pulsante di avvio non serve più. Il metronomo riparte dal primo movimento a ogni avvio; la mappa suona alla posizione del transport. Senza conteggio."
+            "value": "Il metronomo (o la mappa dei tempi) attende il transport JACK, suona finché scorre e si ferma con lui: il pulsante di avvio non serve più. Il metronomo riparte dal primo battito a ogni avvio; la mappa suona alla posizione del transport. Senza conteggio."
           }
         },
         "es": {
@@ -467,7 +467,7 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Klick fornisce agli altri client JACK il tempo, il metro e la posizione in battute e movimenti (come klick), prendendo il posto del master attuale. Senza, se un altro client è master, il metronomo semplice ne prende tempo e metro."
+            "value": "Klick fornisce agli altri client JACK il tempo, la misura e la posizione in battute e battiti (come klick), prendendo il posto del master attuale. Senza, se un altro client è master, il metronomo semplice ne prende tempo e misura."
           }
         },
         "es": {
