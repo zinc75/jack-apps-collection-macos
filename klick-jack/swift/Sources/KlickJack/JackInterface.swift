@@ -27,6 +27,7 @@ private struct JackSections: View {
     @Environment(AppModel.self) private var model
 
     private var jack: JackBackend? { model.backend as? JackBackend }
+    @State private var showsAdvanced = false
 
     var body: some View {
         GroupTitle("JACK")
@@ -57,6 +58,27 @@ private struct JackSections: View {
         GroupTitle("Connexions")
         PortList()
             .groupBox()
+
+        // Rarely wanted, and not for a first try: folded away at the bottom of the page.
+        DisclosureGroup(isExpanded: $showsAdvanced) {
+            VStack(spacing: 0) {
+                OutputRow(title: "Suivre le transport JACK", detail: Text("Le métronome (ou la carte de tempo) attend le transport JACK, joue tant qu'il roule et s'arrête avec lui : le bouton de départ n'est plus nécessaire. Le métronome repart de son premier temps à chaque démarrage ; la carte joue à la position du transport. Sans décompte.")) {
+                    Toggle("", isOn: Binding(get: { JackBackend.followsTransport(model.settings) }, set: { jack?.setFollowsTransport($0, model: model) }))
+                        .labelsHidden().toggleStyle(.switch).accentTint()
+                }
+                Divider()
+                OutputRow(title: "Être maître de timebase", detail: Text("Klick donne aux autres clients JACK le tempo, la mesure et la position en mesures et temps (comme klick), et prend la place du maître actuel. Sans cela, si un autre client est maître, le métronome simple prend son tempo et sa mesure.")) {
+                    Toggle("", isOn: Binding(get: { JackBackend.isTimebaseMaster(model.settings) }, set: { jack?.setTimebaseMaster($0, model: model) }))
+                        .labelsHidden().toggleStyle(.switch).accentTint()
+                }
+            }
+            .groupBox()
+            .padding(.top, 6)
+        } label: {
+            Text("Options avancées").font(.headline)
+        }
+        .padding(.top, 10)
+        .onAppear { showsAdvanced = JackBackend.followsTransport(model.settings) || JackBackend.isTimebaseMaster(model.settings) }   // an option that is on is not hidden
     }
 
     private func kHz(_ rate: Double) -> String {

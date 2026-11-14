@@ -254,34 +254,6 @@
         }
       }
     },
-    "Le serveur JACK s'est arrêté.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The JACK server has stopped."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Der JACK-Server wurde beendet."
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Il server JACK si è fermato."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "El servidor JACK se ha detenido."
-          }
-        }
-      }
-    },
     "Relie la sortie aux deux premières sorties du matériel quand le moteur démarre.": {
       "localizations": {
         "en": {
@@ -338,6 +310,34 @@
         }
       }
     },
+    "Suivre le transport JACK": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Follow the JACK transport"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JACK-Transport folgen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Segui il transport JACK"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seguir el transporte JACK"
+          }
+        }
+      }
+    },
     "Taille des blocs du serveur JACK : plus elle est petite, moins il y a de retard.": {
       "localizations": {
         "en": {
@@ -390,6 +390,118 @@
           "stringUnit": {
             "state": "translated",
             "value": "libjack no encontrada: instala JACK."
+          }
+        }
+      }
+    },
+    "Le métronome (ou la carte de tempo) attend le transport JACK, joue tant qu'il roule et s'arrête avec lui : le bouton de départ n'est plus nécessaire. Le métronome repart de son premier temps à chaque démarrage ; la carte joue à la position du transport. Sans décompte.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The metronome (or the tempo map) waits for the JACK transport, plays while it rolls and stops with it: the start button is no longer needed. The metronome starts from its first beat each time; the map plays at the position of the transport. No count-in."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Metronom (oder die Tempokarte) wartet auf den JACK-Transport, spielt, solange er läuft, und hält mit ihm an: Die Starttaste ist nicht mehr nötig. Das Metronom beginnt jedes Mal beim ersten Schlag; die Karte spielt an der Position des Transports. Ohne Vorzähler."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il metronomo (o la mappa dei tempi) attende il transport JACK, suona finché scorre e si ferma con lui: il pulsante di avvio non serve più. Il metronomo riparte dal primo movimento a ogni avvio; la mappa suona alla posizione del transport. Senza conteggio."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El metrónomo (o el mapa de tempo) espera el transporte JACK, suena mientras avanza y se detiene con él: ya no hace falta el botón de inicio. El metrónomo parte de su primer tiempo cada vez; el mapa suena en la posición del transporte. Sin cuenta previa."
+          }
+        }
+      }
+    },
+    "Être maître de timebase": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Be the timebase master"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Timebase-Master sein"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Essere il master timebase"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ser el maestro de timebase"
+          }
+        }
+      }
+    },
+    "Klick donne aux autres clients JACK le tempo, la mesure et la position en mesures et temps (comme klick), et prend la place du maître actuel. Sans cela, si un autre client est maître, le métronome simple prend son tempo et sa mesure.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klick gives the other JACK clients the tempo, the meter and the position in bars and beats (as klick does), and takes the place of the current master. Without it, if another client is the master, the simple metronome takes its tempo and meter."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klick gibt den anderen JACK-Clients Tempo, Takt und die Position in Takten und Schlägen (wie klick) und ersetzt den aktuellen Master. Ohne dies übernimmt das einfache Metronom Tempo und Takt, wenn ein anderer Client Master ist."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klick fornisce agli altri client JACK il tempo, il metro e la posizione in battute e movimenti (come klick), prendendo il posto del master attuale. Senza, se un altro client è master, il metronomo semplice ne prende tempo e metro."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klick da a los demás clientes JACK el tempo, el compás y la posición en compases y tiempos (como klick), y ocupa el lugar del maestro actual. Sin esto, si otro cliente es maestro, el metrónomo simple toma su tempo y compás."
+          }
+        }
+      }
+    },
+    "Options avancées": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Advanced options"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erweiterte Optionen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opzioni avanzate"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opciones avanzadas"
           }
         }
       }

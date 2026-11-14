@@ -107,6 +107,99 @@ final class JackIntegrationTests: XCTestCase {
         XCTAssertTrue(groups.first?.isPhysical ?? false, "the hardware comes first")
     }
 
+    /// The server stops while Klick plays on it: within a refresh the first backend takes over, what played has stopped, the reason is
+    /// shown and JACK stays the choice, to be tried again. A server of its own ("kltest2") is started and stopped here.
+    func testItFallsBackWhenTheServerStops() async throws {
+        let jackd = "/usr/local/bin/jackd"
+        try XCTSkipUnless(FileManager.default.isExecutableFile(atPath: jackd), "needs jackd")
+        let original = ProcessInfo.processInfo.environment["JACK_DEFAULT_SERVER"]
+        let server = Process()
+        server.executableURL = URL(fileURLWithPath: jackd)
+        server.arguments = ["-n", "kltest2", "-d", "dummy", "-r", "48000", "-p", "512"]
+        server.standardOutput = FileHandle.nullDevice
+        server.standardError = FileHandle.nullDevice
+        try server.run()
+        defer {
+            if server.isRunning { server.terminate() }
+            setenv("JACK_DEFAULT_SERVER", original ?? "", 1)
+            if original == nil { unsetenv("JACK_DEFAULT_SERVER") }
+        }
+        setenv("JACK_DEFAULT_SERVER", "kltest2", 1)
+        try await Task.sleep(for: .seconds(3))
+
+        let jack = JackBackend()
+        let player = Player(engine: try jack.makeEngine(), soundsDirectory: Self.sounds)
+        let model = AppModel(player: player, store: MemoryStore(), backends: [OfflineBackend(), jack])
+        XCTAssertEqual(model.backend.id, "jack")
+        model.settings.backendID = "jack"   // the choice of the user, made earlier
+        model.start(.simple)
+        XCTAssertTrue(model.isPlaying)
+
+        server.terminate()
+        for _ in 0..<40 where !model.player.isBackendShutdown { try await Task.sleep(for: .milliseconds(100)) }
+        XCTAssertTrue(model.player.isBackendShutdown, "the engine knows its server is gone")
+        model.refreshOutput()
+        XCTAssertEqual(model.backend.id, "offline", "the first backend takes over")
+        XCTAssertFalse(model.isPlaying)
+        XCTAssertEqual(model.fallenBackFrom?.id, "jack")
+        XCTAssertEqual(model.settings.backendID, "jack", "JACK stays the choice")
+        XCTAssertTrue(model.errorMessage?.contains("JACK") ?? false, model.errorMessage ?? "no message")
+
+        // The server comes back at another rate (a rate is fixed for the life of a server): trying again makes the engine at that rate.
+        let second = Process()
+        second.executableURL = URL(fileURLWithPath: jackd)
+        second.arguments = ["-n", "kltest2", "-d", "dummy", "-r", "44100", "-p", "512"]
+        second.standardOutput = FileHandle.nullDevice
+        second.standardError = FileHandle.nullDevice
+        try second.run()
+        defer { if second.isRunning { second.terminate() } }
+        try await Task.sleep(for: .seconds(3))
+        model.switchBackend(to: "jack")
+        XCTAssertEqual(model.backend.id, "jack", model.errorMessage ?? "")
+        XCTAssertEqual(model.player.sampleRate, 44100, "the engine is made again at the rate of the new server")
+        XCTAssertNil(model.fallenBackFrom)
+        XCTAssertNil(model.errorMessage)
+    }
+
+    func testTheTransportIsFollowedOnlyWhenAsked() throws {
+        let (model, backend) = try makeModel()
+        XCTAssertFalse(JackBackend.followsTransport(model.settings), "off by default")
+        backend.setFollowsTransport(true, model: model)
+        XCTAssertTrue(JackBackend.followsTransport(model.settings))
+        XCTAssertEqual(model.settings.option("transport", backend: "jack"), "1")
+        backend.setFollowsTransport(false, model: model)
+        XCTAssertFalse(JackBackend.followsTransport(model.settings))
+        XCTAssertNil(model.settings.backendOptions["jack"], "an option that is off leaves no entry")
+    }
+
+    func testItWaitsForTheTransportWithoutAPressOnTheButton() throws {
+        let (model, backend) = try makeModel()
+        XCTAssertFalse(model.isPlaying)
+        backend.setFollowsTransport(true, model: model)
+        XCTAssertTrue(model.isPlaying, "armed by the option")
+        XCTAssertEqual(model.player.transport.state, .waiting)
+        XCTAssertFalse(model.showsLiveView, "waiting does not take the window over")
+        model.togglePlayback()   // the user stops it: it is not armed again by the reading of the output
+        model.refreshOutput()
+        XCTAssertFalse(model.isPlaying)
+        XCTAssertEqual(model.player.transport.state, .off)
+        model.togglePlayback()
+        XCTAssertTrue(model.isPlaying)
+        XCTAssertEqual(model.player.transport.state, .waiting)
+        backend.setFollowsTransport(false, model: model)
+        XCTAssertFalse(model.isPlaying, "without the option nothing waits")
+    }
+
+    func testTheTimebaseMasterIsAnOption() throws {
+        let (model, backend) = try makeModel()
+        XCTAssertFalse(JackBackend.isTimebaseMaster(model.settings))
+        backend.setTimebaseMaster(true, model: model)
+        XCTAssertNil(model.errorMessage)
+        XCTAssertTrue(JackBackend.isTimebaseMaster(model.settings))
+        backend.setTimebaseMaster(false, model: model)
+        XCTAssertFalse(JackBackend.isTimebaseMaster(model.settings))
+    }
+
     func testSwitchingAwayFromJackAndBack() throws {
         let (model, backend) = try makeModel()
         model.refreshOutput()

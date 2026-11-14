@@ -15,7 +15,7 @@ struct JackError: LocalizedError {
 }
 
 /// The JACK server as an output: Klick is a client of the server, with one output port that is connected to the ports the user chooses.
-/// libjack is loaded when needed; no server is ever started.
+/// libjack is loaded when needed; no server is ever started. When the server stops, the model falls back on the first backend (AppModel).
 @MainActor
 @Observable
 public final class JackBackend: AudioBackend {
@@ -29,6 +29,10 @@ public final class JackBackend: AudioBackend {
     public static let clientName = "Klick"
     /// The setting of the connection at start (`ClickSettings.backendOptions`, backend "jack"): on unless it is "0".
     public static let autoconnectKey = "autoconnect"
+    /// The setting of the transport (backend "jack"): "1" when a tempo map follows the transport of JACK; off unless it is "1".
+    public static let transportKey = "transport"
+    /// The setting "timebase" (backend "jack"): "1" when Klick is the timebase master of the transport (bars, beats, tempo).
+    public static let timebaseKey = "timebase"
 
     /// The input ports of the server, read again by `refresh`.
     public private(set) var ports: [JackPort] = []
@@ -40,7 +44,6 @@ public final class JackBackend: AudioBackend {
     public private(set) var bundles: [String: String] = [:]
 
     @ObservationIgnored private var pendingAutoconnect = false
-    @ObservationIgnored private var shutdownReported = false
     @ObservationIgnored private var askingDaemon = false
     @ObservationIgnored private var daemonAttempts = 0
     @ObservationIgnored private var clientsSeen: Set<String> = []
@@ -64,7 +67,7 @@ public final class JackBackend: AudioBackend {
         }
         let engine = try Engine(backend: backend)
         pendingAutoconnect = true
-        shutdownReported = false
+        timebaseApplied = false
         ports = []
         return engine
     }
@@ -80,12 +83,18 @@ public final class JackBackend: AudioBackend {
         let list = Self.portList(handle)
         if list != ports { ports = list }
         resolveBundles()
+        player.engine.setTransportFollow(Self.followsTransport(host.settings))   // read by the engine when it starts
+        let master = Self.isTimebaseMaster(host.settings)
+        if master != timebaseApplied {   // once for each engine (the engine is new after a change of backend or of server)
+            timebaseApplied = master
+            do { try player.engine.setTimebaseMaster(master) } catch {
+                host.errorMessage = error.localizedDescription
+                host.settings.setOption(Self.timebaseKey, nil, backend: "jack")
+                timebaseApplied = false
+            }
+        }
         let name = Self.text { klick_jack_port_name(handle, $0, $1) }
         if name != portName { portName = name }
-        if player.isBackendShutdown, !shutdownReported {
-            shutdownReported = true
-            host.errorMessage = String(localized: "Le serveur JACK s'est arrêté.")
-        }
         var info = OutputInfo()
         info.name = Self.serverName
         info.sampleRate = Double(player.sampleRate)
@@ -102,6 +111,35 @@ public final class JackBackend: AudioBackend {
 
     /// True unless the connection at start was turned off.
     public static func autoconnects(_ settings: ClickSettings) -> Bool { settings.option(autoconnectKey, backend: "jack") != "0" }
+
+    /// True when a tempo map follows the transport of JACK (off unless it was turned on).
+    public static func followsTransport(_ settings: ClickSettings) -> Bool { settings.option(transportKey, backend: "jack") == "1" }
+
+    /// True when Klick is to be the timebase master of the transport (off unless it was turned on).
+    public static func isTimebaseMaster(_ settings: ClickSettings) -> Bool { settings.option(timebaseKey, backend: "jack") == "1" }
+
+    /// What the engine was told about the timebase master since it was made.
+    private var timebaseApplied = false
+
+    public func armsWithTransport(_ settings: ClickSettings) -> Bool { Self.followsTransport(settings) }
+
+    /// Turns the following of the transport on or off: the metronome waits for the transport, and plays with it.
+    public func setFollowsTransport(_ on: Bool, model: AppModel) {
+        model.settings.setOption(Self.transportKey, on ? "1" : nil, backend: "jack")
+        model.player.engine.setTransportFollow(on)
+        model.transportOptionChanged()
+    }
+
+    /// Becomes the timebase master of the transport, replacing the one there is (as klick does), or gives it up.
+    public func setTimebaseMaster(_ on: Bool, model: AppModel) {
+        do {
+            try model.player.engine.setTimebaseMaster(on)
+            timebaseApplied = on
+            model.settings.setOption(Self.timebaseKey, on ? "1" : nil, backend: "jack")
+        } catch {
+            model.errorMessage = error.localizedDescription
+        }
+    }
 
     /// Turns the connection at start on or off; on, it connects to the first two outputs of the hardware at once.
     public func setAutoconnect(_ on: Bool, model: AppModel) {
