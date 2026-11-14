@@ -44,7 +44,7 @@ for arch in $UB_ARCHS; do
   thin=$work/libklickengine_thin.a
   lipo -thin "$arch" "$engine_lib" -output "$thin"
   ub_env "$arch" clang++ -arch "$arch" -std=c++11 -O2 -Wall -Wextra -DNDEBUG \
-    -I"$api_engine" -I"$api_jack" "$here/tests/jack_backend_test.cc" "$work/libklickjack.a" "$thin" \
+    -I"$here" -I"$jack_prefix/include" -I"$api_engine" -I"$api_jack" "$here/tests/jack_backend_test.cc" "$work/libklickjack.a" "$thin" \
     -framework AudioToolbox -framework CoreAudio -framework CoreFoundation -framework Accelerate -o "$out/tests/jack_backend_test_$arch"
   echo "built $out/tests/jack_backend_test_$arch"
 done

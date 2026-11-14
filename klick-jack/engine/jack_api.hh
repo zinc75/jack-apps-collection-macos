@@ -41,6 +41,8 @@ struct JackApi {
     decltype(&::jack_get_ports) get_ports;
     decltype(&::jack_free) free;
     decltype(&::jack_transport_query) transport_query;
+    decltype(&::jack_transport_start) transport_start;
+    decltype(&::jack_transport_stop) transport_stop;
     decltype(&::jack_transport_locate) transport_locate;
     decltype(&::jack_transport_reposition) transport_reposition;
     decltype(&::jack_set_timebase_callback) set_timebase_callback;

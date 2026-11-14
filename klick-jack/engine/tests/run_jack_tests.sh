@@ -41,11 +41,15 @@ done
 
 echo "== the clicks, recorded"
 wav=$(mktemp -t kltest_capture).wav
-"$build/tests/jack_backend_test_arm64" "$samples" $rate $block --play 7 >/dev/null &
+# (the test checks the transport first, then says "playing on" and plays for 14 more seconds: the recording is made in that part)
+out=$(mktemp -t kltest_out)
+"$build/tests/jack_backend_test_arm64" "$samples" $rate $block --play 14 >"$out" &
 test_pid=$!
-sleep 3
+for _ in $(seq 1 120); do grep -q "playing on" "$out" && break; sleep 0.5; done
+sleep 2
 "$capture" -c 1 -p "Klick-test:out" -d 3 --bitdepth 24 "$wav" >/dev/null 2>&1
-wait $test_pid || fail=1
+wait $test_pid || { fail=1; cat "$out"; }
+rm -f "$out"
 python3 -I - "$wav" <<'PY' || fail=1
 import sys, wave
 import numpy as np

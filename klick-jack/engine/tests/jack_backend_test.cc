@@ -9,6 +9,7 @@
  */
 
 #include "klick_jack.h"
+#include "jack_api.hh"
 
 #include <chrono>
 #include <cstdio>
@@ -51,6 +52,24 @@ int connected_count(KlickEngine * e)
     int n = 0;
     for (auto const & p : ports(e)) if (p.connected) ++n;
     return n;
+}
+
+
+// A timebase master of the test: 90 beats per minute in 3/4, the bars and beats following the frame of the transport.
+unsigned rate_for_master = 48000;
+void master_callback(jack_transport_state_t, jack_nframes_t, jack_position_t * pos, int, void *)
+{
+    double beats = static_cast<double>(pos->frame) * 90.0 / (60.0 * rate_for_master);
+    long whole = static_cast<long>(beats);
+    pos->valid = JackPositionBBT;
+    pos->bar = static_cast<int32_t>(whole / 3) + 1;
+    pos->beat = static_cast<int32_t>(whole % 3) + 1;
+    pos->tick = static_cast<int32_t>((beats - whole) * 1920.0);
+    pos->bar_start_tick = static_cast<double>((whole / 3) * 3 * 1920);
+    pos->beats_per_bar = 3.0f;
+    pos->beat_type = 4.0f;
+    pos->ticks_per_beat = 1920.0;
+    pos->beats_per_minute = 90.0;
 }
 
 }
@@ -134,7 +153,157 @@ int main(int argc, char ** argv)
     CHECK(klick_engine_is_playing(e) == 1);
     CHECK(klick_engine_lost_beats(e) == 0);
 
-    if (hold > 0) std::this_thread::sleep_for(std::chrono::duration<double>(hold));
+    // A tempo map that follows the transport of JACK: silent while the transport is stopped, playing while it rolls, silent again
+    // when it stops. Another client of the server rolls the transport.
+    klick_engine_stop(e);
+    n = klick_engine_poll_beats(e, beats, 64);   // what is left of the metronome
+    KlickSection map = { "song", 16, 4, 4, 120.0f, 0.0f, "Xxxx", 1.0f, NULL, 0 };
+    CHECK(klick_engine_set_map(e, &map, 1, 1.0f, err, sizeof err));
+    klick_engine_set_transport_follow(e, 1);
+    CHECK(klick_engine_start(e, KLICK_MODE_MAP, err, sizeof err));
+    std::this_thread::sleep_for(std::chrono::milliseconds(800));
+    CHECK(klick_engine_poll_beats(e, beats, 64) == 0);   // the transport is stopped
+    {
+        klickjack::JackApi const & api = klickjack::JackApi::load();
+        jack_client_t * other = api.client_open("Klick-test-transport", JackNoStartServer, NULL);
+        CHECK(other != NULL);
+        if (other) {
+            api.transport_start(other);
+            std::this_thread::sleep_for(std::chrono::milliseconds(1700));
+            size_t rolling = klick_engine_poll_beats(e, beats, 64);
+            std::printf("beat events while the transport rolls: %zu\n", rolling);
+            CHECK(rolling >= 2);
+            CHECK(klick_engine_is_playing(e) == 1);
+            api.transport_stop(other);
+            std::this_thread::sleep_for(std::chrono::milliseconds(300));
+            klick_engine_poll_beats(e, beats, 64);       // the last ones, scheduled before it stopped
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            CHECK(klick_engine_poll_beats(e, beats, 64) == 0);   // stopped again
+            api.client_close(other);
+        }
+    }
+    klick_engine_stop(e);
+    klick_engine_set_transport_follow(e, 0);
+
+    // The simple metronome follows the transport as well: it waits, starts at its first beat when the transport rolls, and stops with it.
+    {
+        klickjack::JackApi const & api = klickjack::JackApi::load();
+        KlickTransportInfo info;
+        CHECK(klick_engine_set_simple(e, 120.0f, 4, 4, "Xxxx", 0, 0, 0, err, sizeof err));
+        klick_engine_set_transport_follow(e, 1);
+        CHECK(klick_engine_set_countin(e, 1, 4, 1.0f, err, sizeof err));   // (ignored while following)
+        CHECK(klick_engine_start(e, KLICK_MODE_SIMPLE, err, sizeof err));
+        std::this_thread::sleep_for(std::chrono::milliseconds(800));
+        CHECK(klick_engine_poll_beats(e, beats, 64) == 0);   // the transport is stopped: the metronome waits
+        klick_engine_transport_info(e, &info);
+        CHECK(info.state == 1);
+        CHECK(info.external == 0);
+        jack_client_t * other = api.client_open("Klick-test-transport", JackNoStartServer, NULL);
+        CHECK(other != NULL);
+        if (other) {
+            api.transport_locate(other, 0);
+            api.transport_start(other);
+            std::this_thread::sleep_for(std::chrono::milliseconds(1700));
+            size_t rolling = klick_engine_poll_beats(e, beats, 64);
+            std::printf("simple metronome, beat events while the transport rolls: %zu\n", rolling);
+            CHECK(rolling >= 3 && rolling <= 4);
+            if (rolling) CHECK(beats[0].beat == 0 && beats[0].count_in == 0);
+            if (rolling > 1) CHECK(beats[1].frame - beats[0].frame == rate / 2);
+            klick_engine_transport_info(e, &info);
+            CHECK(info.state == 2);
+            api.transport_stop(other);
+            std::this_thread::sleep_for(std::chrono::milliseconds(300));
+            klick_engine_poll_beats(e, beats, 64);
+            klick_engine_transport_info(e, &info);
+            CHECK(info.state == 1);
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            CHECK(klick_engine_poll_beats(e, beats, 64) == 0);
+            // rolls again: it starts again at its first beat
+            api.transport_start(other);
+            std::this_thread::sleep_for(std::chrono::milliseconds(700));
+            rolling = klick_engine_poll_beats(e, beats, 64);
+            CHECK(rolling >= 1);
+            if (rolling) CHECK(beats[0].beat == 0);
+            api.transport_stop(other);
+
+            // Klick is the timebase master: the other clients read its tempo and meter, and the bars and beats while it plays
+            CHECK(klick_engine_set_simple(e, 100.0f, 3, 4, "Xxx", 0, 0, 0, err, sizeof err));
+            CHECK(klick_engine_set_timebase_master(e, 1, err, sizeof err));
+            std::this_thread::sleep_for(std::chrono::milliseconds(300));
+            api.transport_locate(other, 0);
+            api.transport_start(other);
+            std::this_thread::sleep_for(std::chrono::milliseconds(1300));
+            jack_position_t pos;
+            api.transport_query(other, &pos);
+            std::printf("timebase master: valid %d, bar %d beat %d tick %d, %.1f bpm, %.0f/%.0f\n", static_cast<int>(pos.valid & JackPositionBBT),
+                        pos.bar, pos.beat, pos.tick, pos.beats_per_minute, pos.beats_per_bar, pos.beat_type);
+            CHECK(pos.valid & JackPositionBBT);
+            CHECK(pos.beats_per_bar == 3.0f && pos.beat_type == 4.0f);
+            CHECK(pos.beats_per_minute > 99.5 && pos.beats_per_minute < 100.5);
+            CHECK(pos.bar == 1 && pos.beat >= 2 && pos.beat <= 3);   // 1.3 s at 100 BPM: the third beat
+            api.transport_stop(other);
+            // A tempo map that is the timebase master: nobody else is, and the engine must not take its own position for another client's
+            klick_engine_stop(e);
+            CHECK(klick_engine_set_map(e, &map, 1, 1.0f, err, sizeof err));
+            CHECK(klick_engine_start(e, KLICK_MODE_MAP, err, sizeof err));
+            api.transport_locate(other, 0);
+            api.transport_start(other);
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            klick_engine_transport_info(e, &info);
+            CHECK(info.state == 2);
+            CHECK(info.external == 0);
+            api.transport_stop(other);
+            CHECK(klick_engine_set_timebase_master(e, 0, err, sizeof err));
+            klick_engine_stop(e);
+            CHECK(klick_engine_set_simple(e, 100.0f, 3, 4, "Xxx", 0, 0, 0, err, sizeof err));
+            CHECK(klick_engine_start(e, KLICK_MODE_SIMPLE, err, sizeof err));
+            klick_engine_stop(e);
+            klick_engine_poll_beats(e, beats, 64);
+
+            // Another client is the timebase master (90 BPM in 3/4, the settings say 120 in 4/4): the metronome takes its tempo and meter,
+            // and starts on the beat of the song.
+            CHECK(klick_engine_set_simple(e, 120.0f, 4, 4, "Xxxx", 0, 0, 0, err, sizeof err));
+            rate_for_master = rate;
+            api.activate(other);
+            CHECK(api.set_timebase_callback(other, 0, master_callback, NULL) == 0);
+            CHECK(klick_engine_start(e, KLICK_MODE_SIMPLE, err, sizeof err));
+            api.transport_locate(other, 0);
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            klick_engine_transport_info(e, &info);
+            std::printf("external master: present %d, %.1f BPM, %d/%d\n", info.external, info.tempo, info.beats, info.denom);
+            CHECK(info.external == 1);
+            CHECK(info.tempo > 89.9f && info.tempo < 90.1f && info.beats == 3 && info.denom == 4);
+            api.transport_start(other);
+            std::this_thread::sleep_for(std::chrono::milliseconds(2500));
+            rolling = klick_engine_poll_beats(e, beats, 64);
+            std::printf("external master, beat events: %zu\n", rolling);
+            CHECK(rolling >= 3);
+            for (size_t i = 0; i < rolling; ++i) { CHECK(beats[i].beats == 3); CHECK(beats[i].beat == static_cast<int>(i % 3)); }
+            if (rolling > 1) CHECK(std::llabs(static_cast<long long>(beats[1].frame) - static_cast<long long>(beats[0].frame) - 32000) <= 2);
+            // relocated to the second beat of the second bar (a bar is 2 s): the next click is the third beat of that bar
+            api.transport_locate(other, static_cast<jack_nframes_t>(rate * 2 + rate * 2 / 3 + 1000));
+            std::this_thread::sleep_for(std::chrono::milliseconds(300));
+            klick_engine_poll_beats(e, beats, 64);
+            std::this_thread::sleep_for(std::chrono::milliseconds(1200));
+            rolling = klick_engine_poll_beats(e, beats, 64);
+            CHECK(rolling >= 1);
+            if (rolling) CHECK(beats[0].beat == 2 || beats[0].beat == 0);
+            api.transport_stop(other);
+            klick_engine_stop(e);
+            api.release_timebase(other);
+            api.client_close(other);
+        }
+        klick_engine_set_countin(e, 0, 4, 0.0f, err, sizeof err);
+    }
+    klick_engine_stop(e);
+    klick_engine_set_transport_follow(e, 0);
+
+    if (hold > 0) {   // plays on for a recorder
+        std::printf("playing on\n"); std::fflush(stdout);
+        CHECK(klick_engine_set_simple(e, 120.0f, 4, 4, "Xxxx", 0, 0, 0, err, sizeof err));
+        CHECK(klick_engine_start(e, KLICK_MODE_SIMPLE, err, sizeof err));
+        std::this_thread::sleep_for(std::chrono::duration<double>(hold));
+    }
     klick_engine_destroy(e);
 
     // not a JACK engine: the functions say so

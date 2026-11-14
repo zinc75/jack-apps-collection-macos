@@ -61,6 +61,8 @@ JackApi open_api(std::string const & path)
     resolve(handle, "jack_get_ports", a.get_ports);
     resolve(handle, "jack_free", a.free);
     resolve(handle, "jack_transport_query", a.transport_query);
+    resolve(handle, "jack_transport_start", a.transport_start);
+    resolve(handle, "jack_transport_stop", a.transport_stop);
     resolve(handle, "jack_transport_locate", a.transport_locate);
     resolve(handle, "jack_transport_reposition", a.transport_reposition);
     resolve(handle, "jack_set_timebase_callback", a.set_timebase_callback);
