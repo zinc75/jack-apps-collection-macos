@@ -28,6 +28,8 @@ Tools are built for Apple Silicon and Intel, and get a SwiftUI application where
   <br><em>Jack Capture</em>
 </div>
 
+---
+
 <div align="center">
   <a href="klick/"><img src="klick/screenshots/live.png" width="640" alt="Klick driven by the JACK transport"></a>
   <br><em>Klick</em>
