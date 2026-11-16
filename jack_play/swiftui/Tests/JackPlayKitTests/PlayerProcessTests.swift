@@ -67,7 +67,8 @@ final class PlayerProcessTests: XCTestCase {
         try process.start()
         XCTAssertTrue(process.isRunning)
         XCTAssertNotNil(process.processIdentifier)
-        XCTAssertEqual(process.clientName, "jack_play-\(process.processIdentifier!)")
+        XCTAssertEqual(process.clientName, "jack_play-" + String(format: "%012d", process.processIdentifier!))
+        XCTAssertEqual(process.clientName?.count, "jack_play-".count + 12)
         await wait(box) { $0.contains(.ready(channels: 2, fileRate: 48000, serverRate: 48000, frames: 192000)) }
         process.send(.play)
         await wait(box) { $0.contains(.position(frame: 100, state: .playing)) }

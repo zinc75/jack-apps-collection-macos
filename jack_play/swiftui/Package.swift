@@ -14,6 +14,8 @@ let package = Package(
     name: "JackPlay",
     platforms: [.macOS("15.0")],
     dependencies: [
+        // libjack loaded at run time, shared with the other tools of the repository.
+        .package(path: "../../shared/JackBridge"),
         // The waveform of the file, MIT, shared with the other tools.
         .package(path: "../../shared/WaveformKit"),
     ],
@@ -28,12 +30,16 @@ let package = Package(
         // Logic without any UI: files, player process, connections, state. Unit tested.
         .target(
             name: "JackPlayKit",
-            dependencies: ["CSndfile", .product(name: "WaveformKit", package: "WaveformKit")],
+            dependencies: [
+                "CSndfile",
+                .product(name: "JackBridge", package: "JackBridge"),
+                .product(name: "WaveformKit", package: "WaveformKit"),
+            ],
             swiftSettings: [.unsafeFlags(headers)]
         ),
         .testTarget(
             name: "JackPlayKitTests",
-            dependencies: ["JackPlayKit", "CSndfile", .product(name: "WaveformKit", package: "WaveformKit")],
+            dependencies: ["JackPlayKit", "CSndfile", .product(name: "JackBridge", package: "JackBridge"), .product(name: "WaveformKit", package: "WaveformKit")],
             swiftSettings: [.unsafeFlags(headers)]
         ),
     ]

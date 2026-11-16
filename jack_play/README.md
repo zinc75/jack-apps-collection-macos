@@ -6,7 +6,7 @@ Sound file player for JACK. This is `rju-play` 0.19 by Rohan Drape, built for ma
 jack_play [options] sound-file...
 ```
 
-The default JACK client name is `jack_play`, so the ports are `jack_play-<pid>:out_1`, `out_2`, and so on.
+The default JACK client name is `jack_play`, and the program adds its process number, with at least 12 digits: the ports are `jack_play-000000052048:out_1`, `out_2`, and so on.
 
 ## Build
 

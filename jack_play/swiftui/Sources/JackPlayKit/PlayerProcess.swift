@@ -48,7 +48,10 @@ public final class PlayerProcess {
     public var processIdentifier: Int32? { process?.processIdentifier }
 
     /// The name of the JACK client of the program, once it runs: its ports are `<clientName>:out_1`, `out_2` …
-    public var clientName: String? { processIdentifier.map { "\(command.settings.safeClientName)-\($0)" } }
+    /// `jack_play` adds the number of its process to the name, written with at least 12 digits (`jack_play-000000052048`).
+    public var clientName: String? {
+        processIdentifier.map { "\(String(command.settings.safeClientName.prefix(50)))-" + String(format: "%012d", $0) }
+    }
 
     /// - Parameter environment: the environment of the program; nil keeps the one of the application. Tests use it to
     ///   point the program to a JACK server of their own.
