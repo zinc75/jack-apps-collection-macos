@@ -39,7 +39,7 @@ struct PlayView: View {
                     .font(.system(size: 22, weight: .semibold)).lineLimit(1).truncationMode(.middle)
                 HStack(spacing: 6) {
                     Chip(text: Text(verbatim: "\(info.container) · \(info.encoding)"))
-                    Chip(text: Text("\(info.channels) voies"))
+                    Chip(text: Text(Plural.channels(info.channels)))
                     if let serverRate, abs(serverRate - info.sampleRate) > 0.5 {
                         Chip(text: Text(verbatim: "\(rate) kHz → \(Self.kHz(serverRate)) kHz"), kind: .warn, symbol: "waveform.path")
                             .help("La fréquence du fichier diffère de celle de JACK : il est rééchantillonné.")
@@ -135,7 +135,7 @@ struct PlayView: View {
                     if clients.isEmpty {
                         Chip(text: Text("Aucune sortie n'est connectée"), kind: .warn, symbol: "exclamationmark.triangle.fill")
                     } else if silent > 0 {
-                        Chip(text: Text("\(silent) voies sans sortie"), kind: .warn, symbol: "exclamationmark.triangle.fill")
+                        Chip(text: Text(Plural.silentChannels(silent)), kind: .warn, symbol: "exclamationmark.triangle.fill")
                     }
                     Spacer(minLength: 0)
                 }

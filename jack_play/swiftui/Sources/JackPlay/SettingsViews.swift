@@ -140,7 +140,7 @@ struct OutputsView: View {
                         .font(.callout).foregroundStyle(.secondary)
                 }
                 HStack(spacing: 8) {
-                    Text("Fichier : \(file.url.lastPathComponent) · \(file.info.channels) voies").font(.callout).foregroundStyle(.secondary)
+                    Text(Plural.fileAndChannels(file.url.lastPathComponent, file.info.channels)).font(.callout).foregroundStyle(.secondary)
                     Spacer()
                     Button("Vers les premières sorties") { player.presetFirstOutputs() }
                     Button("Mono sur gauche et droite") { monoOnBothSides() }.disabled(file.info.channels != 1)
@@ -201,7 +201,7 @@ struct OutputsView: View {
                             BadgeView(client: client.name, isPlayback: client.isPlayback, isJackMoebiusMaster: client.isJackMoebiusMaster, size: 28, bundleID: client.bundleID)
                             VStack(alignment: .leading, spacing: 0) {
                                 Text(verbatim: client.displayName).fontWeight(.semibold)
-                                Text("\(client.ports.count) entrées").font(.caption).foregroundStyle(.secondary)
+                                Text(Plural.inputs(client.ports.count)).font(.caption).foregroundStyle(.secondary)
                             }
                             Spacer()
                         }
@@ -237,7 +237,7 @@ struct OutputsView: View {
     private func hint(_ file: OpenFile) -> some View {
         let player = model.player
         let n = file.info.channels, used = player.routing.connectedChannels
-        let base: Text = used == n ? Text("Toutes les voies sont reliées. ") : Text("\(used) voies sur \(n) reliées : les autres restent sans sortie. ")
+        let base: Text = Text(Plural.connected(used: used, of: n))
         let sum: Text = player.summedPorts.isEmpty ? Text(verbatim: "") : Text("Un port qui reçoit plusieurs voies les additionne.")
         return (base + sum).font(.callout).foregroundStyle(used < n ? Color.orange : .secondary)
     }

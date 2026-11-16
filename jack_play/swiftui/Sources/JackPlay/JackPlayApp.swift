@@ -90,7 +90,7 @@ struct JackPlayApp: App {
         .commands {
             CommandGroup(replacing: .appInfo) {
                 Button("À propos de Jack Play") {
-                    let credits = String(localized: "Interface non officielle de jack_play, tiré de rju-play de Rohan Drape.\nPortage macOS et interface : Éric Bavu.\nLicence GPL, version 3.")
+                    let credits = String(localized: "Interface non officielle de jack_play (rju-play de Rohan Drape).\nPortage macOS et interface : Éric Bavu.\nLicence GPL, version 3.")
                     let style = NSMutableParagraphStyle()
                     style.alignment = .center
                     let upstream = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
