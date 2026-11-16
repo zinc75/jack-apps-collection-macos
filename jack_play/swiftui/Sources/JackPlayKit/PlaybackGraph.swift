@@ -30,7 +30,7 @@ public struct JackDestinationClient: Identifiable, Equatable, Sendable {
 /// server. The application opens one JACK client of its own for this, and keeps trying while no server runs.
 @MainActor
 @Observable
-public final class PlaybackGraph: JackLinking {
+public final class PlaybackGraph: PlaybackServer {
     public private(set) var isConnected = false
     public private(set) var sampleRate: Int?
     public private(set) var bufferSize: Int?
@@ -91,6 +91,15 @@ public final class PlaybackGraph: JackLinking {
         guard let system = destinations.first(where: \.isPlayback) else { return [] }
         return system.ports.map { system.fullName(of: $0) }
     }
+
+    // MARK: Transport
+
+    public func transportStart() { bridge.transportStart() }
+    /// Stops the transport where it is.
+    public func transportPause() { bridge.transportPause() }
+    /// Stops the transport and goes back to the start.
+    public func transportStop() { bridge.transportStop() }
+    public func transportLocate(frame: UInt32) { bridge.transportLocate(frame: frame) }
 
     // MARK: JackLinking
 
