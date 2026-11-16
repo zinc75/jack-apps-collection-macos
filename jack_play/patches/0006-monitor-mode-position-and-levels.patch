@@ -1,0 +1,371 @@
+Subject: monitor mode, the position and the levels on standard output
+
+-M writes the state of the player on standard output, one line each, for a
+program that shows it. It works with -t, -l and alone, and -C includes it. Without
+-M or -C nothing is written, as before.
+
+  ready CHANNELS FILE-RATE SERVER-RATE FRAMES   once, when the ports exist
+  pos FRAME STATE                               when it changes
+                                                (STATE: paused, playing or ended)
+  lev PEAK PEAK ...                             about thirty times a second while
+                                                there is sound, and once more with
+                                                the zeros
+
+Nothing is said while nothing changes: a paused player is silent on its output.
+
+The levels are the highest sample of each channel since the last line, as the
+program sends it out (1.0 is full scale, -g counted), measured in the process
+thread and taken by the thread that writes the lines, without a lock. The
+position is a frame of the file, and in transport mode it follows the transport:
+a locate sets it, and the state is paused while the transport is stopped.
+With -l the position goes back to the start of the file at each turn.
+--- a/cmd/rju-play.c
++++ b/cmd/rju-play.c
+@@ -4,6 +4,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ 
++#include <math.h>
+ #include <pthread.h> /* Posix */
+ #include <poll.h>
+ #include <unistd.h>
+@@ -42,7 +43,8 @@
+ 	char *dst_pattern;
+ 	float ampl;
+ 	bool loop;
+-	bool control; /* commands on standard input, position on standard output */
++	bool control; /* commands on standard input, state on standard output */
++	bool monitor; /* position and output levels on standard output */
+ };
+ 
+ struct player {
+@@ -79,8 +81,35 @@
+ 	double play_pos; /* process thread: frame of the file being played */
+ 	i64 pub_pos;
+ 	int pub_state; /* 0 paused, 1 playing, 2 ended */
++
++	/* Monitor mode (-M).  The process thread keeps the highest sample of each output channel since the last report,
++	   as the bits of a float (that of a positive float orders like an integer); the reporting thread takes them. */
++	uint32_t *peak_bits;
++	pthread_t report_thread;
+ };
+ 
++/* Keeps, for each channel, the highest sample of this cycle if it is higher than the one kept. */
++static void peaks_update(struct player *d, jack_nframes_t nframes)
++{
++	int j;
++	for (j = 0; j < d->channels; j++) {
++		float m = 0;
++		jack_nframes_t i;
++		for (i = 0; i < nframes; i++) {
++			float a = fabsf(d->out[j][i]);
++			if (a > m) {
++				m = a;
++			}
++		}
++		uint32_t bits;
++		memcpy(&bits, &m, sizeof(bits));
++		uint32_t kept = __atomic_load_n(&d->peak_bits[j], __ATOMIC_RELAXED);
++		while (bits > kept &&
++			!__atomic_compare_exchange_n(&d->peak_bits[j], &kept, bits, true, __ATOMIC_RELAXED, __ATOMIC_RELAXED)) {
++		}
++	}
++}
++
+ /* True when the program has to stop: a signal, or the end of the control mode. */
+ static bool stopping(struct player *d)
+ {
+@@ -212,6 +241,8 @@
+ 	/* The transport counts frames of the server, the file frames of its own
+ 	   rate: one frame of the server is 1 / src_ratio frames of the file. */
+ 	i64 frame = (i64)((double)position->frame / d->o.src_ratio);
++	d->play_pos = (double)frame;
++	__atomic_store_n(&d->pub_pos, frame, __ATOMIC_RELEASE);
+ 	__atomic_store_n(&d->o.seek_request, frame, __ATOMIC_RELEASE);
+ 	return 1;
+ }
+@@ -294,6 +325,7 @@
+ 			return 1;
+ 		} else {
+ 			signal_set(d->out, nframes, d->channels, 0.0);
++			__atomic_store_n(&d->pub_state, 0, __ATOMIC_RELEASE);
+ 			return 0;
+ 		}
+ 	}
+@@ -339,19 +371,23 @@
+ 	}
+ 
+ 	/* Control mode: a short ramp when playing starts or stops, so that
+-	   the output does not click, then where we are in the file. */
+-	if (d->o.control) {
+-		if (want != d->playing) {
+-			float a = d->playing ? 1.0f : 0.0f, b = want ? 1.0f : 0.0f;
+-			for (i = 0; i < (int)nframes; i++) {
+-				float g = a + (b - a) * (float)(i + 1) / (float)nframes;
+-				for (j = 0; j < d->channels; j++) {
+-					d->out[j][i] *= g;
+-				}
+-			}
+-			d->playing = want;
++	   the output does not click. */
++	if (d->o.control && want != d->playing) {
++		float a = d->playing ? 1.0f : 0.0f, b = want ? 1.0f : 0.0f;
++		for (i = 0; i < (int)nframes; i++) {
++			float g = a + (b - a) * (float)(i + 1) / (float)nframes;
++			for (j = 0; j < d->channels; j++) {
++				d->out[j][i] *= g;
++			}
+ 		}
+-		if (d->ended) {
++		d->playing = want;
++	}
++
++	/* Monitor mode: where we are in the file, and the highest sample of
++	   each channel, for the reporting thread. */
++	if (d->o.monitor) {
++		int finished = d->o.control ? d->ended : __atomic_load_n(&d->done, __ATOMIC_ACQUIRE);
++		if (finished) {
+ 			d->play_pos = (double)d->file_frames;
+ 		} else {
+ 			d->play_pos += (double)err / d->o.src_ratio;
+@@ -362,7 +398,8 @@
+ 			}
+ 		}
+ 		__atomic_store_n(&d->pub_pos, (i64)d->play_pos, __ATOMIC_RELEASE);
+-		__atomic_store_n(&d->pub_state, d->ended ? 2 : d->playing, __ATOMIC_RELEASE);
++		__atomic_store_n(&d->pub_state, finished ? 2 : (d->o.control ? d->playing : 1), __ATOMIC_RELEASE);
++		peaks_update(d, nframes);
+ 	}
+ 
+ 	/* Indicate to the disk thread that the ring buffer has been read
+@@ -385,7 +422,8 @@
+ 	printf("    -b N : Ring buffer size in frames (default=4096).\n");
+ 	printf("    -c N : ID of conversion algorithm (default=2, SRC_SINC_FASTEST).\n");
+ 	printf("    -C   : Control mode: commands on standard input (play, pause, seek N, quit),\n");
+-	printf("           position on standard output.  Starts paused.  Not with -t.\n");
++	printf("           and what -M says.  Starts paused.  Not with -t.\n");
++	printf("    -M   : Monitor: write the position and the output levels on standard output.\n");
+ 	printf("    -d N : Destination port pattern (default=NULL).\n");
+ 	printf("    -g N : amplitude gain (multiplier, default=1).\n");
+ 	printf("    -i N : Initial disk seek in frames (default=0).\n");
+@@ -433,37 +471,89 @@
+ 	return (long)err;
+ }
+ 
+-/* Control mode.  Commands arrive on standard input, one per line:
++/* Monitor mode (-M) and control mode (-C), which includes it.
+ 
++   What the program says on standard output, one line each:
++
++     ready CHANNELS FILE-RATE SERVER-RATE FRAMES     once, when the ports exist
++     pos FRAME STATE                                 when it changes
++                                                     (STATE is paused, playing or ended)
++     lev PEAK PEAK ...                               about thirty times a second while there is sound, and
++                                                     once more with the zeros (the highest sample of each
++                                                     channel since the last line, 1.0 is full scale, as
++                                                     the program sends it out)
++
++   Nothing is said while nothing changes: a paused player is silent on its output.
++
++   Any other line is information.
++
++   Control mode.  Commands arrive on standard input, one per line:
++
+      play        play, or go on playing (from the start if the end had been reached)
+      pause       stop playing, the position is kept
+      seek N      go to frame N of the file (a frame of the file, not of the server)
+      quit        leave
+ 
+-   What the program says on standard output, one line each:
++   The end of the input is a quit. */
++struct report_state {
++	i64 last_pos;
++	int last_state;
++	bool last_sound;
++};
+ 
+-     ready CHANNELS FILE-RATE SERVER-RATE FRAMES     once, when the ports exist
+-     pos FRAME STATE                                 as it changes, and twice a second
+-                                                     (STATE is paused, playing or ended)
++static void report_init(struct report_state *r)
++{
++	r->last_pos = -1;
++	r->last_state = -1;
++	r->last_sound = false;
++}
+ 
+-   Any other line is information.  The end of the input is a quit. */
+-static void control_print(struct player *d, i64 *last_pos, int *last_state, struct timespec *last_time)
++static void report(struct player *d, struct report_state *r)
+ {
+ 	i64 pos = __atomic_load_n(&d->pub_pos, __ATOMIC_ACQUIRE);
+ 	int state = __atomic_load_n(&d->pub_state, __ATOMIC_ACQUIRE);
+-	struct timespec now;
+-	clock_gettime(CLOCK_MONOTONIC, &now);
+-	double since = (double)(now.tv_sec - last_time->tv_sec) + (double)(now.tv_nsec - last_time->tv_nsec) / 1e9;
+-	if (pos != *last_pos || state != *last_state || since >= 0.5) {
++	if (pos != r->last_pos || state != r->last_state) {
+ 		static const char *names[] = { "paused", "playing", "ended" };
+ 		printf("pos %ld %s\n", (long)pos, names[state]);
+-		fflush(stdout);
+-		*last_pos = pos;
+-		*last_state = state;
+-		*last_time = now;
++		r->last_pos = pos;
++		r->last_state = state;
+ 	}
++	/* The levels: take them, and say them while there is sound (and once more, with the zeros). */
++	bool sound = false;
++	float peaks[256];
++	int n = d->channels < 256 ? d->channels : 256, j;
++	for (j = 0; j < n; j++) {
++		uint32_t bits = __atomic_exchange_n(&d->peak_bits[j], 0, __ATOMIC_RELAXED);
++		memcpy(&peaks[j], &bits, sizeof(float));
++		if (peaks[j] > 0) {
++			sound = true;
++		}
++	}
++	if (sound || r->last_sound) {
++		printf("lev");
++		for (j = 0; j < n; j++) {
++			printf(" %.4f", (double)peaks[j]);
++		}
++		printf("\n");
++	}
++	r->last_sound = sound;
++	fflush(stdout);
+ }
+ 
++/* Monitor mode without control: the lines are said by a thread of their own, until the end. */
++static void *report_proc(void *PTR)
++{
++	struct player *d = (struct player *)PTR;
++	struct report_state r;
++	report_init(&r);
++	while (!__atomic_load_n(&d->quit, __ATOMIC_ACQUIRE)) {
++		report(d, &r);
++		usleep(33000);
++	}
++	report(d, &r);
++	return NULL;
++}
++
+ static void control_command(struct player *d, const char *line)
+ {
+ 	long n;
+@@ -485,11 +575,8 @@
+ {
+ 	char buf[256];
+ 	size_t fill = 0;
+-	i64 last_pos = -1;
+-	int last_state = -1;
+-	struct timespec last_time;
+-	clock_gettime(CLOCK_MONOTONIC, &last_time);
+-	last_time.tv_sec -= 1;
++	struct report_state rs;
++	report_init(&rs);
+ 	while (!stopping(d)) {
+ 		struct pollfd p = { 0, POLLIN, 0 };
+ 		int r = poll(&p, 1, 33);
+@@ -512,7 +599,7 @@
+ 				fill = 0; /* a line that is too long is dropped */
+ 			}
+ 		}
+-		control_print(d, &last_pos, &last_state, &last_time);
++		report(d, &rs);
+ 	}
+ }
+ 
+@@ -533,6 +620,7 @@
+ 	d.play_pos = 0;
+ 	d.pub_pos = 0;
+ 	d.pub_state = 0;
++	d.peak_bits = NULL;
+ 	observe_signals();
+ 
+ 	/* Open sound file. */
+@@ -545,6 +633,7 @@
+ 	/* Allocate channel based data. */
+ 	die_when(d.channels < 1, "rju-play: channels < 1: %d\n", d.channels);
+ 	d.out = xmalloc(d.channels * sizeof(float *));
++	d.peak_bits = calloc((size_t)d.channels, sizeof(uint32_t));
+ 	d.output_port = xmalloc(d.channels * sizeof(jack_port_t *));
+ 
+ 	/* Allocate buffers. */
+@@ -628,16 +717,19 @@
+ 
+ 	/* Wait for disk thread to end, which it does when it reaches the
+ 	   end of the file or is interrupted. */
+-	if (d.o.control) {
+-		/* The program that controls us decides when it is over. */
++	if (d.o.monitor) {
+ 		printf("ready %d %g %g %ld\n", d.channels, isr, osr, (long)d.file_frames);
+ 		fflush(stdout);
++	}
++	if (d.o.control) {
++		/* The program that controls us decides when it is over. */
+ 		control_loop(&d);
+ 		__atomic_store_n(&d.quit, 1, __ATOMIC_RELEASE);
+ 		char wake = 1;
+ 		xwrite(d.pipe[1], &wake, 1);
+ 		pthread_join(d.disk_thread, NULL);
+ 	} else {
++		bool reporting = d.o.monitor && pthread_create(&d.report_thread, NULL, report_proc, &d) == 0;
+ 		pthread_join(d.disk_thread, NULL);
+ 
+ 		/* The disk thread ends when the whole file is in the ring buffer.
+@@ -645,6 +737,10 @@
+ 		while (!__atomic_load_n(&d.done, __ATOMIC_ACQUIRE) && __atomic_load_n(&d.eof, __ATOMIC_ACQUIRE) && !observe_end_of_process()) {
+ 			usleep(2000);
+ 		}
++		if (reporting) {
++			__atomic_store_n(&d.quit, 1, __ATOMIC_RELEASE);
++			pthread_join(d.report_thread, NULL);
++		}
+ 	}
+ 
+ 	/* Close sound file, free ring buffer, close Jack connection, close
+@@ -658,6 +754,7 @@
+ 	free(d.j_buffer);
+ 	free(d.k_buffer);
+ 	free(d.out);
++	free(d.peak_bits);
+ 	free(d.output_port);
+ 	src_delete(d.src);
+ 	return 0;
+@@ -681,13 +778,17 @@
+ 	o.dst_pattern = NULL;
+ 	o.loop = false;
+ 	o.control = false;
++	o.monitor = false;
+ 	strncpy(o.client_name, "jack_play", NAME_MAX - 1);
+ 
+-	while ((c = getopt(argc, argv, "b:c:Cd:g:hi:I:lm:n:q:r:tu")) != -1) {
++	while ((c = getopt(argc, argv, "b:c:Cd:g:hi:I:lm:Mn:q:r:tu")) != -1) {
+ 		switch (c) {
+ 		case 'C':
+ 			o.control = true;
+ 			break;
++		case 'M':
++			o.monitor = true;
++			break;
+ 		case 'b':
+ 			o.buffer_frames = (int)strtol(optarg, NULL, 0);
+ 			break;
+@@ -747,10 +848,14 @@
+ 			fprintf(stderr, "rju-play: -C cannot be used with -t\n");
+ 			usage();
+ 		}
+-		/* Standard output carries the position: one line at a time, and only the first file. */
+-		setvbuf(stdout, NULL, _IOLBF, 0);
++		/* Control includes monitoring, and plays only the first file. */
++		o.monitor = true;
+ 		argc = optind + 1;
+ 	}
++	if (o.monitor) {
++		/* Standard output carries the state: one line at a time. */
++		setvbuf(stdout, NULL, _IOLBF, 0);
++	}
+ 	int i;
+ 	for (i = optind; i < argc; i++) {
+ 		printf("rju-play: %s\n", argv[i]);

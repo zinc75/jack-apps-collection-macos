@@ -1,0 +1,27 @@
+Subject: fade in after a seek in control mode
+
+After a seek the converter is reset and the output starts in the middle of the
+waveform, from silence to the value of the signal in one sample. The converter
+overshoots on that step (0.5305 on a file that never goes above 0.5, after a
+seek) and the step is a click. In control mode the output now fades in over the
+first block after a seek, as it already did after a start or a pause. The
+position and the way the player answers are unchanged.
+
+Checked with three seeks during playback of a file that peaks at 0.5: the
+highest level on the output was 0.502, it is 0.500 now.
+--- a/cmd/rju-play.c
++++ b/cmd/rju-play.c
+@@ -286,9 +286,12 @@
+ 			d->in_frames = 0;
+ 			d->out_frames = 0;
+ 			d->ended = 0;
++			/* The output starts again from silence: it fades in, instead of
++			   starting in the middle of the waveform with a click. */
++			d->playing = 0;
+ 			d->play_pos = (double)s;
+ 			__atomic_store_n(&d->pub_pos, s, __ATOMIC_RELEASE);
+-			__atomic_store_n(&d->pub_state, d->playing, __ATOMIC_RELEASE);
++			__atomic_store_n(&d->pub_state, __atomic_load_n(&d->ctl_play, __ATOMIC_ACQUIRE), __ATOMIC_RELEASE);
+ 			__atomic_store_n(&d->o.seek_request, s, __ATOMIC_RELEASE);
+ 		}
+ 	}
