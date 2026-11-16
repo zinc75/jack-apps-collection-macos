@@ -21,8 +21,9 @@ struct ContentView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                // The idle page of the recording has its own red button and its own summary.
-                if !(model.view == .recording && model.phase == .configuration) { FooterBar() }
+                // The idle page of the recording has its own red button and its own summary: the footer only holds the
+                // command button there, at the same place as on every page.
+                FooterBar(commandOnly: model.view == .recording && model.phase == .configuration)
             }
             // A failure stays on screen, at the top of the page (under the toolbar, beside the sidebar), until it is
             // closed or the next recording starts.

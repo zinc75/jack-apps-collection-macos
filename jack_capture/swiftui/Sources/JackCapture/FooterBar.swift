@@ -6,6 +6,9 @@ import MatrixKit
 import JackCaptureKit
 
 struct FooterBar: View {
+    /// On the idle page of the recording, which has its own red button and summary: only the command button, at the
+    /// same place as on the other pages.
+    var commandOnly = false
     @Environment(RecorderModel.self) private var model
     @State private var showsCommand = false
     @State private var nextName = ""
@@ -19,27 +22,29 @@ struct FooterBar: View {
 
     var body: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                if model.phase.showsStopSymbol {
-                    Text(verbatim: model.outputFile ?? nextName).fontWeight(.medium)
-                    Text(verbatim: (model.settings.folder as NSString).abbreviatingWithTildeInPath)
-                        .font(.caption).foregroundStyle(.secondary)
-                } else {
-                    Text(verbatim: model.settings.summaryLine(sampleRate: model.sampleRate)).fontWeight(.medium)
-                    Text(verbatim: sizeLine).font(.caption).foregroundStyle(.secondary)
+            if !commandOnly {
+                VStack(alignment: .leading, spacing: 2) {
+                    if model.phase.showsStopSymbol {
+                        Text(verbatim: model.outputFile ?? nextName).fontWeight(.medium)
+                        Text(verbatim: (model.settings.folder as NSString).abbreviatingWithTildeInPath)
+                            .font(.caption).foregroundStyle(.secondary)
+                    } else {
+                        Text(verbatim: model.settings.summaryLine(sampleRate: model.sampleRate)).fontWeight(.medium)
+                        Text(verbatim: sizeLine).font(.caption).foregroundStyle(.secondary)
+                    }
                 }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-            if model.isConfigured || model.phase.showsStopSymbol {
-                RecordButton(showsStop: model.phase.showsStopSymbol, isEnabled: model.phase != .stopping) {
-                    #if DEBUG
-                    model.trace("red button action fired")
-                    #endif
-                    model.toggleRecording()
+                if model.isConfigured || model.phase.showsStopSymbol {
+                    RecordButton(showsStop: model.phase.showsStopSymbol, isEnabled: model.phase != .stopping) {
+                        #if DEBUG
+                        model.trace("red button action fired")
+                        #endif
+                        model.toggleRecording()
+                    }
+                } else {
+                    ConfigureButton()
                 }
-            } else {
-                ConfigureButton()
             }
 
             HStack {

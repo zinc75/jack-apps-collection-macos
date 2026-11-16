@@ -28,7 +28,6 @@ struct RecordingView: View {
     // MARK: nothing started
 
     @State private var available: Int64?
-    @State private var showsCommand = false
 
     private var idle: some View {
         VStack(spacing: 30) {
@@ -51,11 +50,9 @@ struct RecordingView: View {
             }
             levels
             recap
-            Button("Ligne de commande générée") { showsCommand = true }.buttonStyle(.link)
         }
         .onAppear { model.showsIdlePage = true }
         .onDisappear { model.showsIdlePage = false }
-        .sheet(isPresented: $showsCommand) { CommandSheet() }
         .task(id: model.settings) { available = model.availableBytes() }
     }
 
