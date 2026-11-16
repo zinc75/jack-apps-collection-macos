@@ -8,17 +8,17 @@ final class PlayerCommandTests: XCTestCase {
 
     func testTheDefaultCommandPutsTheProgramUnderControl() {
         XCTAssertEqual(PlayerCommand(file: file).arguments,
-                       ["-C", "-n", "jack_play", "-c", "0", "-b", "4096", "/Users/x/Music/Intro.wav"])
+                       ["-C", "-u", "-n", "jack_play", "-c", "0", "-b", "4096", "/Users/x/Music/Intro.wav"])
     }
 
     func testTheSettingsBecomeOptions() {
         let c = PlayerCommand(file: file, settings: PlayerSettings(converter: 2, bufferFrames: 16384, clientName: "lecteur", loop: true))
-        XCTAssertEqual(c.arguments, ["-C", "-n", "lecteur", "-c", "2", "-b", "16384", "-l", "/Users/x/Music/Intro.wav"])
+        XCTAssertEqual(c.arguments, ["-C", "-u", "-n", "lecteur", "-c", "2", "-b", "16384", "-l", "/Users/x/Music/Intro.wav"])
     }
 
     func testFollowingTheTransportWatchesInsteadOfControlling() {
         let c = PlayerCommand(file: file, settings: PlayerSettings(loop: true), mode: .followTransport)
-        XCTAssertEqual(c.arguments, ["-t", "-n", "jack_play", "-c", "0", "-b", "4096", "-M", "/Users/x/Music/Intro.wav"])
+        XCTAssertEqual(c.arguments, ["-t", "-u", "-n", "jack_play", "-c", "0", "-b", "4096", "-M", "/Users/x/Music/Intro.wav"])
         XCTAssertFalse(c.arguments.contains("-C"), "-C and -t cannot go together")
         XCTAssertFalse(c.arguments.contains("-l"), "the program does not loop when it follows the transport")
         XCTAssertTrue(c.display().hasPrefix("jack_play -t "))
@@ -39,7 +39,21 @@ final class PlayerCommandTests: XCTestCase {
 
     func testTheCommandLineIsWhatAPersonWouldType() {
         XCTAssertEqual(PlayerCommand(file: file).display(),
-                       "jack_play -C -n jack_play -c 0 -b 4096 /Users/x/Music/Intro.wav")
+                       "jack_play -C -u -n jack_play -c 0 -b 4096 /Users/x/Music/Intro.wav")
+
+    func testTheBufferIsAtLeastFourPeriodsOfTheServer() {
+        // The program stops with "period size exceeds limit" when its buffer is not larger than a period.
+        XCTAssertEqual(PlayerCommand(file: file, settings: PlayerSettings(bufferFrames: 1024), serverPeriod: 2048).bufferFrames, 8192)
+        XCTAssertEqual(PlayerCommand(file: file, settings: PlayerSettings(bufferFrames: 16384), serverPeriod: 2048).bufferFrames, 16384)
+        XCTAssertEqual(PlayerCommand(file: file, settings: PlayerSettings(bufferFrames: 2048)).bufferFrames, 2048)
+        XCTAssertTrue(PlayerCommand(file: file, settings: PlayerSettings(bufferFrames: 1024), serverPeriod: 2048).arguments.contains("8192"))
+    }
+
+    func testTheProgramSaysTheNameOfItsClient() {
+        var parser = PlayerLogParser()
+        XCTAssertEqual(parser.feed(Data("client Salle A-01\nready 2 48000 48000 10\n".utf8)),
+                       [.client("Salle A-01"), .ready(channels: 2, fileRate: 48000, serverRate: 48000, frames: 10)])
+    }
     }
 
     func testTheCommandLineQuotesWhatNeedsIt() {

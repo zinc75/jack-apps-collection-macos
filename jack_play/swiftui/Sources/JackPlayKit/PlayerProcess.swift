@@ -48,10 +48,13 @@ public final class PlayerProcess {
     public var processIdentifier: Int32? { process?.processIdentifier }
 
     /// The name of the JACK client of the program, once it runs: its ports are `<clientName>:out_1`, `out_2` …
-    /// `jack_play` adds the number of its process to the name, written with at least 12 digits (`jack_play-000000052048`).
+    /// The program says the name JACK gave it, before "ready". Until then it is the name asked for (the program is
+    /// started with `-u`, so it does not add its process number), which JACK may change if another client has it.
     public var clientName: String? {
-        processIdentifier.map { "\(String(command.settings.safeClientName.prefix(50)))-" + String(format: "%012d", $0) }
+        guard process != nil else { return nil }
+        return reportedName ?? command.settings.safeClientName
     }
+    private var reportedName: String?
 
     /// - Parameter environment: the environment of the program; nil keeps the one of the application. Tests use it to
     ///   point the program to a JACK server of their own.
@@ -89,7 +92,10 @@ public final class PlayerProcess {
                             self.finishIfDone()
                         } else {
                             let events = isError ? self.errorParser.feed(data) : self.outputParser.feed(data)
-                            for event in events { self.onEvent?(event) }
+                            for event in events {
+                                if case .client(let name) = event { self.reportedName = name }
+                                self.onEvent?(event)
+                            }
                         }
                     }
                 }

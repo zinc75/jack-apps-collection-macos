@@ -46,18 +46,25 @@ public struct PlayerCommand: Equatable, Sendable {
     public var mode: Mode
     /// Where to start in the file, in frames of the file; nil for the beginning.
     public var initialFrame: Int64?
+    /// The period of the JACK server, in frames, when it is known.
+    public var serverPeriod: Int?
 
-    public init(file: URL, settings: PlayerSettings = PlayerSettings(), mode: Mode = .independent, initialFrame: Int64? = nil) {
+    public init(file: URL, settings: PlayerSettings = PlayerSettings(), mode: Mode = .independent, initialFrame: Int64? = nil, serverPeriod: Int? = nil) {
+        self.serverPeriod = serverPeriod
         self.file = file
         self.settings = settings
         self.mode = mode
         self.initialFrame = initialFrame
     }
 
+    /// The ring buffer the program is given. It stops with an error when the buffer is not larger than a period of the
+    /// server, and a buffer of two periods leaves it no margin: it is at least four periods.
+    public var bufferFrames: Int { max(settings.bufferFrames, 4 * (serverPeriod ?? 0)) }
+
     /// The arguments given to the program. Both modes make it say where it is and how loud it is on its standard
     /// output (`-C` includes `-M`).
     public var arguments: [String] {
-        var a = [mode == .independent ? "-C" : "-t", "-n", settings.safeClientName, "-c", String(settings.converter), "-b", String(settings.bufferFrames)]
+        var a = [mode == .independent ? "-C" : "-t", "-u", "-n", settings.safeClientName, "-c", String(settings.converter), "-b", String(bufferFrames)]
         if mode == .followTransport { a.append("-M") }
         // The program does not loop when it follows the transport: the option is left out rather than shown for nothing.
         if settings.loop, mode == .independent { a.append("-l") }

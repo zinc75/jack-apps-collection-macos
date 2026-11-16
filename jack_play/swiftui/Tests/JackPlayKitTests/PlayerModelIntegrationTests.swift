@@ -61,7 +61,7 @@ final class PlayerModelIntegrationTests: XCTestCase {
         XCTAssertEqual(model.duration, 12, accuracy: 1e-9)
         // The first time, the channels go to the first outputs of the system.
         XCTAssertEqual(model.routing.channels, [["system:playback_1"], ["system:playback_2"]])
-        var client = try XCTUnwrap(graph.bridge.getPorts().map(\.id).first { $0.hasPrefix("jack_play-") && $0.hasSuffix(":out_1") }).replacingOccurrences(of: ":out_1", with: "")
+        var client = try XCTUnwrap(graph.bridge.getPorts().map(\.id).first { $0.hasPrefix("jack_play") && $0.hasSuffix(":out_1") }).replacingOccurrences(of: ":out_1", with: "")
         XCTAssertEqual(graph.destinations(of: "\(client):out_1"), ["system:playback_1"])
 
         // The matrix sends the channels to the client that measures.
@@ -93,7 +93,7 @@ final class PlayerModelIntegrationTests: XCTestCase {
         // An option changes: the program starts again where it was, and the connections are made again.
         model.update(settings: PlayerSettings(loop: true))
         await wait("the program is back") { model.phase == .running(.paused) && model.position >= resting - 4800 }
-        client = try XCTUnwrap(graph.bridge.getPorts().map(\.id).first { $0.hasPrefix("jack_play-") && $0.hasSuffix(":out_1") }).replacingOccurrences(of: ":out_1", with: "")
+        client = try XCTUnwrap(graph.bridge.getPorts().map(\.id).first { $0.hasPrefix("jack_play") && $0.hasSuffix(":out_1") }).replacingOccurrences(of: ":out_1", with: "")
         XCTAssertEqual(graph.destinations(of: "\(client):out_1"), ["dest:in1"], "the connections follow the new program")
         XCTAssertTrue(model.commandLine?.contains(" -l ") == true)
         XCTAssertEqual(Double(model.position), Double(resting), accuracy: 4800)

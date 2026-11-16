@@ -8,6 +8,7 @@ import XCTest
 private let fakeProgram = """
 #!/bin/sh
 echo "jack client name: fake"
+echo "client fake-01"
 case "$FAKE_MODE" in
   crash) echo "ready 2 48000 48000 192000"; echo "something went wrong" 1>&2; exit 3;;
 esac
@@ -67,9 +68,10 @@ final class PlayerProcessTests: XCTestCase {
         try process.start()
         XCTAssertTrue(process.isRunning)
         XCTAssertNotNil(process.processIdentifier)
-        XCTAssertEqual(process.clientName, "jack_play-" + String(format: "%012d", process.processIdentifier!))
-        XCTAssertEqual(process.clientName?.count, "jack_play-".count + 12)
+        // The name asked for (the program is started with -u: no process number), until the program says the one JACK gave.
+        XCTAssertEqual(process.clientName, "jack_play")
         await wait(box) { $0.contains(.ready(channels: 2, fileRate: 48000, serverRate: 48000, frames: 192000)) }
+        XCTAssertEqual(process.clientName, "fake-01", "the name JACK gave wins over the one asked for")
         process.send(.play)
         await wait(box) { $0.contains(.position(frame: 100, state: .playing)) }
         process.send(.seek(96000))
@@ -85,8 +87,8 @@ final class PlayerProcessTests: XCTestCase {
     func testTheEventsComeInTheOrderTheProgramWroteThem() async throws {
         let (process, box) = try makeProcess()
         try process.start()
-        await wait(box) { $0.count >= 3 }
-        XCTAssertEqual(Array(box.events.prefix(3)), [.message("jack client name: fake"),
+        await wait(box) { $0.count >= 4 }
+        XCTAssertEqual(Array(box.events.prefix(4)), [.message("jack client name: fake"), .client("fake-01"),
                                                       .ready(channels: 2, fileRate: 48000, serverRate: 48000, frames: 192000),
                                                       .position(frame: 0, state: .paused)])
         process.stop()

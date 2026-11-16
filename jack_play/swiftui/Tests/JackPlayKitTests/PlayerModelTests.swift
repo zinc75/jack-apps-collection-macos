@@ -23,7 +23,15 @@ final class FakeRunner: PlayerRunner {
         started = true
     }
     func send(_ control: PlayerControl) { controls.append(control) }
-    func stop(grace: TimeInterval) { stopped = true }
+    var isRunning: Bool { started && !stopped && !terminated }
+    /// False to make the program slow to leave: it says so when `leave()` is called.
+    var leavesAtOnce = true
+    func stop(grace: TimeInterval) {
+        guard isRunning else { return }
+        stopped = true
+        if leavesAtOnce { leave() }
+    }
+    func leave() { say(.exited(status: 0, requested: true)) }
     func terminate() { terminated = true }
 
     func say(_ event: PlayerEvent) { onEvent?(event) }
@@ -37,6 +45,7 @@ final class FakeRunner: PlayerRunner {
 final class FakeServer: PlaybackServer {
     var isConnected = true
     var sampleRate: Int? = 48000
+    var bufferSize: Int? = 1024
     var inputs: Set<String> = ["system:playback_1", "system:playback_2", "system:playback_3", "system:playback_4", "Carla:in1"]
     var links: Set<String> = []
     var onChange: (() -> Void)?
@@ -402,6 +411,48 @@ final class PlayerModelTransportTests: XCTestCase {
         model.stop()
         XCTAssertEqual(server.transport, ["start", "pause", "stop"])
         XCTAssertTrue(runners[0].controls.isEmpty, "nothing is sent to the program: the transport is the only command")
+    }
+
+    func testTheTransportStopsAtTheEndOfTheFileWhenTheWindowDrivesIt() throws {
+        let (model, server) = make()
+        model.open(try files.write(TestFiles.all[0], channels: 2, frames: 48000))
+        runners[0].ready(frames: 48000)
+        runners[0].say(.position(frame: 47000, state: .playing))
+        runners[0].say(.position(frame: 48000, state: .ended))
+        runners[0].say(.position(frame: 48000, state: .ended))
+        XCTAssertEqual(server.transport, ["pause"], "once, not at every report")
+        XCTAssertTrue(model.hasEnded)
+        model.play()
+        XCTAssertEqual(server.transport, ["pause", "locate 0", "start"], "from the beginning after the end")
+    }
+
+    func testThePositionNeverGoesPastTheEnd() throws {
+        let (model, _) = make()
+        model.open(try files.write(TestFiles.all[0], channels: 2, frames: 48000))
+        runners[0].ready(frames: 48000)
+        runners[0].say(.position(frame: 50000, state: .playing))
+        XCTAssertEqual(model.position, 48000)
+    }
+
+    func testTheWindowThatOnlyWatchesLeavesTheTransportAloneAtTheEnd() throws {
+        let (model, server) = make()
+        model.commandsTransport = false
+        model.open(try files.write(TestFiles.all[0], channels: 2, frames: 48000))
+        runners[0].ready(frames: 48000)
+        runners[0].say(.position(frame: 48000, state: .ended))
+        XCTAssertEqual(server.transport, [])
+    }
+
+    func testTheNextProgramWaitsForThePreviousOneToLeave() throws {
+        let (model, _) = make()
+        model.open(try files.write(TestFiles.all[0], channels: 2, frames: 48000))
+        runners[0].ready()
+        runners[0].leavesAtOnce = false
+        model.set(mode: .independent)
+        XCTAssertEqual(runners.count, 1, "the new program would be named name-01 while the old one is in the graph")
+        XCTAssertEqual(model.phase, .starting)
+        runners[0].leave()
+        XCTAssertEqual(runners.count, 2)
     }
 
     func testASeekIsAFrameOfTheServer() throws {

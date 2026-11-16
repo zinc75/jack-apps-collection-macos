@@ -13,6 +13,7 @@ public protocol PlayerRunner: AnyObject {
     var onEvent: ((PlayerEvent) -> Void)? { get set }
     /// The name of its JACK client, once it runs.
     var clientName: String? { get }
+    var isRunning: Bool { get }
     func start() throws
     func send(_ control: PlayerControl)
     func stop(grace: TimeInterval)
@@ -27,6 +28,8 @@ extension PlayerProcess: PlayerRunner {}
 public protocol PlaybackServer: JackLinking {
     var isConnected: Bool { get }
     var sampleRate: Int? { get }
+    /// The period of the server, in frames.
+    var bufferSize: Int? { get }
     /// The playback ports of the system, where a file goes the first time.
     var playbackPorts: [String] { get }
     /// Called when the graph has changed or the server has come or gone.
@@ -107,6 +110,12 @@ public final class PlayerModel {
     private var lastLevelAt = Date.distantPast
     @ObservationIgnored private var decay: Task<Void, Never>?
     private var usesDefaultRouting = true
+    /// The program that was asked to leave and has not left yet. The next one waits for it: they carry the same name,
+    /// and JACK would call the second one "name-01" while the first is still in the graph.
+    private var leaving: PlayerRunner?
+    private var queuedLaunch: (() -> Void)?
+    /// The end of the file has been met in the mode that follows the transport, and the transport stopped.
+    private var endHandled = false
 
     private struct Restart {
         let frame: Int64
@@ -172,6 +181,7 @@ public final class PlayerModel {
     }
 
     public func closeFile() {
+        queuedLaunch = nil
         decay?.cancel(); decay = nil
         stopRunner()
         waveform.cancel()
@@ -190,7 +200,10 @@ public final class PlayerModel {
         guard canCommand else { return }
         switch mode {
         case .independent: runner?.send(.play)
-        case .followTransport: server.transportStart()
+        case .followTransport:
+            // At the end of the file the transport was paused where it was: it starts again from the beginning.
+            if hasEnded { server.transportLocate(frame: 0) }
+            server.transportStart()
         }
     }
 
@@ -291,7 +304,7 @@ public final class PlayerModel {
     // MARK: Running the program
 
     private func command(for url: URL, frame: Int64?) -> PlayerCommand {
-        PlayerCommand(file: url, settings: settings, mode: mode, initialFrame: frame)
+        PlayerCommand(file: url, settings: settings, mode: mode, initialFrame: frame, serverPeriod: server.bufferSize)
     }
 
     private func chooseRouting() {
@@ -309,6 +322,11 @@ public final class PlayerModel {
         guard let file else { return }
         guard server.isConnected else {
             phase = .failed(.noJack)
+            return
+        }
+        if leaving != nil {
+            phase = .starting
+            queuedLaunch = { [weak self] in self?.launch(frame: frame, playing: playing) }
             return
         }
         guard let runner = makeRunner(command(for: file.url, frame: frame)) else {
@@ -329,10 +347,20 @@ public final class PlayerModel {
 
     private func stopRunner() {
         manager.detach()
-        let old = runner
+        queuedLaunch = nil
+        guard let old = runner else { return }
         runner = nil
-        old?.onEvent = nil
-        old?.stop(grace: 1)
+        guard old.isRunning else { old.onEvent = nil; return }
+        leaving = old
+        old.onEvent = { [weak self, weak old] event in
+            guard case .exited = event, let self, let old, self.leaving === old else { return }
+            self.leaving = nil
+            old.onEvent = nil
+            let next = self.queuedLaunch
+            self.queuedLaunch = nil
+            next?()
+        }
+        old.stop(grace: 1)
     }
 
     private func relaunchKeepingPlace() {
@@ -353,8 +381,15 @@ public final class PlayerModel {
             }
             if playAtReady { mode == .independent ? runner?.send(.play) : server.transportStart() }
         case .position(let frame, let state):
-            position = frame
+            position = min(frame, file?.info.frames ?? frame)
             phase = .running(state)
+            // The transport is shared and goes on after the end of the file: when the window drives it, it stops there.
+            if mode == .followTransport, state == .ended, commandsTransport, !endHandled {
+                endHandled = true
+                server.transportPause()
+            } else if state != .ended {
+                endHandled = false
+            }
         case .levels(let peaks):
             lastLevelAt = Date()
             tracker.update(peaks: peaks)
@@ -362,7 +397,7 @@ public final class PlayerModel {
         case .warning(let text):
             warnings += 1
             lastWarning = text
-        case .message:
+        case .client, .message:
             break
         case .exited(let status, _):
             manager.detach()
