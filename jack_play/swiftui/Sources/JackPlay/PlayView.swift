@@ -122,8 +122,10 @@ struct PlayView: View {
                 }
                 HStack(spacing: 6) {
                     ForEach(clients, id: \.self) { name in
+                        let known = model.graph.destinations.first { $0.name == name }
                         HStack(spacing: 6) {
-                            BadgeView(client: name, isPlayback: name == "system", size: 16)
+                            BadgeView(client: name, isPlayback: name == "system", isJackMoebiusMaster: known?.isJackMoebiusMaster ?? false,
+                                      size: 16, bundleID: known?.bundleID)
                             Text(verbatim: name == "system" ? "system (playback)" : name)
                         }
                         .font(.caption).fontWeight(.medium)

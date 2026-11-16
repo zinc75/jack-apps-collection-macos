@@ -14,12 +14,15 @@ public struct JackDestinationClient: Identifiable, Equatable, Sendable {
     public let isPlayback: Bool
     /// Bundle identifier of the application a JackMoebius box stands for, if any.
     public var bundleID: String?
+    /// The system node of JackMoebius, whose inputs are shared by the applications: it gets the picto of JackMoebius.
+    public var isJackMoebiusMaster: Bool
 
-    public init(name: String, ports: [String], isPlayback: Bool, bundleID: String? = nil) {
+    public init(name: String, ports: [String], isPlayback: Bool, bundleID: String? = nil, isJackMoebiusMaster: Bool = false) {
         self.name = name
         self.ports = ports
         self.isPlayback = isPlayback
         self.bundleID = bundleID
+        self.isJackMoebiusMaster = isJackMoebiusMaster
     }
 
     public var displayName: String { isPlayback ? "system (playback)" : name }
@@ -45,10 +48,16 @@ public final class PlaybackGraph: PlaybackServer {
     @ObservationIgnored public var onChange: (() -> Void)?
 
     let bridge = JackBridgeWrapper()
+    /// The applications behind the clients (their icons), from the metadata of JACK and from the JackMoebius daemon.
+    @ObservationIgnored let applications: ClientApplications
     @ObservationIgnored private var retry: Task<Void, Never>?
     @ObservationIgnored private var pending: Task<Void, Never>?
 
-    public init() {}
+    public init() {
+        let bridge = bridge
+        applications = ClientApplications(metadata: { bridge.coreAudioBoxKey(name: $0) })
+        applications.onChange = { [weak self] in self?.applyApplications() }
+    }
 
     /// Connects to the server, and again whenever it comes back after a shutdown.
     public func start() {
@@ -76,8 +85,10 @@ public final class PlaybackGraph: PlaybackServer {
         let ports = bridge.getPorts()
         let inputs = ports.filter { $0.direction == .input && $0.type == .audio && $0.clientName != Self.clientName }
         var groups = Self.groupClients(inputPorts: inputs.map(\.id))
+        applications.update(clients: Set(groups.filter { !$0.isPlayback }.map(\.name)))
         for i in groups.indices where !groups[i].isPlayback {
-            groups[i].bundleID = bridge.coreAudioBoxKey(name: groups[i].name)
+            groups[i].bundleID = applications.bundles[groups[i].name]
+            groups[i].isJackMoebiusMaster = groups[i].name == ClientApplications.jackMoebiusClient || bridge.isJackMoebiusMaster(name: groups[i].name)
         }
         destinations = groups
         clientNames = Set(ports.map(\.clientName))
@@ -130,7 +141,18 @@ public final class PlaybackGraph: PlaybackServer {
         refresh()
     }
 
+    /// The applications behind some clients have been found: their boxes get their icon.
+    private func applyApplications() {
+        var groups = destinations
+        var changed = false
+        for i in groups.indices where !groups[i].isPlayback && groups[i].bundleID == nil {
+            if let id = applications.bundles[groups[i].name] { groups[i].bundleID = id; changed = true }
+        }
+        if changed { destinations = groups }
+    }
+
     private func serverStopped() {
+        applications.reset()
         bridge.close()
         isConnected = false
         destinations = []
@@ -142,6 +164,8 @@ public final class PlaybackGraph: PlaybackServer {
 
     private func pollServerState() {
         guard bridge.isConnected else { return }
+        // JackMoebius may publish the application of a box a little after the box appeared: look again.
+        applications.update(clients: Set(destinations.filter { !$0.isPlayback }.map(\.name)))
         sampleRate = Int(bridge.sampleRate)
         bufferSize = Int(bridge.bufferSize)
         xruns = Int(bridge.xrunCount)

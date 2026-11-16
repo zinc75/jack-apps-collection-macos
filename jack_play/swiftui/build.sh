@@ -42,6 +42,10 @@ echo "[2/5] Assembling the bundle"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$APP/Contents/Helpers"
 cp "$BIN/$EXECUTABLE" "$APP/Contents/MacOS/$EXECUTABLE"
+# The resource bundles of the packages (MatrixKit: the picto of JackMoebius).
+for resource_bundle in "$BIN"/*.bundle; do
+  [ -d "$resource_bundle" ] && cp -R "$resource_bundle" "$APP/Contents/Resources/"
+done
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $VERSION.$REVISION" "$APP/Contents/Info.plist"

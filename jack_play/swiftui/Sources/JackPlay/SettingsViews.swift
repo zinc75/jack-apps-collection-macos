@@ -198,7 +198,7 @@ struct OutputsView: View {
                     } label: {
                         HStack(spacing: 10) {
                             Image(systemName: "chevron.down").font(.system(size: 9, weight: .bold)).rotationEffect(.degrees(open ? 0 : -90)).frame(width: 12)
-                            BadgeView(client: client.name, isPlayback: client.isPlayback, size: 28, bundleID: client.bundleID)
+                            BadgeView(client: client.name, isPlayback: client.isPlayback, isJackMoebiusMaster: client.isJackMoebiusMaster, size: 28, bundleID: client.bundleID)
                             VStack(alignment: .leading, spacing: 0) {
                                 Text(verbatim: client.displayName).fontWeight(.semibold)
                                 Text("\(client.ports.count) entrées").font(.caption).foregroundStyle(.secondary)
