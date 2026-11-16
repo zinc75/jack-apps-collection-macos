@@ -8,16 +8,6 @@ jack_play [options] sound-file...
 
 The default JACK client name is `jack_play`, so the ports are `jack_play-<pid>:out_1`, `out_2`, and so on.
 
-## Changes compared with upstream
-
-**CLI.** The program is upstream's, with three small patches:
-
-- The end of the file is played in full. Upstream closed the JACK client as soon as the last block had been read from disk, which cut the end of every file by the size of the ring buffer (about 85 ms with the default `-b`, more with a larger one).
-- In transport mode, a start or a locate empties the ring buffer. Upstream played the audio read before the seek first, so after a start from the beginning the first block of the file was heard twice.
-- The default client name is `jack_play` instead of `rju-play`.
-
-Nothing else changes. It is a universal binary (arm64 and x86_64), linked statically with libsndfile (and its FLAC, Ogg Vorbis, Opus and MP3 codecs) and libsamplerate; only libjack stays dynamic.
-
 ## Build
 
 The libraries are built first, from the root of the repository (see `libs/`), then:
@@ -39,6 +29,16 @@ It builds and plays on Apple Silicon and, under Rosetta, as x86_64. Files are pl
 | `0001-play-the-end-of-the-file.patch` | The end of the file is no longer cut. |
 | `0002-empty-the-ring-buffer-on-seek.patch` | A transport seek no longer replays buffered audio. |
 | `0003-default-client-name-jack_play.patch` | Default client name `jack_play`. Specific to this edition. |
+
+## Changes compared with upstream
+
+**CLI.** The program is upstream's, with three small patches:
+
+- The end of the file is played in full. Upstream closed the JACK client as soon as the last block had been read from disk, which cut the end of every file by the size of the ring buffer (about 85 ms with the default `-b`, more with a larger one).
+- In transport mode, a start or a locate empties the ring buffer. Upstream played the audio read before the seek first, so after a start from the beginning the first block of the file was heard twice.
+- The default client name is `jack_play` instead of `rju-play`.
+
+Nothing else changes. It is a universal binary (arm64 and x86_64), linked statically with libsndfile (and its FLAC, Ogg Vorbis, Opus and MP3 codecs) and libsamplerate; only libjack stays dynamic.
 
 ## Upstream
 
