@@ -1,0 +1,18 @@
+Subject: transport mode, the position stops at the end of the file
+
+The transport is shared and goes on after the end of the file, and the position
+reported with -M went on with it, past the last frame. It now stays at the last
+frame with the state ended, until the transport is moved.
+--- a/cmd/rju-play.c
++++ b/cmd/rju-play.c
+@@ -392,6 +392,10 @@
+ 	   each channel, for the reporting thread. */
+ 	if (d->o.monitor) {
+ 		int finished = d->o.control ? d->ended : __atomic_load_n(&d->done, __ATOMIC_ACQUIRE);
++		/* Following the transport, which goes on after the end of the file: the position stops at the end. */
++		if (!finished && d->o.transport_aware && d->file_frames > 0 && d->play_pos >= (double)d->file_frames) {
++			finished = 1;
++		}
+ 		if (finished) {
+ 			d->play_pos = (double)d->file_frames;
+ 		} else {

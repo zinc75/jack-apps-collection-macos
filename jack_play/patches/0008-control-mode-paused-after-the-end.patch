@@ -1,0 +1,17 @@
+Subject: control mode, stay paused after the end of the file
+
+In control mode the player kept its request to play when the file ended, so a seek
+after the end started playing at once. The end now clears the request: after it
+the player is paused, a seek only moves, and play starts again from the
+beginning as before.
+--- a/cmd/rju-play.c
++++ b/cmd/rju-play.c
+@@ -348,6 +348,8 @@
+ 	if (__atomic_load_n(&d->eof, __ATOMIC_ACQUIRE) && d->out_frames >= (i64)(d->in_frames * d->o.src_ratio)) {
+ 		if (d->o.control) {
+ 			d->ended = 1;
++			/* After the end the player is paused: a seek then moves without playing. */
++			__atomic_store_n(&d->ctl_play, 0, __ATOMIC_RELEASE);
+ 		} else {
+ 			__atomic_store_n(&d->done, 1, __ATOMIC_RELEASE);
+ 		}

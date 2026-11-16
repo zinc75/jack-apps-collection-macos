@@ -33,28 +33,32 @@ It builds and plays on Apple Silicon and, under Rosetta, as x86_64. Files are pl
 | `0005-control-mode-on-standard-input.patch` | The `-C` option. Specific to this edition. |
 | `0006-monitor-mode-position-and-levels.patch` | The `-M` option. Specific to this edition. |
 | `0007-fade-in-after-a-seek-in-control-mode.patch` | No click, and no overshoot of the converter, after a seek with `-C`. Specific to this edition. |
+| `0008-control-mode-paused-after-the-end.patch` | With `-C`, a seek after the end of the file moves without playing. Specific to this edition. |
+| `0009-monitor-mode-client-name.patch` | With `-M`, a `client NAME` line gives the name JACK gave to the client. Specific to this edition. |
+| `0010-transport-mode-position-stops-at-the-end.patch` | With `-M` and `-t`, the position stops at the end of the file instead of following the transport past it. Specific to this edition. |
 
 ## Changes compared with upstream
 
-**CLI.** The program is upstream's, with seven patches. Three are fixes:
+**CLI.** The program is upstream's, with ten patches. Three are fixes:
 
 - The end of the file is played in full. Upstream closed the JACK client as soon as the last block had been read from disk, which cut the end of every file by the size of the ring buffer (about 85 ms with the default `-b`, more with a larger one).
 - In transport mode, a start or a locate empties the ring buffer. Upstream played the audio read before the seek first, so after a start from the beginning the first block of the file was heard twice.
 - In transport mode, the position is converted from the frames of the server to the frames of the file. Upstream used the number of the transport frame as it was: with a file at 44.1 kHz on a server at 48 kHz, a locate to 2.000 s started 2.177 s into the file.
 
-Four are specific to this edition:
+Seven are specific to this edition:
 
 - The default client name is `jack_play` instead of `rju-play`.
 - A new option, `-M`, makes the program say where it is and how loud it is, on standard output, for a program that shows it. It works alone, with `-l` and with `-t`. Without `-M` (and without `-C`) nothing is written, as before. One line each:
 
   | Line | |
   |---|---|
+  | `client NAME` | once, before `ready`: the name JACK gave to the client |
   | `ready CHANNELS FILE-RATE SERVER-RATE FRAMES` | once, when the ports exist |
   | `pos FRAME STATE` | when it changes; `STATE` is `paused`, `playing` or `ended` |
   | `lev PEAK PEAK …` | about thirty times a second while there is sound, and once more with the zeros |
 
-  The levels are the highest sample of each channel since the last line, as the program sends it out (1.0 is full scale, `-g` counted). Nothing is said while nothing changes: a paused player is silent. Frames are the frames of the file, as 64 bit numbers. In transport mode `pos` follows the transport, and its state is `paused` while the transport is stopped.
-- A new option, `-C`, plays a file without the JACK transport, which every client of the server shares. It includes `-M`, and reads commands on standard input, one per line. It starts paused, and the sound fades in over one cycle of the audio server (a few milliseconds, depending on its buffer size) when it starts, resumes or jumps to a new position, and fades out when it pauses, so that a seek or a pause does not click. Once the fade is over, the sound is not touched. It cannot be used with `-t`, where a transport seek is not smoothed, as in `rju-play`.
+  The levels are the highest sample of each channel since the last line, as the program sends it out (1.0 is full scale, `-g` counted). Nothing is said while nothing changes: a paused player is silent. Frames are the frames of the file, as 64 bit numbers. In transport mode `pos` follows the transport, its state is `paused` while the transport is stopped, and it stays at the last frame (state `ended`) once the file is over, although the transport goes on.
+- A new option, `-C`, plays a file without the JACK transport, which every client of the server shares. It includes `-M`, and reads commands on standard input, one per line. It starts paused, and the sound fades in over one cycle of the audio server (a few milliseconds, depending on its buffer size) when it starts, resumes or jumps to a new position, and fades out when it pauses, so that a seek or a pause does not click. Once the fade is over, the sound is not touched. After the end the player is paused, so a seek moves without playing. It cannot be used with `-t`, where a transport seek is not smoothed, as in `rju-play`.
 
   | Command | |
   |---|---|

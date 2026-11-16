@@ -1,0 +1,17 @@
+Subject: monitor mode, say the name of the JACK client
+
+With -M (and -C) a line "client NAME" comes before "ready": the name JACK gave to
+the client. Without -u the name carries the process number, and with -u it is
+the name asked for unless another client has it already, so a program that
+connects the ports must not guess it.
+--- a/cmd/rju-play.c
++++ b/cmd/rju-play.c
+@@ -723,6 +723,8 @@
+ 	/* Wait for disk thread to end, which it does when it reaches the
+ 	   end of the file or is interrupted. */
+ 	if (d.o.monitor) {
++		/* The name JACK gave: it may differ from the one asked for when another client has it. */
++		printf("client %s\n", jack_get_client_name(d.client));
+ 		printf("ready %d %g %g %ld\n", d.channels, isr, osr, (long)d.file_frames);
+ 		fflush(stdout);
+ 	}
