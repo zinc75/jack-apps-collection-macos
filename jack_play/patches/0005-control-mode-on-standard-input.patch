@@ -1,0 +1,407 @@
+Subject: control mode, to play a file without the JACK transport
+
+-C reads commands on standard input and tells where it is on standard output,
+so that another program can play, pause and move in a file without using the
+transport, which every client of the server shares. It starts paused.
+
+  play        play, or go on from where it was (from the start after the end)
+  pause       stop playing, the position is kept
+  seek N      go to frame N of the file
+  quit        leave (the end of the input is a quit too)
+
+  ready CHANNELS FILE-RATE SERVER-RATE FRAMES     once, when the ports exist
+  pos FRAME STATE                                 as it changes and twice a second
+                                                  (STATE: paused, playing or ended)
+
+A seek reuses the way a transport seek empties the ring buffer. The converter is
+reset in the process thread. Playing and pausing use a short ramp, so that the
+output does not click. After the end the file can be played again with a seek or
+a play. -C cannot be used with -t. Without -C nothing changes.
+--- a/cmd/rju-play.c
++++ b/cmd/rju-play.c
+@@ -5,6 +5,7 @@
+ #include <string.h>
+ 
+ #include <pthread.h> /* Posix */
++#include <poll.h>
+ #include <unistd.h>
+ 
+ #include <jack/jack.h> /* Jack */
+@@ -41,6 +42,7 @@
+ 	char *dst_pattern;
+ 	float ampl;
+ 	bool loop;
++	bool control; /* commands on standard input, position on standard output */
+ };
+ 
+ struct player {
+@@ -63,8 +65,28 @@
+ 	int done; /* set by the process thread once everything has been played */
+ 	i64 in_frames; /* frames given to the converter, silence excluded */
+ 	i64 out_frames; /* frames produced by the converter */
++
++	/* Control mode (-C).  The control thread writes ctl_seek and ctl_play, the process thread takes them
++	   at the start of a cycle and publishes where it is in pub_pos and pub_state. */
++	i64 ctl_seek; /* frame of the file to go to, -1 for none */
++	int ctl_play; /* 1 to play, 0 to pause */
++	int quit; /* set to stop the disk thread */
++	i64 file_frames; /* frames of the file */
++	double file_rate;
++	double server_rate;
++	int playing; /* process thread: the output is playing (1) or silent (0) */
++	int ended; /* process thread: the end of the file has been played */
++	double play_pos; /* process thread: frame of the file being played */
++	i64 pub_pos;
++	int pub_state; /* 0 paused, 1 playing, 2 ended */
+ };
+ 
++/* True when the program has to stop: a signal, or the end of the control mode. */
++static bool stopping(struct player *d)
++{
++	return observe_end_of_process() || __atomic_load_n(&d->quit, __ATOMIC_ACQUIRE);
++}
++
+ /* True if a seek request has arrived that the disk thread has not served. */
+ static bool seek_pending(struct player *d, i64 handled)
+ {
+@@ -89,7 +111,7 @@
+ {
+ 	struct player *d = (struct player *)PTR;
+ 	i64 handled = -1; /* the seek request being served, still pending for the process thread */
+-	while (!observe_end_of_process()) {
++	while (!stopping(d)) {
+ 
+ 		/* Handle seek request.  While a request is pending the process
+ 		   thread writes silence and leaves the ring buffer alone, so it is
+@@ -102,13 +124,15 @@
+ 				fprintf(stderr, "rju-play: seek request failed, %ld\n", (long)req);
+ 			}
+ 			ringbuffer_read_advance(d->rb, ringbuffer_read_space(d->rb));
++			/* A file that had been read to its end can be read again from here. */
++			__atomic_store_n(&d->eof, 0, __ATOMIC_RELEASE);
+ 			handled = req;
+ 		}
+ 
+ 		/* Wait for write space at the ring buffer, or for a new seek request. */
+ 		int nbytes = d->o.minimal_frames * sizeof(float) * d->channels;
+ 		int space = (int)ringbuffer_write_space(d->rb);
+-		while (space < nbytes && !seek_pending(d, handled)) {
++		while (space < nbytes && !seek_pending(d, handled) && !stopping(d)) {
+ 			char b;
+ 			if (read(d->pipe[0], &b, 1) == -1) {
+ 				fprintf(stderr, "rju-play: error reading communication pipe\n");
+@@ -116,7 +140,7 @@
+ 			}
+ 			space = (int)ringbuffer_write_space(d->rb);
+ 		}
+-		if (seek_pending(d, handled)) {
++		if (seek_pending(d, handled) || stopping(d)) {
+ 			continue;
+ 		}
+ 		nbytes = space;
+@@ -144,7 +168,18 @@
+ 				   it can play what is still buffered before the client is closed. */
+ 				__atomic_store_n(&d->eof, 1, __ATOMIC_RELEASE);
+ 				seek_clear(d, &handled);
+-				return NULL;
++				if (!d->o.control) {
++					return NULL;
++				}
++				/* In control mode the file can be played again after a seek: wait for it. */
++				while (!seek_pending(d, handled) && !stopping(d)) {
++					char b;
++					if (read(d->pipe[0], &b, 1) == -1) {
++						fprintf(stderr, "rju-play: error reading communication pipe\n");
++						exit(1);
++					}
++				}
++				continue;
+ 			}
+ 		}
+ 
+@@ -210,6 +245,23 @@
+ 		d->out[i] = (float *)jack_port_get_buffer(d->output_port[i], nframes);
+ 	}
+ 
++	/* Control mode: take the seek that was asked, between two cycles, like
++	   sync_handler() does for the transport.  The converter is reset here
++	   because it holds samples from before the seek. */
++	if (d->o.control) {
++		i64 s = __atomic_exchange_n(&d->ctl_seek, (i64)-1, __ATOMIC_ACQ_REL);
++		if (s >= 0) {
++			src_reset(d->src);
++			d->in_frames = 0;
++			d->out_frames = 0;
++			d->ended = 0;
++			d->play_pos = (double)s;
++			__atomic_store_n(&d->pub_pos, s, __ATOMIC_RELEASE);
++			__atomic_store_n(&d->pub_state, d->playing, __ATOMIC_RELEASE);
++			__atomic_store_n(&d->o.seek_request, s, __ATOMIC_RELEASE);
++		}
++	}
++
+ 	/* A seek is pending, the disk thread is emptying and refilling the
+ 	   ring buffer.  Write silence, and wake the disk thread in case it
+ 	   waits for space. */
+@@ -220,6 +272,19 @@
+ 		return 0;
+ 	}
+ 
++	/* Control mode: silence when paused, or when the end of the file has
++	   been played.  The ring buffer is left alone, so playing goes on
++	   from where it stopped. */
++	int want = 1;
++	if (d->o.control) {
++		want = __atomic_load_n(&d->ctl_play, __ATOMIC_ACQUIRE);
++		if (d->ended || (!d->playing && !want)) {
++			signal_set(d->out, nframes, d->channels, 0.0);
++			__atomic_store_n(&d->pub_state, d->ended ? 2 : 0, __ATOMIC_RELEASE);
++			return 0;
++		}
++	}
++
+ 	/* Write silence if the transport is stopped.  If stopped the disk
+ 	   thread will sleep and signals will be ignored, so check here
+ 	   also. */
+@@ -246,7 +311,11 @@
+ 	/* Everything is played once the converter has produced as many frames
+ 	   as the whole file is worth. */
+ 	if (__atomic_load_n(&d->eof, __ATOMIC_ACQUIRE) && d->out_frames >= (i64)(d->in_frames * d->o.src_ratio)) {
+-		__atomic_store_n(&d->done, 1, __ATOMIC_RELEASE);
++		if (d->o.control) {
++			d->ended = 1;
++		} else {
++			__atomic_store_n(&d->done, 1, __ATOMIC_RELEASE);
++		}
+ 	}
+ 
+ 	/* Uninterleave available data to the output buffers. */
+@@ -269,6 +338,33 @@
+ 		}
+ 	}
+ 
++	/* Control mode: a short ramp when playing starts or stops, so that
++	   the output does not click, then where we are in the file. */
++	if (d->o.control) {
++		if (want != d->playing) {
++			float a = d->playing ? 1.0f : 0.0f, b = want ? 1.0f : 0.0f;
++			for (i = 0; i < (int)nframes; i++) {
++				float g = a + (b - a) * (float)(i + 1) / (float)nframes;
++				for (j = 0; j < d->channels; j++) {
++					d->out[j][i] *= g;
++				}
++			}
++			d->playing = want;
++		}
++		if (d->ended) {
++			d->play_pos = (double)d->file_frames;
++		} else {
++			d->play_pos += (double)err / d->o.src_ratio;
++			if (d->o.loop && d->file_frames > 0) {
++				while (d->play_pos >= (double)d->file_frames) {
++					d->play_pos -= (double)d->file_frames;
++				}
++			}
++		}
++		__atomic_store_n(&d->pub_pos, (i64)d->play_pos, __ATOMIC_RELEASE);
++		__atomic_store_n(&d->pub_state, d->ended ? 2 : d->playing, __ATOMIC_RELEASE);
++	}
++
+ 	/* Indicate to the disk thread that the ring buffer has been read
+ 	   from.  This is done by writing a single byte to a communication
+ 	   pipe.  Once the disk thread gets so far ahead that the ring
+@@ -288,6 +384,8 @@
+ 	printf("Usage: rju-play [ options ] sound-file...\n");
+ 	printf("    -b N : Ring buffer size in frames (default=4096).\n");
+ 	printf("    -c N : ID of conversion algorithm (default=2, SRC_SINC_FASTEST).\n");
++	printf("    -C   : Control mode: commands on standard input (play, pause, seek N, quit),\n");
++	printf("           position on standard output.  Starts paused.  Not with -t.\n");
+ 	printf("    -d N : Destination port pattern (default=NULL).\n");
+ 	printf("    -g N : amplitude gain (multiplier, default=1).\n");
+ 	printf("    -i N : Initial disk seek in frames (default=0).\n");
+@@ -333,6 +431,89 @@
+ 	}
+ 
+ 	return (long)err;
++}
++
++/* Control mode.  Commands arrive on standard input, one per line:
++
++     play        play, or go on playing (from the start if the end had been reached)
++     pause       stop playing, the position is kept
++     seek N      go to frame N of the file (a frame of the file, not of the server)
++     quit        leave
++
++   What the program says on standard output, one line each:
++
++     ready CHANNELS FILE-RATE SERVER-RATE FRAMES     once, when the ports exist
++     pos FRAME STATE                                 as it changes, and twice a second
++                                                     (STATE is paused, playing or ended)
++
++   Any other line is information.  The end of the input is a quit. */
++static void control_print(struct player *d, i64 *last_pos, int *last_state, struct timespec *last_time)
++{
++	i64 pos = __atomic_load_n(&d->pub_pos, __ATOMIC_ACQUIRE);
++	int state = __atomic_load_n(&d->pub_state, __ATOMIC_ACQUIRE);
++	struct timespec now;
++	clock_gettime(CLOCK_MONOTONIC, &now);
++	double since = (double)(now.tv_sec - last_time->tv_sec) + (double)(now.tv_nsec - last_time->tv_nsec) / 1e9;
++	if (pos != *last_pos || state != *last_state || since >= 0.5) {
++		static const char *names[] = { "paused", "playing", "ended" };
++		printf("pos %ld %s\n", (long)pos, names[state]);
++		fflush(stdout);
++		*last_pos = pos;
++		*last_state = state;
++		*last_time = now;
++	}
++}
++
++static void control_command(struct player *d, const char *line)
++{
++	long n;
++	if (strcmp(line, "play") == 0) {
++		if (__atomic_load_n(&d->pub_state, __ATOMIC_ACQUIRE) == 2) {
++			__atomic_store_n(&d->ctl_seek, (i64)0, __ATOMIC_RELEASE);
++		}
++		__atomic_store_n(&d->ctl_play, 1, __ATOMIC_RELEASE);
++	} else if (strcmp(line, "pause") == 0) {
++		__atomic_store_n(&d->ctl_play, 0, __ATOMIC_RELEASE);
++	} else if (sscanf(line, "seek %ld", &n) == 1) {
++		__atomic_store_n(&d->ctl_seek, (i64)(n < 0 ? 0 : n), __ATOMIC_RELEASE);
++	} else if (strcmp(line, "quit") == 0) {
++		__atomic_store_n(&d->quit, 1, __ATOMIC_RELEASE);
++	}
++}
++
++static void control_loop(struct player *d)
++{
++	char buf[256];
++	size_t fill = 0;
++	i64 last_pos = -1;
++	int last_state = -1;
++	struct timespec last_time;
++	clock_gettime(CLOCK_MONOTONIC, &last_time);
++	last_time.tv_sec -= 1;
++	while (!stopping(d)) {
++		struct pollfd p = { 0, POLLIN, 0 };
++		int r = poll(&p, 1, 33);
++		if (r > 0 && (p.revents & (POLLIN | POLLHUP))) {
++			ssize_t n = read(0, buf + fill, sizeof(buf) - fill - 1);
++			if (n <= 0) {
++				break; /* the program that controls us is gone */
++			}
++			fill += (size_t)n;
++			buf[fill] = 0;
++			char *start = buf, *nl;
++			while ((nl = strchr(start, '\n')) != NULL) {
++				*nl = 0;
++				control_command(d, start);
++				start = nl + 1;
++			}
++			fill = (size_t)(buf + fill - start);
++			memmove(buf, start, fill);
++			if (fill >= sizeof(buf) - 1) {
++				fill = 0; /* a line that is too long is dropped */
++			}
++		}
++		control_print(d, &last_pos, &last_state, &last_time);
++	}
+ }
+ 
+ int jackplay(const char *file_name,
+@@ -344,12 +525,22 @@
+ 	d.done = 0;
+ 	d.in_frames = 0;
+ 	d.out_frames = 0;
++	d.ctl_seek = -1;
++	d.ctl_play = 0;
++	d.quit = 0;
++	d.playing = 0;
++	d.ended = 0;
++	d.play_pos = 0;
++	d.pub_pos = 0;
++	d.pub_state = 0;
+ 	observe_signals();
+ 
+ 	/* Open sound file. */
+ 	SF_INFO sfinfo;
+ 	d.sound_file = xsf_open(file_name, SFM_READ, &sfinfo);
+ 	d.channels = sfinfo.channels;
++	d.file_frames = (i64)sfinfo.frames;
++	d.file_rate = (double)sfinfo.samplerate;
+ 
+ 	/* Allocate channel based data. */
+ 	die_when(d.channels < 1, "rju-play: channels < 1: %d\n", d.channels);
+@@ -416,6 +607,11 @@
+ 		d.o.seek_request = (i64)(isr * d.o.seek_request_sec);
+ 		d.o.seek_request_sec = -1;
+ 	}
++	d.server_rate = osr;
++	if (d.o.seek_request > 0) {
++		d.play_pos = (double)d.o.seek_request;
++		d.pub_pos = d.o.seek_request;
++	}
+ 
+ 	/* Create output ports, connect if env variable set and activate
+ 	   client. */
+@@ -432,12 +628,23 @@
+ 
+ 	/* Wait for disk thread to end, which it does when it reaches the
+ 	   end of the file or is interrupted. */
+-	pthread_join(d.disk_thread, NULL);
++	if (d.o.control) {
++		/* The program that controls us decides when it is over. */
++		printf("ready %d %g %g %ld\n", d.channels, isr, osr, (long)d.file_frames);
++		fflush(stdout);
++		control_loop(&d);
++		__atomic_store_n(&d.quit, 1, __ATOMIC_RELEASE);
++		char wake = 1;
++		xwrite(d.pipe[1], &wake, 1);
++		pthread_join(d.disk_thread, NULL);
++	} else {
++		pthread_join(d.disk_thread, NULL);
+ 
+-	/* The disk thread ends when the whole file is in the ring buffer.
+-	   Wait until it has been played, or the tail of the file is lost. */
+-	while (!__atomic_load_n(&d.done, __ATOMIC_ACQUIRE) && __atomic_load_n(&d.eof, __ATOMIC_ACQUIRE) && !observe_end_of_process()) {
+-		usleep(2000);
++		/* The disk thread ends when the whole file is in the ring buffer.
++		   Wait until it has been played, or the tail of the file is lost. */
++		while (!__atomic_load_n(&d.done, __ATOMIC_ACQUIRE) && __atomic_load_n(&d.eof, __ATOMIC_ACQUIRE) && !observe_end_of_process()) {
++			usleep(2000);
++		}
+ 	}
+ 
+ 	/* Close sound file, free ring buffer, close Jack connection, close
+@@ -473,10 +680,14 @@
+ 	o.ampl = 1.0;
+ 	o.dst_pattern = NULL;
+ 	o.loop = false;
++	o.control = false;
+ 	strncpy(o.client_name, "jack_play", NAME_MAX - 1);
+ 
+-	while ((c = getopt(argc, argv, "b:c:d:g:hi:I:lm:n:q:r:tu")) != -1) {
++	while ((c = getopt(argc, argv, "b:c:Cd:g:hi:I:lm:n:q:r:tu")) != -1) {
+ 		switch (c) {
++		case 'C':
++			o.control = true;
++			break;
+ 		case 'b':
+ 			o.buffer_frames = (int)strtol(optarg, NULL, 0);
+ 			break;
+@@ -531,6 +742,15 @@
+ 	if (optind > argc - 1) {
+ 		usage();
+ 	}
++	if (o.control) {
++		if (o.transport_aware) {
++			fprintf(stderr, "rju-play: -C cannot be used with -t\n");
++			usage();
++		}
++		/* Standard output carries the position: one line at a time, and only the first file. */
++		setvbuf(stdout, NULL, _IOLBF, 0);
++		argc = optind + 1;
++	}
+ 	int i;
+ 	for (i = optind; i < argc; i++) {
+ 		printf("rju-play: %s\n", argv[i]);
