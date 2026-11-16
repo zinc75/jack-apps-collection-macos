@@ -2,6 +2,8 @@
 
 Sound file player for JACK. This is `rju-play` 0.19 by Rohan Drape, built for macOS and installed as `jack_play`. It reads any file that libsndfile can open, resamples it with libsamplerate when its rate differs from the JACK server, and writes one JACK output port per channel of the file. With `-t` it follows the JACK transport, with `-l` it loops the file without a gap.
 
+Jack Play is an unofficial macOS interface for it: the waveform of the file, the output levels and a matrix to connect each channel of the file to the JACK inputs of your choice. It starts the `jack_play` program and does not replace it. It is part of Jack Apps Collection for macOS.
+
 ```
 jack_play [options] sound-file...
 ```
@@ -67,6 +69,16 @@ Seven are specific to this edition:
   | `seek N` | go to frame N of the file |
   | `quit` | leave; the end of the input is a quit too |
 
+**GUI.** The application adds what the program does not show:
+
+- The waveform of the file, with a time ruler. A click or a drag moves in the file. The channels are drawn on the same scale, so that their levels can be compared.
+- The output levels of every channel, on the IEC scale, measured inside the program (`-M`) just before the ports: the application makes no JACK client for them.
+- A matrix that connects each channel to any input port of the graph, grouped by client, with the icon of the application behind the clients that JackMoebius exposes. The connections are remembered for each file (its name, size and date) and made again when the ports come back. The first time, the channels go to the first outputs of the system.
+- Two ways to play. By default the application plays on its own (`-C`), so that starting it does not start the other clients of the server. It can also follow the JACK transport (`-t`), and command it or only watch it.
+- The command line the application runs, to copy into a Terminal.
+
+Settings that the program reads at start (the buffer, the resampler, the client name, the mode) cannot be changed while a file plays: the application starts the program again for them, which would cut the sound. They are dimmed, with a line that says to pause first. The buffer is raised to four periods of the JACK server when it would be too small for it. The loop does not apply when the application follows the transport.
+
 Nothing else changes. It is a universal binary (arm64 and x86_64), linked statically with libsndfile (and its FLAC, Ogg Vorbis, Opus and MP3 codecs) and libsamplerate; only libjack stays dynamic.
 
 ## Upstream
@@ -92,4 +104,5 @@ GPL-3.0 (`COPYING`). `rju.cabal` declares `GPL-3.0-only`; the sources say "gpl" 
 | `upstream/` | `rju` sources, with `r-common`, as published by Rohan Drape |
 | `patches/` | changes for macOS, unified diffs against `upstream/` |
 | `build_universal.sh` | builds the universal binary |
+| `swiftui/` | the SwiftUI application, with its own `README.md` for building it |
 | `COPYING` | GPL v3 |
