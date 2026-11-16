@@ -74,6 +74,12 @@ Jack Capture is free and open source. If it saves you time, you can buy me a cof
 
 [![Buy me a coffee](https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=&slug=zinc75&button_colour=FFDD00&font_colour=000000&font_family=Lato&outline_colour=000000&coffee_colour=ffffff)](https://www.buymeacoffee.com/zinc75)
 
+## Changes compared with upstream
+
+**CLI.** The `jack_capture` program is upstream's, with six small patches. Three make it build and run on macOS: no `sys/sysinfo.h`, no `-latomic`, and a quality-of-service class for the disk thread. Two make the format and library probes use the same compiler and flags as the build, so that a static build finds its codecs. The last one fixes the `.tme` file, where the leading zeros of the nanoseconds were dropped (5 ms read as 0.5 s). The patches are also sent upstream. The program is built as a universal binary, with libsndfile and its FLAC, Ogg Vorbis, Opus and MP3 codecs linked statically.
+
+**GUI.** The application starts `jack_capture` with the options you set and shows what it does. It adds one function that `jack_capture` does not have: the level preview of the inputs while it waits for you to record.
+
 ## Upstream
 
 | | |
