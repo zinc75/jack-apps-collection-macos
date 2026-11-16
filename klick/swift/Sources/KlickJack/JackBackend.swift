@@ -23,7 +23,7 @@ public final class JackBackend: AudioBackend {
     public let name = "JACK"
 
     /// The shared input of JackMoebius (the system box that CoreAudio applications play into): JackMate shows the picto of JackMoebius for it.
-    public static let jackMoebiusClient = "JackMoebius"
+    public static let jackMoebiusClient = ClientApplications.jackMoebiusClient
 
     /// The name Klick gives itself in the server (JACK renames it if it is taken).
     public static let clientName = "Klick"
@@ -47,11 +47,15 @@ public final class JackBackend: AudioBackend {
     public private(set) var transport = TransportInfo()
 
     @ObservationIgnored private var pendingAutoconnect = false
-    @ObservationIgnored private var askingDaemon = false
-    @ObservationIgnored private var daemonAttempts = 0
-    @ObservationIgnored private var clientsSeen: Set<String> = []
+    /// Finds the application behind each client: Klick reads no JACK metadata, so only the JackMoebius daemon is asked.
+    @ObservationIgnored private let applications = ClientApplications(metadata: { _ in nil })
 
-    public init() {}
+    public init() {
+        applications.onChange = { [weak self] in
+            guard let self else { return }
+            bundles = applications.bundles
+        }
+    }
 
     /// The name of the server: the one JACK_DEFAULT_SERVER gives, else the default one.
     public static var serverName: String { ProcessInfo.processInfo.environment["JACK_DEFAULT_SERVER"] ?? "default" }
@@ -186,27 +190,9 @@ public final class JackBackend: AudioBackend {
 
     // MARK: the applications behind the clients
 
-    /// Asks the daemon which application stands behind the clients that have none yet: up to three times for a set of clients (the
-    /// box of an application may appear in the server a moment before the daemon lists it). The daemon is asked away from the main
-    /// actor; nothing happens when it is not there.
+    /// The clients that are not the sound card: the daemon is asked which application stands behind the ones that have none yet.
     private func resolveBundles() {
-        let clients = Set(ports.filter { !$0.isPhysical }.map(\.client))
-        if clients != clientsSeen {
-            clientsSeen = clients
-            daemonAttempts = 0
-        }
-        let missing = clients.filter { bundles[$0] == nil }
-        guard !askingDaemon, !missing.isEmpty, daemonAttempts < 3, JackMoebiusDaemon.isPresent else { return }
-        askingDaemon = true
-        daemonAttempts += 1
-        Task { [weak self] in
-            let keys = await Task.detached(priority: .utility) { JackMoebiusDaemon.applicationKeys() }.value
-            guard let self else { return }
-            askingDaemon = false
-            var found = bundles
-            for name in missing { if let id = JackMoebiusDaemon.key(forClient: name, in: keys) { found[name] = id } }
-            if found != bundles { bundles = found }
-        }
+        applications.update(clients: Set(ports.filter { !$0.isPhysical }.map(\.client)))
     }
 
     // MARK: reading the C interface
