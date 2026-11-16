@@ -54,7 +54,7 @@ Four are specific to this edition:
   | `lev PEAK PEAK …` | about thirty times a second while there is sound, and once more with the zeros |
 
   The levels are the highest sample of each channel since the last line, as the program sends it out (1.0 is full scale, `-g` counted). Nothing is said while nothing changes: a paused player is silent. Frames are the frames of the file, as 64 bit numbers. In transport mode `pos` follows the transport, and its state is `paused` while the transport is stopped.
-- A new option, `-C`, plays a file without the JACK transport, which every client of the server shares. It includes `-M`, and reads commands on standard input, one per line. It starts paused, and the sound fades in over a few milliseconds when it starts, resumes or jumps to a new position, so that a seek does not click. It cannot be used with `-t`, where a transport seek is not smoothed, as in `rju-play`.
+- A new option, `-C`, plays a file without the JACK transport, which every client of the server shares. It includes `-M`, and reads commands on standard input, one per line. It starts paused, and the sound fades in over one cycle of the audio server (a few milliseconds, depending on its buffer size) when it starts, resumes or jumps to a new position, and fades out when it pauses, so that a seek or a pause does not click. Once the fade is over, the sound is not touched. It cannot be used with `-t`, where a transport seek is not smoothed, as in `rju-play`.
 
   | Command | |
   |---|---|
