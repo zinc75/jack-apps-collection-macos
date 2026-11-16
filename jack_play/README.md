@@ -10,7 +10,7 @@ The default JACK client name is `jack_play`, so the ports are `jack_play-<pid>:o
 
 ## Changes compared with upstream
 
-The program is upstream's, with three small patches:
+**CLI.** The program is upstream's, with three small patches:
 
 - The end of the file is played in full. Upstream closed the JACK client as soon as the last block had been read from disk, which cut the end of every file by the size of the ring buffer (about 85 ms with the default `-b`, more with a larger one).
 - In transport mode, a start or a locate empties the ring buffer. Upstream played the audio read before the seek first, so after a start from the beginning the first block of the file was heard twice.
