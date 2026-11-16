@@ -107,6 +107,16 @@ Klick is free and open source. If it saves you time, you can buy me a coffee: it
 
 [![Buy me a coffee](https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=&slug=zinc75&button_colour=FFDD00&font_colour=000000&font_family=Lato&outline_colour=000000&coffee_colour=ffffff)](https://www.buymeacoffee.com/zinc75)
 
+## Changes compared with upstream
+
+**CLI.** The `klick` program is upstream's, with five small patches that do not change what it does (its exports are byte for byte the same). They let the engine find its sounds in the application, send an event for each beat, follow any transport and not only JACK's, and start after a delay or from a given bar and beat. The details are in [`klick-tempo/klick/README.md`](klick-tempo/klick/README.md).
+
+**GUI.** The application is a graphical interface for what `klick` does with its command line and OSC messages, with a table and a timeline for tempo maps. It adds:
+
+- it also works without JACK, with a CoreAudio engine, and takes over if the JACK server stops;
+- beat lights that follow the real beat, silent beats included;
+- export of a metronome or a map to a MIDI file, in addition to the audio file.
+
 ## Upstream
 
 The program is `klick` by Dominic Sacré, https://github.com/dsacre/klick, see [`klick-tempo/klick/README.md`](klick-tempo/klick/README.md) for the commit used and the patches.
