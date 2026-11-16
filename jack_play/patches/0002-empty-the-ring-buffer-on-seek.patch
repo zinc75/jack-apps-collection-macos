@@ -1,0 +1,137 @@
+Subject: empty the ring buffer when the transport seeks
+
+In transport mode (-t), a locate or a start was served by moving the file
+position only. The ring buffer still held the audio read before the seek, so
+the program first played that audio, then jumped to the new position: after a
+start from 0, the first 4096 samples were heard twice (more with -b).
+
+While a seek is pending the process thread now writes silence and leaves the
+ring buffer alone. The disk thread seeks, empties the ring buffer, fills it
+again and only then clears the request, so the process thread resumes with the
+right audio. The converter is reset in sync_handler(), which runs in the
+process thread. The request is read and cleared with atomic operations, and a
+request that arrives while one is being served is not lost.
+
+Tested with a ramp: the signal used to fall back to 0 after 0.1 s (0.36 s with
+-b 16384) and is now monotonic from the start.
+--- a/cmd/rju-play.c
++++ b/cmd/rju-play.c
+@@ -65,27 +65,61 @@
+ 	i64 out_frames; /* frames produced by the converter */
+ };
+ 
++/* True if a seek request has arrived that the disk thread has not served. */
++static bool seek_pending(struct player *d, i64 handled)
++{
++	i64 req = __atomic_load_n(&d->o.seek_request, __ATOMIC_ACQUIRE);
++	return req >= 0 && req != handled;
++}
++
++/* Tell the process thread that the request being served is done, unless
++   a newer one has replaced it in the meantime. */
++static void seek_clear(struct player *d, i64 *handled)
++{
++	if (*handled >= 0) {
++		__atomic_compare_exchange_n(&d->o.seek_request, handled, (i64)-1, false,
++			__ATOMIC_RELEASE, __ATOMIC_RELAXED);
++		*handled = -1;
++	}
++}
++
+ /* Read the sound file from disk and write to the ring buffer until
+    the end of file, at which point either loop or return. */
+ void *disk_proc(void *PTR)
+ {
+ 	struct player *d = (struct player *)PTR;
++	i64 handled = -1; /* the seek request being served, still pending for the process thread */
+ 	while (!observe_end_of_process()) {
+ 
+-		/* Handle seek request. */
+-		if (d->o.seek_request >= 0) {
+-			sf_count_t err = sf_seek(d->sound_file,
+-				(sf_count_t)d->o.seek_request, SEEK_SET);
++		/* Handle seek request.  While a request is pending the process
++		   thread writes silence and leaves the ring buffer alone, so it is
++		   emptied here: it holds data from before the seek.  The request is
++		   cleared once the ring buffer has been filled again. */
++		i64 req = __atomic_load_n(&d->o.seek_request, __ATOMIC_ACQUIRE);
++		if (req >= 0 && req != handled) {
++			sf_count_t err = sf_seek(d->sound_file, (sf_count_t)req, SEEK_SET);
+ 			if (err == -1) {
+-				fprintf(stderr, "rju-play: seek request failed, %ld\n",
+-					(long)d->o.seek_request);
++				fprintf(stderr, "rju-play: seek request failed, %ld\n", (long)req);
+ 			}
+-			d->o.seek_request = -1;
++			ringbuffer_read_advance(d->rb, ringbuffer_read_space(d->rb));
++			handled = req;
+ 		}
+ 
+-		/* Wait for write space at the ring buffer. */
++		/* Wait for write space at the ring buffer, or for a new seek request. */
+ 		int nbytes = d->o.minimal_frames * sizeof(float) * d->channels;
+-		nbytes = ringbuffer_wait_for_write(d->rb, nbytes, d->pipe[0]);
++		int space = (int)ringbuffer_write_space(d->rb);
++		while (space < nbytes && !seek_pending(d, handled)) {
++			char b;
++			if (read(d->pipe[0], &b, 1) == -1) {
++				fprintf(stderr, "rju-play: error reading communication pipe\n");
++				exit(1);
++			}
++			space = (int)ringbuffer_write_space(d->rb);
++		}
++		if (seek_pending(d, handled)) {
++			continue;
++		}
++		nbytes = space;
+ 
+ 		/* Do not overflow the local buffer. */
+ 		if (nbytes > d->buffer_bytes) {
+@@ -109,6 +143,7 @@
+ 				/* Tell the process thread that no more data will come, so that
+ 				   it can play what is still buffered before the client is closed. */
+ 				__atomic_store_n(&d->eof, 1, __ATOMIC_RELEASE);
++				seek_clear(d, &handled);
+ 				return NULL;
+ 			}
+ 		}
+@@ -122,6 +157,9 @@
+ 		ringbuffer_write(d->rb,
+ 			(char *)d->d_buffer,
+ 			(size_t)err * sizeof(float));
++
++		/* The ring buffer is full again, let the process thread play. */
++		seek_clear(d, &handled);
+ 	}
+ 
+ 	return NULL;
+@@ -132,7 +170,11 @@
+ 	void *PTR)
+ {
+ 	struct player *d = PTR;
+-	d->o.seek_request = (i64)position->frame;
++	/* This runs in the process thread, like src_callback_read(), so the
++	   converter can be reset here: it still holds samples from before
++	   the seek. */
++	src_reset(d->src);
++	__atomic_store_n(&d->o.seek_request, (i64)position->frame, __ATOMIC_RELEASE);
+ 	return 1;
+ }
+ 
+@@ -163,6 +205,16 @@
+ 	int i, j;
+ 	for (i = 0; i < d->channels; i++) {
+ 		d->out[i] = (float *)jack_port_get_buffer(d->output_port[i], nframes);
++	}
++
++	/* A seek is pending, the disk thread is emptying and refilling the
++	   ring buffer.  Write silence, and wake the disk thread in case it
++	   waits for space. */
++	if (__atomic_load_n(&d->o.seek_request, __ATOMIC_ACQUIRE) >= 0) {
++		signal_set(d->out, nframes, d->channels, 0.0);
++		char b = 1;
++		xwrite(d->pipe[1], &b, 1);
++		return 0;
+ 	}
+ 
+ 	/* Write silence if the transport is stopped.  If stopped the disk

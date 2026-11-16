@@ -1,0 +1,14 @@
+Subject: name the JACK client jack_play by default
+
+Used by the macOS edition, where the program is installed as jack_play.
+--- a/cmd/rju-play.c
++++ b/cmd/rju-play.c
+@@ -470,7 +470,7 @@
+ 	o.ampl = 1.0;
+ 	o.dst_pattern = NULL;
+ 	o.loop = false;
+-	strncpy(o.client_name, "rju-play", NAME_MAX - 1);
++	strncpy(o.client_name, "jack_play", NAME_MAX - 1);
+ 
+ 	while ((c = getopt(argc, argv, "b:c:d:g:hi:I:lm:n:q:r:tu")) != -1) {
+ 		switch (c) {
