@@ -17,7 +17,8 @@ struct KlickApp: App {
         let configuration = KlickConfiguration(
             title: "Klick", subtitle: "Jack Apps Collection for macOS", accent: .orange,
             accentColor: Color(red: 1.0, green: 0.42, blue: 0.10),
-            additionalBackends: [BackendOffer(backend: JackBackend(), interface: JackInterface())])
+            additionalBackends: [BackendOffer(backend: JackBackend(), interface: JackInterface())],
+            showsCommandLine: true)
         _application = State(initialValue: KlickApplication(configuration: configuration))
     }
 
