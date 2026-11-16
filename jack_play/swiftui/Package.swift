@@ -20,6 +20,9 @@ let package = Package(
         .package(path: "../../shared/WaveformKit"),
         // Level meters (model, ballistics, bars), MIT, shared with the other tools; the scale stays in the tool.
         .package(path: "../../shared/MeterKit"),
+        // The look (dark, system, light) and the accent, and the badges and glass of the matrix, MIT, shared with the other tools.
+        .package(path: "../../shared/AppearanceKit"),
+        .package(path: "../../shared/MatrixKit"),
     ],
     targets: [
         // libsndfile, for the Swift code. The header comes from the libraries of the repository.
@@ -39,6 +42,18 @@ let package = Package(
                 .product(name: "WaveformKit", package: "WaveformKit"),
             ],
             swiftSettings: [.unsafeFlags(headers)]
+        ),
+        // The SwiftUI application. As in JackMate, UI code is main-actor isolated by default.
+        .executableTarget(
+            name: "JackPlay",
+            dependencies: [
+                "JackPlayKit",
+                .product(name: "AppearanceKit", package: "AppearanceKit"),
+                .product(name: "MatrixKit", package: "MatrixKit"),
+                .product(name: "MeterKit", package: "MeterKit"),
+                .product(name: "WaveformKit", package: "WaveformKit"),
+            ],
+            swiftSettings: [.unsafeFlags(["-Xfrontend", "-default-isolation", "-Xfrontend", "MainActor"] + headers)]
         ),
         .testTarget(
             name: "JackPlayKitTests",

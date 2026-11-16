@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key><string>fr</string>
+	<key>CFBundleLocalizations</key>
+	<array><string>fr</string><string>en</string><string>de</string><string>it</string><string>es</string></array>
+	<key>CFBundleExecutable</key><string>JackPlay</string>
+	<key>CFBundleIdentifier</key><string>io.github.zinc75.jackappscollection.jackplay</string>
+	<key>CFBundleName</key><string>Jack Play</string>
+	<key>CFBundleDisplayName</key><string>Jack Play</string>
+	<key>CFBundlePackageType</key><string>APPL</string>
+	<key>CFBundleShortVersionString</key><string>0.0.0</string>
+	<key>CFBundleVersion</key><string>0</string>
+	<key>CFBundleIconFile</key><string>AppIcon</string>
+	<key>CFBundleIconName</key><string>AppIcon</string>
+	<key>LSMinimumSystemVersion</key><string>15.0</string>
+	<key>LSApplicationCategoryType</key><string>public.app-category.music</string>
+	<key>NSHumanReadableCopyright</key><string>Copyright © Éric Bavu. GPL-3.0.</string>
+	<key>NSHighResolutionCapable</key><true/>
+	<key>NSPrincipalClass</key><string>NSApplication</string>
+</dict>
+</plist>
