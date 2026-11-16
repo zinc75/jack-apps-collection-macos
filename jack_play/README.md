@@ -19,46 +19,41 @@ Open a sound file, connect each of its channels to the JACK inputs of your choic
 
 Jack Play is an unofficial interface. It is part of Jack Apps Collection for macOS.
 
-## The jack_play program
+## Connect the outputs
 
-This is `rju-play` 0.19 by Rohan Drape, built for macOS and installed as `jack_play`. It reads any file that libsndfile can open, resamples it with libsamplerate when its rate differs from the JACK server, and writes one JACK output port per channel of the file. With `-t` it follows the JACK transport, with `-l` it loops the file without a gap.
+A matrix connects each channel of the file to the JACK inputs of your choice, grouped by client. Applications show their own icon when JackMoebius identifies them, and the shared input of JackMoebius has its own badge. The connections are remembered for each file (its name, size and date) and made again when the ports come back. The first time, the channels go to the first outputs of the system.
+
+<!-- <div align="center">
+  <img src="screenshots/matrix.png" width="640" alt="The outputs matrix">
+</div> -->
+
+## Play and watch
+
+The waveform of the file has a time ruler: a click or a drag moves in the file. The output levels of every channel are measured inside the program, just before the ports, on the IEC scale. By default the application plays on its own, so that starting it does not start the other clients of the server; it can also follow the JACK transport, and command it or only watch it.
+
+<!-- <div align="center">
+  <img src="screenshots/levels.png" width="640" alt="The waveform and the output levels">
+</div> -->
+
+## All the options of jack_play
+
+<!-- <div align="center">
+  <img src="screenshots/settings.png" width="760" alt="The settings pages">
+</div> -->
+
+Loop without a gap, resampling quality, playback buffer, JACK client name, and the way to play (on its own or with the JACK transport). The generated command line can be shown at any time. The program is also usable alone, and keeps all its options:
 
 ```
 jack_play [options] sound-file...
 ```
 
-The default JACK client name is `jack_play`, and the program adds its process number, with at least 12 digits: the ports are `jack_play-000000052048:out_1`, `out_2`, and so on.
+The settings of the application are kept between launches. The interface is in French, English, German, Italian and Spanish. The German, Italian and Spanish translations have not been reviewed by native speakers. It needs macOS 15 or later.
 
-## Build
+## Support
 
-The libraries are built first, from the root of the repository (see `libs/`), then:
+Jack Play is free and open source. If it saves you time, you can buy me a coffee: it helps pay the Apple Developer account ($99 a year) that keeps the installers signed and notarized.
 
-```
-jack_play/build_universal.sh
-```
-
-The result is `jack_play/build/jack_play`. `upstream/` is never modified: the script copies it, applies `patches/` and builds the copy. The upstream `Makefile` is not used, because it builds the whole suite.
-
-The application is built from `swiftui/`, see its [README](swiftui/README.md).
-
-## State on macOS
-
-It builds and plays on Apple Silicon and, under Rosetta, as x86_64. Files are played to their exact length with any ring buffer size, `-t` starts, stops and moves with the JACK transport, `-C` plays, pauses and moves on commands, and `-M` reports the position and the output levels.
-
-## Patches
-
-| Patch | |
-|---|---|
-| `0001-play-the-end-of-the-file.patch` | The end of the file is no longer cut. |
-| `0002-empty-the-ring-buffer-on-seek.patch` | A transport seek no longer replays buffered audio. |
-| `0003-default-client-name-jack_play.patch` | Default client name `jack_play`. Specific to this edition. |
-| `0004-transport-seek-scaled-by-the-sample-rate.patch` | A transport seek lands at the right place in a file whose rate is not the server's. |
-| `0005-control-mode-on-standard-input.patch` | The `-C` option. Specific to this edition. |
-| `0006-monitor-mode-position-and-levels.patch` | The `-M` option. Specific to this edition. |
-| `0007-fade-in-after-a-seek-in-control-mode.patch` | No click, and no overshoot of the converter, after a seek with `-C`. Specific to this edition. |
-| `0008-control-mode-paused-after-the-end.patch` | With `-C`, a seek after the end of the file moves without playing. Specific to this edition. |
-| `0009-monitor-mode-client-name.patch` | With `-M`, a `client NAME` line gives the name JACK gave to the client. Specific to this edition. |
-| `0010-transport-mode-position-stops-at-the-end.patch` | With `-M` and `-t`, the position stops at the end of the file instead of following the transport past it. Specific to this edition. |
+[![Buy me a coffee](https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=&slug=zinc75&button_colour=FFDD00&font_colour=000000&font_family=Lato&outline_colour=000000&coffee_colour=ffffff)](https://www.buymeacoffee.com/zinc75)
 
 ## Changes compared with upstream
 
@@ -117,6 +112,27 @@ The `cmd/r-common` folder is a submodule, `r-common` by the same author (https:/
 ## Licence
 
 GPL-3.0 (`COPYING`). `rju.cabal` declares `GPL-3.0-only`; the sources say "gpl" without a version number.
+
+## State on macOS
+
+`jack_play` runs on arm64 and, under Rosetta, as x86_64. `build_universal.sh` builds the universal binary (macOS 11.0 minimum) from the upstream sources and the patches below, with the libraries of `libs/` built first by their own `build_universal.sh`. `upstream/` is never modified: the script copies it, applies `patches/` and builds the copy (the upstream `Makefile` is not used, because it builds the whole suite). The binary links libsndfile with its FLAC, Ogg Vorbis, Opus and MP3 codecs, and libsamplerate, statically; its only dynamic dependencies are `libSystem` and `libjack` (full path).
+
+Files are played to their exact length with any ring buffer size, `-t` starts, stops and moves with the JACK transport, `-C` plays, pauses and moves on commands, and `-M` reports the position and the output levels. The default JACK client name is `jack_play`, and the program adds its process number, with at least 12 digits (`jack_play-000000052048:out_1`, `out_2`, and so on), unless it is started with `-u`.
+
+### Patches
+
+| Patch | |
+|---|---|
+| `0001-play-the-end-of-the-file.patch` | The end of the file is no longer cut. |
+| `0002-empty-the-ring-buffer-on-seek.patch` | A transport seek no longer replays buffered audio. |
+| `0003-default-client-name-jack_play.patch` | Default client name `jack_play`. Specific to this edition. |
+| `0004-transport-seek-scaled-by-the-sample-rate.patch` | A transport seek lands at the right place in a file whose rate is not the server's. |
+| `0005-control-mode-on-standard-input.patch` | The `-C` option. Specific to this edition. |
+| `0006-monitor-mode-position-and-levels.patch` | The `-M` option. Specific to this edition. |
+| `0007-fade-in-after-a-seek-in-control-mode.patch` | No click, and no overshoot of the converter, after a seek with `-C`. Specific to this edition. |
+| `0008-control-mode-paused-after-the-end.patch` | With `-C`, a seek after the end of the file moves without playing. Specific to this edition. |
+| `0009-monitor-mode-client-name.patch` | With `-M`, a `client NAME` line gives the name JACK gave to the client. Specific to this edition. |
+| `0010-transport-mode-position-stops-at-the-end.patch` | With `-M` and `-t`, the position stops at the end of the file instead of following the transport past it. Specific to this edition. |
 
 ## Layout
 
