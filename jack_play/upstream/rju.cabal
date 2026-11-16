@@ -1,0 +1,26 @@
+Cabal-Version:     2.4
+Name:              rju
+Version:           0.23
+Synopsis:          rju
+Description:       rju utils
+License:           GPL-3.0-only
+Category:          Sound
+Copyright:         (c) Rohan Drape, 2003-2026
+Author:            Rohan Drape
+Maintainer:        rd@rohandrape.net
+Stability:         Experimental
+Homepage:          http://rohandrape.net/t/rju
+Tested-With:       GHC == 9.14.1
+Build-Type:        Simple
+Data-Files:        README.md
+
+Library
+  Build-Depends:   base >= 4.8 && < 5,
+                   hosc == 0.23
+  GHC-Options:     -Wall -fwarn-tabs
+  Exposed-modules: Sound.Rju.LxVst
+  default-language:Haskell2010
+
+source-repository  head
+  type:            git
+  location:        https://gitlab.com/rd--/rju
