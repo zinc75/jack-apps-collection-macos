@@ -12,6 +12,8 @@ public enum PlayerEvent: Equatable, Sendable {
     case ready(channels: Int, fileRate: Double, serverRate: Double, frames: Int64)
     /// Where it is in the file, in frames of the file.
     case position(frame: Int64, state: PlayerState)
+    /// The output levels, one per channel: the highest sample since the last report, 1.0 being full scale.
+    case levels([Float])
     /// A line of information on its standard output ("jack client name: …").
     case message(String)
     /// A line on its standard error: a warning such as "disk thread late".
@@ -50,6 +52,10 @@ public struct PlayerLogParser: Sendable {
         if words.first == "ready", words.count == 5,
            let channels = Int(words[1]), let fileRate = Double(words[2]), let serverRate = Double(words[3]), let frames = Int64(words[4]) {
             return .ready(channels: channels, fileRate: fileRate, serverRate: serverRate, frames: frames)
+        }
+        if words.first == "lev", words.count >= 2 {
+            let values = words.dropFirst().compactMap { Float($0) }
+            if values.count == words.count - 1, values.allSatisfy({ $0.isFinite && $0 >= 0 }) { return .levels(values) }
         }
         if words.first == "pos", words.count == 3, let frame = Int64(words[1]), let state = PlayerState(rawValue: String(words[2])) {
             return .position(frame: frame, state: state)

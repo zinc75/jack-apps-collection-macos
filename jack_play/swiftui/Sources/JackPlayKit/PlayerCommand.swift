@@ -31,24 +31,36 @@ public struct PlayerSettings: Equatable, Sendable {
     }
 }
 
-/// How `jack_play` is started to play a file under the control of the application.
+/// How `jack_play` is started to play a file for the application.
 public struct PlayerCommand: Equatable, Sendable {
+    /// Who decides when the file plays.
+    public enum Mode: Equatable, Sendable {
+        /// The application: `-C`, the program starts paused and obeys play, pause and seek.
+        case independent
+        /// The JACK transport, which every client of the server shares: `-t`. The application only watches (`-M`).
+        case followTransport
+    }
+
     public var file: URL
     public var settings: PlayerSettings
+    public var mode: Mode
     /// Where to start in the file, in frames of the file; nil for the beginning.
     public var initialFrame: Int64?
 
-    public init(file: URL, settings: PlayerSettings = PlayerSettings(), initialFrame: Int64? = nil) {
+    public init(file: URL, settings: PlayerSettings = PlayerSettings(), mode: Mode = .independent, initialFrame: Int64? = nil) {
         self.file = file
         self.settings = settings
+        self.mode = mode
         self.initialFrame = initialFrame
     }
 
-    /// The arguments given to the program. `-C` puts it under the control of the application: it starts paused and
-    /// answers on its standard output.
+    /// The arguments given to the program. Both modes make it say where it is and how loud it is on its standard
+    /// output (`-C` includes `-M`).
     public var arguments: [String] {
-        var a = ["-C", "-n", settings.safeClientName, "-c", String(settings.converter), "-b", String(settings.bufferFrames)]
-        if settings.loop { a.append("-l") }
+        var a = [mode == .independent ? "-C" : "-t", "-n", settings.safeClientName, "-c", String(settings.converter), "-b", String(settings.bufferFrames)]
+        if mode == .followTransport { a.append("-M") }
+        // The program does not loop when it follows the transport: the option is left out rather than shown for nothing.
+        if settings.loop, mode == .independent { a.append("-l") }
         if let initialFrame, initialFrame > 0 { a += ["-i", String(initialFrame)] }
         // The path of a file is absolute, so it never starts with a dash: it cannot be taken for an option.
         a.append(file.path)

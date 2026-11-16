@@ -16,6 +16,14 @@ final class PlayerCommandTests: XCTestCase {
         XCTAssertEqual(c.arguments, ["-C", "-n", "lecteur", "-c", "2", "-b", "16384", "-l", "/Users/x/Music/Intro.wav"])
     }
 
+    func testFollowingTheTransportWatchesInsteadOfControlling() {
+        let c = PlayerCommand(file: file, settings: PlayerSettings(loop: true), mode: .followTransport)
+        XCTAssertEqual(c.arguments, ["-t", "-n", "jack_play", "-c", "0", "-b", "4096", "-M", "/Users/x/Music/Intro.wav"])
+        XCTAssertFalse(c.arguments.contains("-C"), "-C and -t cannot go together")
+        XCTAssertFalse(c.arguments.contains("-l"), "the program does not loop when it follows the transport")
+        XCTAssertTrue(c.display().hasPrefix("jack_play -t "))
+    }
+
     func testTheStartPositionIsGivenInFramesOfTheFile() {
         XCTAssertTrue(PlayerCommand(file: file, initialFrame: 96000).arguments.contains("96000"))
         XCTAssertFalse(PlayerCommand(file: file, initialFrame: 0).arguments.contains("-i"))
@@ -95,6 +103,23 @@ final class PlayerLogParserTests: XCTestCase {
         let events = parser.feed(Data("pos abc playing\nready 2 48000\npos 10 sideways\n".utf8))
         XCTAssertEqual(events.count, 3)
         for event in events { guard case .message = event else { return XCTFail("\(event)") } }
+    }
+
+    func testTheLevelsOfEveryChannel() {
+        var parser = PlayerLogParser()
+        XCTAssertEqual(parser.feed(Data("lev 0.4981 0.2490\n".utf8)), [.levels([0.4981, 0.2490])])
+        XCTAssertEqual(parser.feed(Data("lev 0.0000\n".utf8)), [.levels([0])])
+        let many = (0..<64).map { String(format: "%.4f", Double($0) / 100) }.joined(separator: " ")
+        guard case .levels(let values)? = parser.feed(Data("lev \(many)\n".utf8)).first else { return XCTFail("64 channels") }
+        XCTAssertEqual(values.count, 64)
+        XCTAssertEqual(values[63], 0.63, accuracy: 1e-6)
+    }
+
+    func testALevelLineThatIsNotUnderstoodIsInformation() {
+        var parser = PlayerLogParser()
+        for line in ["lev", "lev abc", "lev 0.5 nan", "lev 0.5 -1", "lev 0.5 inf"] {
+            guard case .message? = parser.feed(Data((line + "\n").utf8)).first else { return XCTFail(line) }
+        }
     }
 
     func testTheStandardErrorIsWarnings() {

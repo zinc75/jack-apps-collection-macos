@@ -18,6 +18,8 @@ let package = Package(
         .package(path: "../../shared/JackBridge"),
         // The waveform of the file, MIT, shared with the other tools.
         .package(path: "../../shared/WaveformKit"),
+        // Level meters (model, ballistics, bars), MIT, shared with the other tools; the scale stays in the tool.
+        .package(path: "../../shared/MeterKit"),
     ],
     targets: [
         // libsndfile, for the Swift code. The header comes from the libraries of the repository.
@@ -33,13 +35,14 @@ let package = Package(
             dependencies: [
                 "CSndfile",
                 .product(name: "JackBridge", package: "JackBridge"),
+                .product(name: "MeterKit", package: "MeterKit"),
                 .product(name: "WaveformKit", package: "WaveformKit"),
             ],
             swiftSettings: [.unsafeFlags(headers)]
         ),
         .testTarget(
             name: "JackPlayKitTests",
-            dependencies: ["JackPlayKit", "CSndfile", .product(name: "JackBridge", package: "JackBridge"), .product(name: "WaveformKit", package: "WaveformKit")],
+            dependencies: ["JackPlayKit", "CSndfile", .product(name: "JackBridge", package: "JackBridge"), .product(name: "MeterKit", package: "MeterKit"), .product(name: "WaveformKit", package: "WaveformKit")],
             swiftSettings: [.unsafeFlags(headers)]
         ),
     ]
