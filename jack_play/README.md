@@ -1,8 +1,27 @@
-# jack_play
+<div align="center">
 
-Sound file player for JACK. This is `rju-play` 0.19 by Rohan Drape, built for macOS and installed as `jack_play`. It reads any file that libsndfile can open, resamples it with libsamplerate when its rate differs from the JACK server, and writes one JACK output port per channel of the file. With `-t` it follows the JACK transport, with `-l` it loops the file without a gap.
+  <!-- <img src="screenshots/icon.png" width="128" alt="Jack Play icon"> -->
+  <h1>Jack Play</h1>
+  <p>A native macOS interface for <code>jack_play</code>, the JACK sound file player (<code>rju-play</code> by Rohan Drape).</p>
 
-Jack Play is an unofficial macOS interface for it: the waveform of the file, the output levels and a matrix to connect each channel of the file to the JACK inputs of your choice. It starts the `jack_play` program and does not replace it. It is part of Jack Apps Collection for macOS.
+  ![macOS](https://img.shields.io/badge/macOS-15.0%2B-lightgrey?logo=apple)
+  ![Architectures](https://img.shields.io/badge/arm64%20%7C%20x86__64-universal-blue)
+  ![License](https://img.shields.io/badge/license-GPL--3.0-green)
+  [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?logo=buymeacoffee&logoColor=000000)](https://www.buymeacoffee.com/zinc75)
+
+  <!-- <img src="screenshots/play.png" width="760" alt="Jack Play playing a file"> -->
+
+</div>
+
+---
+
+Open a sound file, connect each of its channels to the JACK inputs of your choice, press play. Jack Play shows the waveform of the file and the output levels, and remembers the connections of each file. The application starts the `jack_play` program, built here for macOS (arm64 and x86_64), and does not replace it: the command-line program keeps all its options.
+
+Jack Play is an unofficial interface. It is part of Jack Apps Collection for macOS.
+
+## The jack_play program
+
+This is `rju-play` 0.19 by Rohan Drape, built for macOS and installed as `jack_play`. It reads any file that libsndfile can open, resamples it with libsamplerate when its rate differs from the JACK server, and writes one JACK output port per channel of the file. With `-t` it follows the JACK transport, with `-l` it loops the file without a gap.
 
 ```
 jack_play [options] sound-file...
@@ -19,6 +38,8 @@ jack_play/build_universal.sh
 ```
 
 The result is `jack_play/build/jack_play`. `upstream/` is never modified: the script copies it, applies `patches/` and builds the copy. The upstream `Makefile` is not used, because it builds the whole suite.
+
+The application is built from `swiftui/`, see its [README](swiftui/README.md).
 
 ## State on macOS
 
