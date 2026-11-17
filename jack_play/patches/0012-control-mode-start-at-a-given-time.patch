@@ -1,0 +1,174 @@
+Subject: control mode, start at a given time, and say when the file will end
+
+To play files one after the other with no gap, the program of the next file waits,
+paused, and starts at the exact time the one before it ends.
+
+  end T          said once, when the disk thread has read the whole file: T is the
+                 frame time of JACK (jack_last_frame_time, which wraps) at which the
+                 last frame of the file will have been played, at the rate of the
+                 server
+  play at T      play, from the beginning of the cycle in which time T comes, with
+                 silence before T inside that cycle; if T has passed, play now
+
+A start at a given time fades in over 32 frames only, not over a cycle, because
+the file goes on from the end of the one before. pause and seek cancel a start
+that has not come. The announcement is said again after a pause or a seek, as the
+time of the end has changed. It is not said with -l.
+
+Measured on a dummy server with a file at 44.1 kHz and the next one at 48 kHz, for
+periods of 512 to 2048 frames and for 44.1, 48 and 96 kHz: no frame of silence
+between the two (before, up to one period, 5 to 20 ms depending on the length
+of the file), and no overlap.
+--- a/cmd/rju-play.c
++++ b/cmd/rju-play.c
+@@ -72,6 +72,12 @@
+ 	   at the start of a cycle and publishes where it is in pub_pos and pub_state. */
+ 	i64 ctl_seek; /* frame of the file to go to, -1 for none */
+ 	int ctl_play; /* 1 to play, 0 to pause */
++	/* A start at a given time (play at T): the frame time of JACK (it wraps: compared as a difference). */
++	uint32_t start_at;
++	int start_armed; /* control thread: start_at is set and has not come yet */
++	/* The time at which the file will have been played to its end, said once the disk thread has read it all (end T). */
++	uint32_t end_time;
++	int end_state; /* 0 not said, 1 to be said, 2 said */
+ 	int quit; /* set to stop the disk thread */
+ 	i64 file_frames; /* frames of the file */
+ 	double file_rate;
+@@ -286,6 +292,7 @@
+ 			d->in_frames = 0;
+ 			d->out_frames = 0;
+ 			d->ended = 0;
++			d->end_state = 0;
+ 			/* The output starts again from silence: it fades in, instead of
+ 			   starting in the middle of the waveform with a click. */
+ 			d->playing = 0;
+@@ -310,8 +317,32 @@
+ 	   been played.  The ring buffer is left alone, so playing goes on
+ 	   from where it stopped. */
+ 	int want = 1;
++	int offset = 0; /* frames of silence before the start, when it is at a given time */
++	int scheduled = 0;
+ 	if (d->o.control) {
+ 		want = __atomic_load_n(&d->ctl_play, __ATOMIC_ACQUIRE);
++		if (want && __atomic_load_n(&d->start_armed, __ATOMIC_ACQUIRE)) {
++			if (d->playing) {
++				__atomic_store_n(&d->start_armed, 0, __ATOMIC_RELEASE); /* it plays already */
++			} else {
++				/* The start is at a time of JACK: until it comes, silence; in this cycle, silence up to it; late, now. */
++				int32_t dt = (int32_t)(d->start_at - (uint32_t)jack_last_frame_time(d->client));
++				if (dt >= (int32_t)nframes) {
++					signal_set(d->out, nframes, d->channels, 0.0);
++					__atomic_store_n(&d->pub_state, 0, __ATOMIC_RELEASE);
++					return 0;
++				}
++				offset = dt > 0 ? (int)dt : 0;
++				scheduled = 1;
++				__atomic_store_n(&d->start_armed, 0, __ATOMIC_RELEASE);
++			}
++		}
++		/* When the file will end, said once: the time of this cycle plus what is left of the file, at the rate of the server. */
++		if (d->playing && !d->o.loop && d->end_state == 0 && d->file_frames > 0 && __atomic_load_n(&d->eof, __ATOMIC_ACQUIRE)) {
++			double left = ((double)d->file_frames - d->play_pos) * d->o.src_ratio;
++			d->end_time = (uint32_t)jack_last_frame_time(d->client) + (uint32_t)ceil(left > 0 ? left : 0);
++			__atomic_store_n(&d->end_state, 1, __ATOMIC_RELEASE);
++		}
+ 		if (d->ended || (!d->playing && !want)) {
+ 			signal_set(d->out, nframes, d->channels, 0.0);
+ 			__atomic_store_n(&d->pub_state, d->ended ? 2 : 0, __ATOMIC_RELEASE);
+@@ -337,7 +368,7 @@
+ 	   frames acquired. */
+ 	long err = src_callback_read(d->src,
+ 		d->o.src_ratio,
+-		(long)nframes,
++		(long)nframes - offset,
+ 		d->j_buffer);
+ 	die_when(err == 0,
+ 		"rju-play: sample rate converter failed: %s\n",
+@@ -356,9 +387,14 @@
+ 	}
+ 
+ 	/* Uninterleave available data to the output buffers. */
++	for (i = 0; i < offset; i++) {
++		for (j = 0; j < d->channels; j++) {
++			d->out[j][i] = 0.0;
++		}
++	}
+ 	for (i = 0; i < err; i++) {
+ 		for (j = 0; j < d->channels; j++) {
+-			d->out[j][i] = d->j_buffer[(i * d->channels) + j];
++			d->out[j][offset + i] = d->j_buffer[(i * d->channels) + j];
+ 		}
+ 	}
+ 
+@@ -366,13 +402,25 @@
+ 	   output buffers.  The print statement is not correct, a this
+ 	   should set a flag and have another thread take appropriate
+ 	   action. */
+-	if (err < nframes) {
+-		fprintf(stderr, "rju-play: disk thread late (%ld < %d)\n", err, nframes);
+-		for (i = err; i < nframes; i++) {
++	if (err < (long)nframes - offset) {
++		fprintf(stderr, "rju-play: disk thread late (%ld < %d)\n", err, nframes - offset);
++		for (i = offset + err; i < nframes; i++) {
+ 			for (j = 0; j < d->channels; j++) {
+ 				d->out[j][i] = 0.0;
++			}
++		}
++	}
++
++	/* A start at a given time: the file goes on from the end of the one before it, so the ramp is only a few frames, enough
++	   to keep a file that starts abruptly from clicking. */
++	if (scheduled) {
++		for (i = 0; i < 32 && offset + i < (int)nframes; i++) {
++			float g = (float)(i + 1) / 32.0f;
++			for (j = 0; j < d->channels; j++) {
++				d->out[j][offset + i] *= g;
+ 			}
+ 		}
++		d->playing = 1;
+ 	}
+ 
+ 	/* Control mode: a short ramp when playing starts or stops, so that
+@@ -527,6 +575,11 @@
+ 		r->last_pos = pos;
+ 		r->last_state = state;
+ 	}
++	/* The end of the file, when the process thread has worked out when it will be: the program that plays the next file starts it then. */
++	if (__atomic_load_n(&d->end_state, __ATOMIC_ACQUIRE) == 1) {
++		printf("end %u\n", (unsigned)d->end_time);
++		__atomic_store_n(&d->end_state, 2, __ATOMIC_RELEASE);
++	}
+ 	/* The levels: take them, and say them while there is sound (and once more, with the zeros). */
+ 	bool sound = false;
+ 	float peaks[256];
+@@ -566,14 +619,21 @@
+ static void control_command(struct player *d, const char *line)
+ {
+ 	long n;
++	unsigned at;
+ 	if (strcmp(line, "play") == 0) {
+ 		if (__atomic_load_n(&d->pub_state, __ATOMIC_ACQUIRE) == 2) {
+ 			__atomic_store_n(&d->ctl_seek, (i64)0, __ATOMIC_RELEASE);
+ 		}
++		__atomic_store_n(&d->ctl_play, 1, __ATOMIC_RELEASE);
++	} else if (sscanf(line, "play at %u", &at) == 1) {
++		d->start_at = (uint32_t)at;
++		__atomic_store_n(&d->start_armed, 1, __ATOMIC_RELEASE);
+ 		__atomic_store_n(&d->ctl_play, 1, __ATOMIC_RELEASE);
+ 	} else if (strcmp(line, "pause") == 0) {
++		__atomic_store_n(&d->start_armed, 0, __ATOMIC_RELEASE);
+ 		__atomic_store_n(&d->ctl_play, 0, __ATOMIC_RELEASE);
+ 	} else if (sscanf(line, "seek %ld", &n) == 1) {
++		__atomic_store_n(&d->start_armed, 0, __ATOMIC_RELEASE);
+ 		__atomic_store_n(&d->ctl_seek, (i64)(n < 0 ? 0 : n), __ATOMIC_RELEASE);
+ 	} else if (strcmp(line, "quit") == 0) {
+ 		__atomic_store_n(&d->quit, 1, __ATOMIC_RELEASE);
+@@ -624,6 +684,8 @@
+ 	d.out_frames = 0;
+ 	d.ctl_seek = -1;
+ 	d.ctl_play = 0;
++	d.start_armed = 0;
++	d.end_state = 0;
+ 	d.quit = 0;
+ 	d.playing = 0;
+ 	d.ended = 0;

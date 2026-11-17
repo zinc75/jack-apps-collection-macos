@@ -57,13 +57,13 @@ Jack Play is free and open source. If it saves you time, you can buy me a coffee
 
 ## Changes compared with upstream
 
-**CLI.** The program is upstream's, with ten patches. Three are fixes:
+**CLI.** The program is upstream's, with twelve patches. Three are fixes:
 
 - The end of the file is played in full. Upstream closed the JACK client as soon as the last block had been read from disk, which cut the end of every file by the size of the ring buffer (about 85 ms with the default `-b`, more with a larger one).
 - In transport mode, a start or a locate empties the ring buffer. Upstream played the audio read before the seek first, so after a start from the beginning the first block of the file was heard twice.
 - In transport mode, the position is converted from the frames of the server to the frames of the file. Upstream used the number of the transport frame as it was: with a file at 44.1 kHz on a server at 48 kHz, a locate to 2.000 s started 2.177 s into the file.
 
-Seven are specific to this edition:
+Nine are specific to this edition:
 
 - The default client name is `jack_play` instead of `rju-play`.
 - A new option, `-M`, makes the program say where it is and how loud it is, on standard output, for a program that shows it. It works alone, with `-l` and with `-t`. Without `-M` (and without `-C`) nothing is written, as before. One line each:
@@ -74,6 +74,7 @@ Seven are specific to this edition:
   | `ready CHANNELS FILE-RATE SERVER-RATE FRAMES` | once, when the ports exist |
   | `pos FRAME STATE` | when it changes; `STATE` is `paused`, `playing` or `ended` |
   | `lev PEAK PEAK …` | about thirty times a second while there is sound, and once more with the zeros |
+  | `end T` | with `-C`, once the whole file has been read: the JACK frame time (32 bit, it wraps) at which its last frame will have been played |
 
   The levels are the highest sample of each channel since the last line, as the program sends it out (1.0 is full scale, `-g` counted). Nothing is said while nothing changes: a paused player is silent. Frames are the frames of the file, as 64 bit numbers. In transport mode `pos` follows the transport, its state is `paused` while the transport is stopped, and it stays at the last frame (state `ended`) once the file is over, although the transport goes on.
 - A new option, `-C`, plays a file without the JACK transport, which every client of the server shares. It includes `-M`, and reads commands on standard input, one per line. It starts paused, and the sound fades in over one cycle of the audio server (a few milliseconds, depending on its buffer size) when it starts, resumes or jumps to a new position, and fades out when it pauses, so that a seek or a pause does not click. Once the fade is over, the sound is not touched. After the end the player is paused, so a seek moves without playing. It cannot be used with `-t`, where a transport seek is not smoothed, as in `rju-play`.
@@ -81,6 +82,7 @@ Seven are specific to this edition:
   | Command | |
   |---|---|
   | `play` | play, or go on from where it was (from the start after the end) |
+  | `play at T` | play from the beginning of the cycle in which the JACK frame time `T` comes, with silence before `T` inside that cycle; if `T` has passed, play now |
   | `pause` | stop playing, the position is kept |
   | `seek N` | go to frame N of the file |
   | `quit` | leave; the end of the input is a quit too |
@@ -133,6 +135,8 @@ Files are played to their exact length with any ring buffer size, `-t` starts, s
 | `0008-control-mode-paused-after-the-end.patch` | With `-C`, a seek after the end of the file moves without playing. Specific to this edition. |
 | `0009-monitor-mode-client-name.patch` | With `-M`, a `client NAME` line gives the name JACK gave to the client. Specific to this edition. |
 | `0010-transport-mode-position-stops-at-the-end.patch` | With `-M` and `-t`, the position stops at the end of the file instead of following the transport past it. Specific to this edition. |
+| `0011-control-mode-state-every-4-ms.patch` | With `-C`, the state is looked at every 4 ms instead of 33 ms. Specific to this edition. |
+| `0012-control-mode-start-at-a-given-time.patch` | With `-C`, the `end T` line and the `play at T` command, to play files one after the other with no gap. Specific to this edition. |
 
 ## Layout
 

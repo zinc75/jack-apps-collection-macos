@@ -1,0 +1,18 @@
+Subject: control mode, look at the state every 4 ms
+
+The control thread wakes up to say where the player is. At 33 ms the end of the
+file was reported up to 33 ms late, and a program that chains files starts the
+next one on that report: the gap between two files varied by that much. At 4 ms it
+varies by at most that, at no measurable cost.
+--- a/cmd/rju-play.c
++++ b/cmd/rju-play.c
+@@ -588,7 +588,8 @@
+ 	report_init(&rs);
+ 	while (!stopping(d)) {
+ 		struct pollfd p = { 0, POLLIN, 0 };
+-		int r = poll(&p, 1, 33);
++		/* Short: this loop also reports the end of the file, and the program that chains files starts the next one on it. */
++		int r = poll(&p, 1, 4);
+ 		if (r > 0 && (p.revents & (POLLIN | POLLHUP))) {
+ 			ssize_t n = read(0, buf + fill, sizeof(buf) - fill - 1);
+ 			if (n <= 0) {
