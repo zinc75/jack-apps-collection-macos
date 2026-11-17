@@ -96,7 +96,10 @@ struct PlaylistView: View {
                 } dragEnded: {
                     if let from = dragged {
                         let to = Self.target(from: from, moved: dragY, count: items.count)
-                        withAnimation(.snappy(duration: 0.15)) {
+                        // No animation: the rows have already made room, and the list now has them in their new places.
+                        var transaction = Transaction()
+                        transaction.disablesAnimations = true
+                        withTransaction(transaction) {
                             if to != from { list.move(from: [from], to: to > from ? to + 1 : to); selected = to }
                             dragged = nil
                             dragY = 0
@@ -222,7 +225,7 @@ private struct PlaylistRow: View {
         .font(.callout).monospacedDigit()
         .onHover { isHovered = $0 }
         .padding(.horizontal, 14).frame(height: PlaylistColumns.rowHeight)
-        .background { if isDragged { Rectangle().fill(.regularMaterial).shadow(radius: 6) } else { Color.clear } }
+        .background { if isDragged { LiftedRowBackground() } else { Color.clear } }
         .background(isSelected ? accent.opacity(0.13) : Color.clear)
         .overlay(alignment: .bottom) { if !isLast, !isDragged { Divider().padding(.leading, 14) } }
         .overlay(alignment: .bottomLeading) {
@@ -278,5 +281,16 @@ struct RepeatPicker: View {
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(on ? [.isSelected] : [])
+    }
+}
+
+/// The row that is lifted: a Liquid Glass that answers the pointer on macOS 26, a material with a shadow before.
+private struct LiftedRowBackground: View {
+    var body: some View {
+        if #available(macOS 26, *), GlassSupport.enabled {
+            Color.clear.glassEffect(.regular.interactive(), in: .rect(cornerRadius: 8))
+        } else {
+            Rectangle().fill(.regularMaterial).shadow(radius: 6)
+        }
     }
 }
