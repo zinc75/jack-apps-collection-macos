@@ -75,6 +75,17 @@ final class PlayerLevelsIntegrationTests: XCTestCase {
         XCTAssertEqual(tracker.meters[0].level, IECScale.fraction(db: -6.02), accuracy: 0.01)
         XCTAssertFalse(tracker.meters[0].clipped)
 
+        // Levels off: one last line with the zeros, then nothing; on again: the levels come back.
+        player.send(.levels(false))
+        try await Task.sleep(nanoseconds: 300_000_000)
+        let silent = box.events.count
+        try await Task.sleep(nanoseconds: 500_000_000)
+        XCTAssertEqual(levels(box.events).last, [0, 0], "the last line says the zeros")
+        XCTAssertEqual(box.events.filter { if case .levels = $0 { return true }; return false }.count,
+                       levels(Array(box.events.prefix(silent))).count, "no more levels while they are off")
+        player.send(.levels(true))
+        await wait("levels again") { self.levels(box.events).last?[0] ?? 0 > 0.4 }
+
         player.send(.pause)
         try await Task.sleep(nanoseconds: 500_000_000)   // the fade out, and the line with the zeros
         let afterPause = box.events.count

@@ -1,0 +1,58 @@
+Subject: control mode, levels on and off
+
+levels off   stop measuring the levels: no more lev lines (one last one, with the
+             zeros, so that a display falls to nothing), and the peak of every
+             channel is no longer looked for in the process callback
+levels on    measure them again; this is the default
+
+A display that does not show the levels can say so, and the program does no work
+for them.
+--- a/cmd/rju-play.c
++++ b/cmd/rju-play.c
+@@ -73,6 +73,7 @@
+ 	   at the start of a cycle and publishes where it is in pub_pos and pub_state. */
+ 	i64 ctl_seek; /* frame of the file to go to, -1 for none */
+ 	int ctl_play; /* 1 to play, 0 to pause */
++	int levels_off; /* 1: the levels are not measured (levels off) */
+ 	/* A start at a given time (play at T): the frame time of JACK (it wraps: compared as a difference). */
+ 	uint32_t start_at;
+ 	int start_armed; /* control thread: start_at is set and has not come yet */
+@@ -457,7 +458,9 @@
+ 		}
+ 		__atomic_store_n(&d->pub_pos, (i64)d->play_pos, __ATOMIC_RELEASE);
+ 		__atomic_store_n(&d->pub_state, finished ? 2 : (d->o.control ? d->playing : 1), __ATOMIC_RELEASE);
+-		peaks_update(d, nframes);
++		if (!__atomic_load_n(&d->levels_off, __ATOMIC_RELAXED)) {
++			peaks_update(d, nframes);
++		}
+ 	}
+ 
+ 	/* Indicate to the disk thread that the ring buffer has been read
+@@ -550,6 +553,8 @@
+      play        play, or go on playing (from the start if the end had been reached)
+      pause       stop playing, the position is kept
+      seek N      go to frame N of the file (a frame of the file, not of the server)
++     levels off  do not measure the levels: no lev lines (one more with the zeros, then nothing)
++     levels on   measure them again (the default)
+      quit        leave
+ 
+    The end of the input is a quit. */
+@@ -653,6 +658,10 @@
+ 	} else if (sscanf(line, "seek %ld", &n) == 1) {
+ 		__atomic_store_n(&d->start_armed, 0, __ATOMIC_RELEASE);
+ 		__atomic_store_n(&d->ctl_seek, (i64)(n < 0 ? 0 : n), __ATOMIC_RELEASE);
++	} else if (strcmp(line, "levels off") == 0) {
++		__atomic_store_n(&d->levels_off, 1, __ATOMIC_RELAXED);
++	} else if (strcmp(line, "levels on") == 0) {
++		__atomic_store_n(&d->levels_off, 0, __ATOMIC_RELAXED);
+ 	} else if (strcmp(line, "quit") == 0) {
+ 		__atomic_store_n(&d->quit, 1, __ATOMIC_RELEASE);
+ 	}
+@@ -702,6 +711,7 @@
+ 	d.out_frames = 0;
+ 	d.ctl_seek = -1;
+ 	d.ctl_play = 0;
++	d.levels_off = 0;
+ 	d.start_armed = 0;
+ 	d.end_state = 0;
+ 	d.quit = 0;

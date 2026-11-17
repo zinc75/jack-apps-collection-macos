@@ -57,13 +57,13 @@ Jack Play is free and open source. If it saves you time, you can buy me a coffee
 
 ## Changes compared with upstream
 
-**CLI.** The program is upstream's, with twelve patches. Three are fixes:
+**CLI.** The program is upstream's, with thirteen patches. Three are fixes:
 
 - The end of the file is played in full. Upstream closed the JACK client as soon as the last block had been read from disk, which cut the end of every file by the size of the ring buffer (about 85 ms with the default `-b`, more with a larger one).
 - In transport mode, a start or a locate empties the ring buffer. Upstream played the audio read before the seek first, so after a start from the beginning the first block of the file was heard twice.
 - In transport mode, the position is converted from the frames of the server to the frames of the file. Upstream used the number of the transport frame as it was: with a file at 44.1 kHz on a server at 48 kHz, a locate to 2.000 s started 2.177 s into the file.
 
-Nine are specific to this edition:
+Ten are specific to this edition:
 
 - The default client name is `jack_play` instead of `rju-play`.
 - A new option, `-M`, makes the program say where it is and how loud it is, on standard output, for a program that shows it. It works alone, with `-l` and with `-t`. Without `-M` (and without `-C`) nothing is written, as before. One line each:
@@ -84,6 +84,7 @@ Nine are specific to this edition:
   | `play` | play, or go on from where it was (from the start after the end) |
   | `play at T` | play from the beginning of the cycle in which the JACK frame time `T` comes, with silence before `T` inside that cycle; if `T` has passed, play now |
   | `pause` | stop playing, the position is kept |
+  | `levels off` / `levels on` | stop measuring the levels (the last `lev` line has the zeros, then nothing) or measure them again; on by default |
   | `seek N` | go to frame N of the file |
   | `quit` | leave; the end of the input is a quit too |
 
@@ -93,6 +94,8 @@ Nine are specific to this edition:
 - The output levels of every channel, on the IEC scale, measured inside the program (`-M`) just before the ports: the application makes no JACK client for them.
 - A matrix that connects each channel to any input port of the graph, grouped by client, with the icon of the application behind the clients that JackMoebius exposes. The connections are remembered for each file (its name, size and date) and made again when the ports come back. The first time, the channels go to the first outputs of the system.
 - Two ways to play. By default the application plays on its own (`-C`), so that starting it does not start the other clients of the server. It can also follow the JACK transport (`-t`), and command it or only watch it.
+- A playlist. The files play one after the other with no gap: the program of the next file is started in advance, paused, with its ports connected as that file asks, and told at which JACK frame to start, so the first sample of the next file follows the last sample of the one that ends. It is the same for every file, whatever its number of channels and its sample rate. Each program is a JACK client named after its place in the list (`01 of 12 - jack_play`), because two clients of the same name cannot live together. The order is changed by dragging the rows, the list can repeat, and it is read from and saved to a playlist file (M3U8, which other players read too). The list and the file that was open come back at the next launch. A playlist does not play with the JACK transport, which decides alone.
+- Display options for the levels: under the waveform, or beside the lane of each channel, and a switch that stops measuring them (`levels off`).
 - The command line the application runs, to copy into a Terminal.
 
 Settings that the program reads at start (the buffer, the resampler, the client name, the mode) cannot be changed while a file plays: the application starts the program again for them, which would cut the sound. They are dimmed, with a line that says to pause first. The buffer is raised to four periods of the JACK server when it would be too small for it. The loop does not apply when the application follows the transport.
@@ -137,6 +140,7 @@ Files are played to their exact length with any ring buffer size, `-t` starts, s
 | `0010-transport-mode-position-stops-at-the-end.patch` | With `-M` and `-t`, the position stops at the end of the file instead of following the transport past it. Specific to this edition. |
 | `0011-control-mode-state-every-4-ms.patch` | With `-C`, the state is looked at every 4 ms instead of 33 ms. Specific to this edition. |
 | `0012-control-mode-start-at-a-given-time.patch` | With `-C`, the `end T` line and the `play at T` command, to play files one after the other with no gap. Specific to this edition. |
+| `0013-control-mode-levels-on-and-off.patch` | With `-C`, the `levels on` and `levels off` commands: when off, the levels are not measured. Specific to this edition. |
 
 ## Layout
 
