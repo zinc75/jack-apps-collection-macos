@@ -23,9 +23,23 @@ public struct PlayerSettings: Equatable, Sendable {
         self.loop = loop
     }
 
+    /// The name of the program that plays the file at a place of the playlist: the place and the size of the list, then the name
+    /// chosen, "02 of 12 - jack_play". Without a number, the name chosen.
+    /// The programs of two files that follow each other are alive together for a moment, so their names must differ (JACK would
+    /// call the second one "name-01"), and the place in the list makes each name its own.
+    /// The place comes first on purpose: JACK on macOS names the semaphore of a client "js<uid>.<server><client>" and cuts it at
+    /// 31 characters (the server is left out when it is "default"), so two clients whose names are the same up to there cannot
+    /// live together. With the place at the start, the names differ whatever the name chosen and the name of the server.
+    /// The words are the same in every language: it is a name in JACK, and patchbays remember connections by name.
+    public func programName(number: Int?, of count: Int? = nil) -> String {
+        guard let number else { return safeClientName }
+        let place = count.map { String(format: "%02d of %02d", number, $0) } ?? String(format: "%02d", number)
+        return place + " - " + String(safeClientName.prefix(44)).trimmingCharacters(in: .whitespaces)
+    }
+
     /// A name JACK accepts: the characters it does not like are replaced, and it is not empty.
     public var safeClientName: String {
-        let cleaned = clientName.map { $0.isLetter || $0.isNumber || "-_. ".contains($0) ? $0 : "_" }
+        let cleaned = clientName.map { $0.isLetter || $0.isNumber || "-_. ()".contains($0) ? $0 : "_" }
         let name = String(cleaned).trimmingCharacters(in: .whitespaces)
         return name.isEmpty ? "jack_play" : String(name.prefix(48))
     }
@@ -48,9 +62,13 @@ public struct PlayerCommand: Equatable, Sendable {
     public var initialFrame: Int64?
     /// The period of the JACK server, in frames, when it is known.
     public var serverPeriod: Int?
+    /// The sample rate of the file, when it is known.
+    public var fileRate: Double?
 
-    public init(file: URL, settings: PlayerSettings = PlayerSettings(), mode: Mode = .independent, initialFrame: Int64? = nil, serverPeriod: Int? = nil) {
+    public init(file: URL, settings: PlayerSettings = PlayerSettings(), mode: Mode = .independent, initialFrame: Int64? = nil,
+                serverPeriod: Int? = nil, fileRate: Double? = nil) {
         self.serverPeriod = serverPeriod
+        self.fileRate = fileRate
         self.file = file
         self.settings = settings
         self.mode = mode
@@ -59,7 +77,10 @@ public struct PlayerCommand: Equatable, Sendable {
 
     /// The ring buffer the program is given. It stops with an error when the buffer is not larger than a period of the
     /// server, and a buffer of two periods leaves it no margin: it is at least four periods.
-    public var bufferFrames: Int { max(settings.bufferFrames, 4 * (serverPeriod ?? 0)) }
+    /// It also holds at least a tenth of a second of the file: the program says when the file will end once it has read it all,
+    /// which is a ring buffer ahead of the end, and the program of the next file must be told in time (a file at 192 kHz has
+    /// only 21 ms in 4096 frames).
+    public var bufferFrames: Int { max(settings.bufferFrames, 4 * (serverPeriod ?? 0), Int((fileRate ?? 0) / 10)) }
 
     /// The arguments given to the program. Both modes make it say where it is and how loud it is on its standard
     /// output (`-C` includes `-M`).
@@ -90,6 +111,8 @@ public struct PlayerCommand: Equatable, Sendable {
 /// What the application asks `jack_play` to do.
 public enum PlayerControl: Equatable, Sendable {
     case play
+    /// Play from the beginning of the cycle in which this time of JACK comes (see `PlayerEvent.endAnnounced`).
+    case playAt(UInt32)
     case pause
     /// A frame of the file (not of the server).
     case seek(Int64)
@@ -99,6 +122,7 @@ public enum PlayerControl: Equatable, Sendable {
     public var line: String {
         switch self {
         case .play: return "play"
+        case .playAt(let time): return "play at \(time)"
         case .pause: return "pause"
         case .seek(let frame): return "seek \(max(frame, 0))"
         case .quit: return "quit"

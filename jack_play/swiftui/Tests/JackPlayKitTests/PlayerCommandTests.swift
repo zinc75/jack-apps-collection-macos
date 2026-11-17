@@ -49,6 +49,37 @@ final class PlayerCommandTests: XCTestCase {
         XCTAssertTrue(PlayerCommand(file: file, settings: PlayerSettings(bufferFrames: 1024), serverPeriod: 2048).arguments.contains("8192"))
     }
 
+    func testTheBufferHoldsAtLeastATenthOfASecondOfTheFile() {
+        // At 192 kHz, 4096 frames are 21 ms: too little to tell the next program in time.
+        XCTAssertEqual(PlayerCommand(file: file, fileRate: 192_000).bufferFrames, 19_200)
+        XCTAssertEqual(PlayerCommand(file: file, fileRate: 44_100).bufferFrames, 4096, "the usual size is enough")
+        XCTAssertEqual(PlayerCommand(file: file, settings: PlayerSettings(bufferFrames: 32768), fileRate: 192_000).bufferFrames, 32768)
+    }
+
+    func testTheProgramIsNamedForItsPlaceInThePlaylist() {
+        let settings = PlayerSettings(clientName: "jack_play")
+        XCTAssertEqual(settings.programName(number: nil), "jack_play")
+        XCTAssertEqual(settings.programName(number: 2), "02 - jack_play")
+        XCTAssertEqual(settings.programName(number: 12), "12 - jack_play")
+        XCTAssertEqual(settings.programName(number: 2, of: 12), "02 of 12 - jack_play")
+        XCTAssertEqual(settings.programName(number: 123), "123 - jack_play")
+        XCTAssertTrue(PlayerCommand(file: file, settings: PlayerSettings(clientName: settings.programName(number: 2))).arguments.contains("02 - jack_play"),
+                      "a name with spaces is one argument")
+        // Whatever the name chosen, two places differ within the first characters (JACK keeps 31 of "js<uid>.<server><client>").
+        let long = PlayerSettings(clientName: String(repeating: "x", count: 100))
+        for (number, other) in [(1, 2), (9, 10), (99, 100)] {
+            let a = long.programName(number: number, of: 100), b = long.programName(number: other, of: 100)
+            XCTAssertLessThan(zip(a, b).prefix { $0 == $1 }.count, 8)
+            XCTAssertLessThanOrEqual(a.count, 63, "JACK names are 63 characters at most")
+        }
+    }
+
+    func testTheProgramSaysWhenTheFileWillEnd() {
+        var parser = PlayerLogParser()
+        XCTAssertEqual(parser.feed(Data("end 4294967000\nend nonsense\n".utf8)), [.endAnnounced(4_294_967_000), .message("end nonsense")])
+        XCTAssertEqual(PlayerControl.playAt(123).line, "play at 123")
+    }
+
     func testTheProgramSaysTheNameOfItsClient() {
         var parser = PlayerLogParser()
         XCTAssertEqual(parser.feed(Data("client Salle A-01\nready 2 48000 48000 10\n".utf8)),

@@ -12,6 +12,9 @@ public enum PlayerEvent: Equatable, Sendable {
     case ready(channels: Int, fileRate: Double, serverRate: Double, frames: Int64)
     /// Where it is in the file, in frames of the file.
     case position(frame: Int64, state: PlayerState)
+    /// When the file will have been played to its end, as a time of JACK (a 32 bit frame time, which wraps). Said once the
+    /// program has read the whole file: the program of the next file is told to start at that time.
+    case endAnnounced(UInt32)
     /// The output levels, one per channel: the highest sample since the last report, 1.0 being full scale.
     case levels([Float])
     /// The name JACK gave to the client of the program: its ports are `<name>:out_1`, `out_2` …
@@ -57,6 +60,9 @@ public struct PlayerLogParser: Sendable {
         }
         if words.first == "client", words.count >= 2 {
             return .client(String(line.dropFirst("client ".count)))
+        }
+        if words.first == "end", words.count == 2, let time = UInt32(words[1]) {
+            return .endAnnounced(time)
         }
         if words.first == "lev", words.count >= 2 {
             let values = words.dropFirst().compactMap { Float($0) }

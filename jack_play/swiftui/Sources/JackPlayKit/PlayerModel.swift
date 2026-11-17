@@ -100,16 +100,61 @@ public final class PlayerModel {
     /// Connect the outputs when the player starts. Off, nothing is connected until the matrix says so.
     public var autoConnect = true
 
+    // The file after this one (the playlist says which), and the program that is ready to play it.
+    /// The file that comes next. The application starts a second program for it, paused and with its ports connected, while this
+    /// one plays (only when it plays on its own: a transport that is followed decides by itself). At the end of this file the second
+    /// program takes over with a `play`, so that the files follow each other with a gap of the same short length every time.
+    public var nextFile: URL? {
+        didSet { if nextFile != oldValue { refreshStandby() } }
+    }
+    /// The place of the file that plays in the playlist, from 1, and the place of the next one: they are in the names of the programs
+    /// in JACK, "02 of 12 - jack_play" (see `PlayerCommand.programName`). nil when the playlist has one file only. A program keeps
+    /// the name it was started with, so the place that is in it is the one the file had then.
+    public var currentNumber: Int?
+    public var nextNumber: Int? { didSet { if nextNumber != oldValue { renameStandbyIfNeeded() } } }
+    /// The number of files of the playlist, which is in the names too. It is read when a program is started: the one that
+    /// plays keeps the size the list had then, and the next one is made again when the size changes.
+    public var listCount: Int? { didSet { if listCount != oldValue { renameStandbyIfNeeded() } } }
+    private func renameStandbyIfNeeded() {
+        guard let s = standby, s.number != standbyNumber || s.count != listCount else { return }
+        stopStandby()      // a program cannot be renamed: the one with the right name is made when the other has left
+        refreshStandby()
+    }
+    /// The place of the next file: the one the playlist says, else the one after the file that plays (the two programs live
+    /// together, so they need two names).
+    private var standbyNumber: Int { nextNumber ?? ((currentNumber ?? 1) + 1) }
+    /// Called once when the file has been played to its end, in the mode where the application plays on its own.
+    @ObservationIgnored public var onFileEnded: (() -> Void)?
+    /// The next file is ready to start at once.
+    public var nextIsReady: Bool { standby?.ready == true && standby?.file.url == nextFile }
+
     // Collaborators
     private let server: PlaybackServer
     private let store: ConnectionStore
     private let makeRunner: @MainActor (PlayerCommand) -> PlayerRunner?
-    private let manager: ConnectionManager
+    private var manager: ConnectionManager
     private var runner: PlayerRunner?
     private var tracker = LevelTracker()
     private var lastLevelAt = Date.distantPast
     @ObservationIgnored private var decay: Task<Void, Never>?
     private var usesDefaultRouting = true
+    /// The program of the next file.
+    private struct Standby {
+        let file: OpenFile
+        let runner: PlayerRunner
+        let manager: ConnectionManager
+        let routing: ChannelRouting
+        var ready = false
+        var serverRate: Double?
+        var number: Int?
+        var count: Int?
+    }
+    private var standby: Standby?
+    /// A program of the next file that was asked to leave and has not left yet.
+    private var standbyLeaving: PlayerRunner?
+    /// The program of the next file has been told to start at the end of this one.
+    private var nextIsArmed = false
+    private var endReported = false
     /// The program that was asked to leave and has not left yet. The next one waits for it: they carry the same name,
     /// and JACK would call the second one "name-01" while the first is still in the graph.
     private var leaving: PlayerRunner?
@@ -153,7 +198,7 @@ public final class PlayerModel {
     /// The buttons act: not when the window only watches a transport that another program drives.
     public var canCommand: Bool { isRunning && (mode == .independent || commandsTransport) }
     /// The command as a person would type it, for the "command line" sheet.
-    public var commandLine: String? { file.map { command(for: $0.url, frame: nil).display() } }
+    public var commandLine: String? { file.map { command(for: $0.url, frame: nil, number: currentNumber).display() } }
     /// A destination of the routing is connected twice over: several channels feed the same port.
     public var summedPorts: Set<String> { routing.summedPorts }
 
@@ -182,6 +227,7 @@ public final class PlayerModel {
 
     public func closeFile() {
         queuedLaunch = nil
+        endReported = false
         decay?.cancel(); decay = nil
         stopRunner()
         waveform.cancel()
@@ -210,9 +256,18 @@ public final class PlayerModel {
     public func pause() {
         guard canCommand else { return }
         switch mode {
-        case .independent: runner?.send(.pause)
+        case .independent:
+            cancelNextStart()
+            runner?.send(.pause)
         case .followTransport: server.transportPause()
         }
+    }
+
+    /// The next program was told to start at the end of this file, which is no longer where it was (pause, seek): it waits again.
+    private func cancelNextStart() {
+        guard nextIsArmed else { return }
+        nextIsArmed = false
+        standby?.runner.send(.pause)
     }
 
     public func togglePlay() { isPlaying ? pause() : play() }
@@ -247,6 +302,7 @@ public final class PlayerModel {
         position = target
         switch mode {
         case .independent:
+            cancelNextStart()
             runner?.send(.seek(target))
         case .followTransport:
             // The transport counts frames of the server, the file frames of its own rate.
@@ -303,8 +359,11 @@ public final class PlayerModel {
 
     // MARK: Running the program
 
-    private func command(for url: URL, frame: Int64?) -> PlayerCommand {
-        PlayerCommand(file: url, settings: settings, mode: mode, initialFrame: frame, serverPeriod: server.bufferSize)
+    private func command(for url: URL, frame: Int64?, number: Int?, fileRate: Double? = nil) -> PlayerCommand {
+        var s = settings
+        s.clientName = s.programName(number: number, of: listCount)
+        return PlayerCommand(file: url, settings: s, mode: mode, initialFrame: frame, serverPeriod: server.bufferSize,
+                             fileRate: fileRate ?? file?.info.sampleRate)
     }
 
     private func chooseRouting() {
@@ -329,7 +388,7 @@ public final class PlayerModel {
             queuedLaunch = { [weak self] in self?.launch(frame: frame, playing: playing) }
             return
         }
-        guard let runner = makeRunner(command(for: file.url, frame: frame)) else {
+        guard let runner = makeRunner(command(for: file.url, frame: frame, number: currentNumber)) else {
             phase = .failed(.noPlayer)
             return
         }
@@ -348,8 +407,10 @@ public final class PlayerModel {
     private func stopRunner() {
         manager.detach()
         queuedLaunch = nil
-        guard let old = runner else { return }
-        runner = nil
+        let old = runner
+        runner = nil   // before the program of the next file leaves: its exit must not make another one for a player that is gone
+        stopStandby()
+        guard let old else { return }
         guard old.isRunning else { old.onEvent = nil; return }
         leaving = old
         old.onEvent = { [weak self, weak old] event in
@@ -380,6 +441,7 @@ public final class PlayerModel {
                 missingPorts = manager.missingPorts
             }
             if playAtReady { mode == .independent ? runner?.send(.play) : server.transportStart() }
+            refreshStandby()
         case .position(let frame, let state):
             position = min(frame, file?.info.frames ?? frame)
             phase = .running(state)
@@ -390,6 +452,11 @@ public final class PlayerModel {
             } else if state != .ended {
                 endHandled = false
             }
+            if state == .ended, mode == .independent {
+                if !endReported { endReported = true; onFileEnded?() }
+            } else {
+                endReported = false
+            }
         case .levels(let peaks):
             lastLevelAt = Date()
             tracker.update(peaks: peaks)
@@ -397,6 +464,12 @@ public final class PlayerModel {
         case .warning(let text):
             warnings += 1
             lastWarning = text
+        case .endAnnounced(let time):
+            // The end of this file is known to the frame: the next one starts then, with no gap.
+            if mode == .independent, nextIsReady, !nextIsArmed, isPlaying, let s = standby {
+                s.runner.send(.playAt(time))
+                nextIsArmed = true
+                }
         case .client, .message:
             break
         case .exited(let status, _):
@@ -409,6 +482,7 @@ public final class PlayerModel {
     /// The graph has changed, or the server has come or gone.
     private func serverChanged() {
         manager.graphChanged()
+        standby?.manager.graphChanged()
         missingPorts = manager.missingPorts
         guard file != nil else { return }
         if usesDefaultRouting, routing.connectedChannels == 0, !server.playbackPorts.isEmpty, let file {
@@ -422,6 +496,123 @@ public final class PlayerModel {
             stopRunner()
             phase = .failed(.noJack)
         }
+    }
+
+
+    // MARK: The next file
+
+    /// Starts, keeps or stops the program of the next file, as the state of the player allows.
+    private func refreshStandby() {
+        guard mode == .independent, runner != nil, isRunning, server.isConnected, let url = nextFile, !settings.loop else {
+            stopStandby()
+            return
+        }
+        if let s = standby, s.file.url == url { return }
+        stopStandby()
+        // The old program may have left at once, and made the new one on its way out.
+        if let s = standby, s.file.url == url { return }
+        // A program of the same name that is still leaving: this one starts when it is gone.
+        if standbyLeaving != nil { return }
+        guard let info = try? SoundFile.probe(url) else { return }
+        let key = FileKey(url: url)
+        let file = OpenFile(url: url, info: info, key: key)
+        let routing = store.routing(for: key, channels: info.channels) ?? DefaultRouting.make(channels: info.channels, playbackPorts: server.playbackPorts)
+        let number = standbyNumber
+        // A program that is still leaving under the name this one would have: it starts when that one is gone.
+        if let name = leaving?.clientName, name == settings.programName(number: number, of: listCount) { return }
+        guard let runner = makeRunner(command(for: url, frame: nil, number: number, fileRate: info.sampleRate)) else { return }
+        let next = Standby(file: file, runner: runner, manager: ConnectionManager(linking: server), routing: routing, number: number, count: listCount)
+        runner.onEvent = { [weak self, weak runner] event in
+            guard let self, let runner, self.standby?.runner === runner else { return }
+            self.handleStandby(event)
+        }
+        standby = next
+        do { try runner.start() } catch { standby = nil }
+    }
+
+    private func handleStandby(_ event: PlayerEvent) {
+        guard var s = standby else { return }
+        switch event {
+        case .ready(_, _, let serverRate, _):
+            s.ready = true
+            s.serverRate = serverRate
+            standby = s
+            if let client = s.runner.clientName {
+                s.manager.attach(client: client, routing: autoConnect ? s.routing : .empty(channels: s.file.info.channels))
+            }
+        case .exited:
+            s.manager.detach()
+            standby = nil
+        default:
+            break
+        }
+    }
+
+    private func stopStandby() {
+        nextIsArmed = false
+        guard let s = standby else { return }
+        standby = nil
+        s.manager.detach()
+        guard s.runner.isRunning else { s.runner.onEvent = nil; return }
+        standbyLeaving = s.runner
+        s.runner.onEvent = { [weak self, weak runner = s.runner] event in
+            guard case .exited = event, let self, let runner, self.standbyLeaving === runner else { return }
+            self.standbyLeaving = nil
+            runner.onEvent = nil
+            self.refreshStandby()
+        }
+        s.runner.stop(grace: 1)
+    }
+
+    /// Goes on with the next file: its program, which is ready, takes the place of this one and starts. False when it is not ready
+    /// (or there is no next file): the caller opens the file the usual way.
+    @discardableResult
+    public func advanceToNext(play: Bool) -> Bool {
+        guard mode == .independent, nextIsReady, let s = standby else { return false }
+        let nextWasArmed = nextIsArmed
+        nextIsArmed = false
+        // This program leaves (its connections go with it) ...
+        let old = runner
+        manager.detach()
+        runner = nil
+        old?.onEvent = nil
+        if let old, old.isRunning {
+            leaving = old
+            old.onEvent = { [weak self, weak old] event in
+                guard case .exited = event, let self, let old, self.leaving === old else { return }
+                self.leaving = nil
+                old.onEvent = nil
+                self.refreshStandby()
+            }
+            old.stop(grace: 1)
+        }
+        // ... and the other one is the player.
+        standby = nil
+        manager = s.manager
+        runner = s.runner
+        file = s.file
+        routing = s.routing
+        usesDefaultRouting = store.routing(for: s.file.key, channels: s.file.info.channels) == nil
+        currentNumber = s.number
+        serverRate = s.serverRate
+        position = 0
+        warnings = 0
+        lastWarning = nil
+        endReported = false
+        endHandled = false
+        tracker.reset()
+        meters = []
+        missingPorts = manager.missingPorts
+        waveform.load { try SoundFile(url: s.file.url) }
+        let me = s.runner
+        me.onEvent = { [weak self, weak me] event in
+            guard let self, let me, self.runner === me else { return }
+            self.handle(event, playAtReady: false)
+        }
+        // It has been told to start at the end of the file: it plays already, or does so at once.
+        phase = .running(nextWasArmed && play ? .playing : .paused)
+        if play, !nextWasArmed { me.send(.play) }
+        return true
     }
 
     // MARK: Levels settle

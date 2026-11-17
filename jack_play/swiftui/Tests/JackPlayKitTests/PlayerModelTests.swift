@@ -8,7 +8,7 @@ import XCTest
 @MainActor
 final class FakeRunner: PlayerRunner {
     var onEvent: ((PlayerEvent) -> Void)?
-    var clientName: String? { started ? "jack_play-000000004242" : nil }
+    var clientName: String? { started ? command.settings.safeClientName : nil }
     let command: PlayerCommand
     private(set) var controls: [PlayerControl] = []
     private(set) var started = false
@@ -62,6 +62,7 @@ final class FakeServer: PlaybackServer {
     func transportPause() { transport.append("pause") }
     func transportStop() { transport.append("stop") }
     func transportLocate(frame: UInt32) { transport.append("locate \(frame)") }
+
 }
 
 @MainActor
@@ -163,7 +164,7 @@ final class PlayerModelTests: XCTestCase {
         model.open(try wav())
         XCTAssertEqual(model.routing.channels, [["system:playback_1"], ["system:playback_2"]])
         runner.ready()
-        XCTAssertEqual(server.links, ["jack_play-000000004242:out_1>system:playback_1", "jack_play-000000004242:out_2>system:playback_2"])
+        XCTAssertEqual(server.links, ["jack_play:out_1>system:playback_1", "jack_play:out_2>system:playback_2"])
     }
 
     func testAMonoFileGoesToBothSides() throws {
@@ -179,15 +180,15 @@ final class PlayerModelTests: XCTestCase {
         model.open(url)
         runner.ready()
         model.toggle(channel: 0, port: "Carla:in1")
-        XCTAssertTrue(server.links.contains("jack_play-000000004242:out_1>Carla:in1"))
+        XCTAssertTrue(server.links.contains("jack_play:out_1>Carla:in1"))
         model.toggle(channel: 1, port: "system:playback_2")   // disconnect
-        XCTAssertFalse(server.links.contains("jack_play-000000004242:out_2>system:playback_2"))
+        XCTAssertFalse(server.links.contains("jack_play:out_2>system:playback_2"))
         // Another model, as after a restart: the same file comes back with its connections.
         let (again, server2) = make(server: FakeServer())
         again.open(url)
         XCTAssertEqual(again.routing.channels, [["system:playback_1", "Carla:in1"], []])
         runners.last!.ready()
-        XCTAssertEqual(server2.links, ["jack_play-000000004242:out_1>Carla:in1", "jack_play-000000004242:out_1>system:playback_1"].reduce(into: Set<String>()) { $0.insert($1) })
+        XCTAssertEqual(server2.links, ["jack_play:out_1>Carla:in1", "jack_play:out_1>system:playback_1"].reduce(into: Set<String>()) { $0.insert($1) })
     }
 
     func testAFileWithAnotherNumberOfChannelsHasItsOwnConnections() throws {
@@ -219,7 +220,7 @@ final class PlayerModelTests: XCTestCase {
         XCTAssertEqual(model.missingPorts, ["Ghost:in1"])
         server.inputs.insert("Ghost:in1")
         server.onChange?()
-        XCTAssertTrue(server.links.contains("jack_play-000000004242:out_1>Ghost:in1"))
+        XCTAssertTrue(server.links.contains("jack_play:out_1>Ghost:in1"))
         XCTAssertTrue(model.missingPorts.isEmpty)
     }
 
