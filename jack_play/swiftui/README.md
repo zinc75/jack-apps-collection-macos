@@ -33,7 +33,7 @@ If `../build/jack_play` is missing, the application is still built, without the 
 
 ## Layout
 
-- `Sources/JackPlayKit`: logic without any UI (the program and its messages, the file, the connections, the levels, the state of the player), unit tested.
+- `Sources/JackPlayKit`: logic without any UI (the program and its messages, the file, the connections, the levels, the playlist, the state of the player), unit tested.
 - `Sources/JackPlay`: the SwiftUI application.
 - `Sources/CSndfile`: libsndfile for the Swift code.
 - `Tests`: unit and integration tests of `JackPlayKit`.

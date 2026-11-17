@@ -9,45 +9,70 @@
   ![License](https://img.shields.io/badge/license-GPL--3.0-green)
   [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?logo=buymeacoffee&logoColor=000000)](https://www.buymeacoffee.com/zinc75)
 
-  <!-- <img src="screenshots/play.png" width="760" alt="Jack Play playing a file"> -->
+  <img src="screenshots/play.png" width="760" alt="Jack Play playing an 8 channel file">
 
 </div>
 
 ---
 
-Open a sound file, connect each of its channels to the JACK inputs of your choice, press play. Jack Play shows the waveform of the file and the output levels, and remembers the connections of each file. The application starts the `jack_play` program, built here for macOS (arm64 and x86_64), and does not replace it: the command-line program keeps all its options.
+Open sound files, connect each channel to the JACK inputs of your choice, press play. Jack Play shows the waveform and the output levels, plays a list of files one after the other with no gap, and remembers the connections of each file. The application starts the `jack_play` program, built here for macOS (arm64 and x86_64), and does not replace it: the command-line program keeps all its options.
 
 Jack Play is an unofficial interface. It is part of Jack Apps Collection for macOS.
+
+## Install
+
+Download `JackPlay-0.19-macOS.pkg` from the [Releases](https://github.com/zinc75/jack-apps-collection-macos/releases) page and open it. It installs the application in `/Applications/Jack Apps Collection/` and the `jack_play` program in `/usr/local/bin`.
+
+It needs macOS 15 or later, and [JACK](https://jackaudio.org/downloads/) installed.
+
+To build from source instead, see [`swiftui/README.md`](swiftui/README.md).
 
 ## Connect the outputs
 
 A matrix connects each channel of the file to the JACK inputs of your choice, grouped by client. Applications show their own icon when JackMoebius identifies them, and the shared input of JackMoebius has its own badge. The connections are remembered for each file (its name, size and date) and made again when the ports come back. The first time, the channels go to the first outputs of the system.
 
-<!-- <div align="center">
+<div align="center">
   <img src="screenshots/matrix.png" width="640" alt="The outputs matrix">
-</div> -->
+</div>
 
 ## Play and watch
 
-The waveform of the file has a time ruler: a click or a drag moves in the file. The output levels of every channel are measured inside the program, just before the ports, on the IEC scale. By default the application plays on its own, so that starting it does not start the other clients of the server; it can also follow the JACK transport, and command it or only watch it.
+The waveform of the file has a time ruler: a click or a drag moves in the file. The output levels of every channel are measured inside the program, just before the ports, on the IEC scale, and shown beside the lane of each channel or under the waveform. A file with many channels (an ambisonic recording, for instance) is shown in columns, each with its own ruler, so that the lanes keep a height that can be read. The levels can be switched off, and are then not measured at all. By default the application plays on its own, so that starting it does not start the other clients of the server; it can also follow the JACK transport, and command it or only watch it.
 
-<!-- <div align="center">
-  <img src="screenshots/levels.png" width="640" alt="The waveform and the output levels">
-</div> -->
+## Play files one after the other
+
+Open several files, drop them on the window or add them to the list. The files play with no gap: the program of the next file is started in advance, with its ports connected as that file asks, and told at which JACK frame to start, so its first sample follows the last sample of the file that ends. It is the same for every file, whatever its number of channels and its sample rate. The order is changed by dragging the rows, the list can repeat (the file or the whole list), and the table shows for each file its channels, its rate (in orange when the server's is different), its duration, where it is connected and, for the file that plays, its levels.
+
+Each file is played by a program of its own, a JACK client named after its place in the list (`01 of 12 - jack_play`, then `02 of 12 - jack_play`), because two clients of the same name cannot live together. The list is read from and saved to a playlist file (M3U8, which other players read too), and the list and the file that was open come back at the next launch. A playlist does not play with the JACK transport, which decides alone.
+
+<div align="center">
+  <img src="screenshots/playlist.png" width="760" alt="The playlist">
+</div>
 
 ## All the options of jack_play
 
-<!-- <div align="center">
+<div align="center">
   <img src="screenshots/settings.png" width="760" alt="The settings pages">
-</div> -->
+</div>
 
-Loop without a gap, resampling quality, playback buffer, JACK client name, and the way to play (on its own or with the JACK transport). The generated command line can be shown at any time. The program is also usable alone, and keeps all its options:
+Repeat (none, the file or the list), resampling quality, playback buffer, JACK client name, the way to play (on its own or with the JACK transport), and where the levels are shown. The generated command line can be shown at any time. The program is also usable alone, and keeps all its options:
 
 ```
 jack_play [options] sound-file...
 ```
 
 The settings of the application are kept between launches. The interface is in French, English, German, Italian and Spanish. The German, Italian and Spanish translations have not been reviewed by native speakers. It needs macOS 15 or later.
+
+## Uninstall
+
+There is no uninstaller. To remove what the package installed:
+
+```
+sudo rm -rf "/Applications/Jack Apps Collection/Jack Play.app" /usr/local/bin/jack_play /usr/local/share/doc/jack_play
+sudo pkgutil --forget io.github.zinc75.jackappscollection.jackplay.pkg
+```
+
+The settings of the application are in `~/Library/Preferences/io.github.zinc75.jackappscollection.jackplay.plist`; `defaults delete io.github.zinc75.jackappscollection.jackplay` removes them. Your sound files and playlists are not touched.
 
 ## Support
 
