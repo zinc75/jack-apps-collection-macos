@@ -47,7 +47,15 @@ Tools are built for Apple Silicon and Intel, and get a SwiftUI application where
 
 Each tool keeps its original sources untouched in `upstream/`, with the changes needed for macOS as patches in `patches/`. Fixes that are not specific to this repository are sent to the original authors.
 
-The core of Klick is the [klick-tempo](https://github.com/zinc75/klick-tempo) repository, included as a Git submodule: clone with `git clone --recurse-submodules`.
+Some folders are Git submodules, each fixed at a given commit of its own repository:
+
+| Submodule | What it is |
+|---|---|
+| `jack_capture/upstream` | `jack_capture` by Kjetil Matheussen, from its [official repository](https://github.com/kmatheussen/jack_capture), unmodified |
+| `klick/klick-tempo` | [klick-tempo](https://github.com/zinc75/klick-tempo), the core of Klick and the same application without JACK, in its own repository |
+| `klick/klick-tempo/klick/upstream` | `klick` by Dominic Sacré, from its [official repository](https://github.com/dsacre/klick), unmodified, inside klick-tempo |
+
+Clone with `git clone --recurse-submodules`, or run `git submodule update --init --recursive` in a clone made without it.
 
 ## Support
 
