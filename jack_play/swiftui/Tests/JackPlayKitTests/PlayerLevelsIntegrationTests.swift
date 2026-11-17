@@ -65,6 +65,10 @@ final class PlayerLevelsIntegrationTests: XCTestCase {
         XCTAssertEqual(highest[0], 0.5, accuracy: 0.01)
         XCTAssertEqual(highest[1], 0.25, accuracy: 0.01, "the second channel is 6 dB under the first, as in the file")
 
+        // A steady tone reads steady: the lines come about thirty times a second, none of them with the zeros of a window too short.
+        let steady = levels(box.events).dropFirst(3)
+        XCTAssertTrue(steady.allSatisfy { $0[0] > 0.45 && $0[1] > 0.2 }, "the levels do not flicker: \(steady.map { $0[0] })")
+
         // Through the meters of the display, as the application will show them.
         var tracker = LevelTracker()
         tracker.update(peaks: highest)

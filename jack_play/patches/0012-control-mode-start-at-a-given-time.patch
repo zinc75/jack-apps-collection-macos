@@ -21,7 +21,7 @@ between the two (before, up to one period, 5 to 20 ms depending on the length
 of the file), and no overlap.
 --- a/cmd/rju-play.c
 +++ b/cmd/rju-play.c
-@@ -72,6 +72,12 @@
+@@ -73,6 +73,12 @@
  	   at the start of a cycle and publishes where it is in pub_pos and pub_state. */
  	i64 ctl_seek; /* frame of the file to go to, -1 for none */
  	int ctl_play; /* 1 to play, 0 to pause */
@@ -34,7 +34,7 @@ of the file), and no overlap.
  	int quit; /* set to stop the disk thread */
  	i64 file_frames; /* frames of the file */
  	double file_rate;
-@@ -286,6 +292,7 @@
+@@ -287,6 +293,7 @@
  			d->in_frames = 0;
  			d->out_frames = 0;
  			d->ended = 0;
@@ -42,7 +42,7 @@ of the file), and no overlap.
  			/* The output starts again from silence: it fades in, instead of
  			   starting in the middle of the waveform with a click. */
  			d->playing = 0;
-@@ -310,8 +317,32 @@
+@@ -311,8 +318,32 @@
  	   been played.  The ring buffer is left alone, so playing goes on
  	   from where it stopped. */
  	int want = 1;
@@ -75,7 +75,7 @@ of the file), and no overlap.
  		if (d->ended || (!d->playing && !want)) {
  			signal_set(d->out, nframes, d->channels, 0.0);
  			__atomic_store_n(&d->pub_state, d->ended ? 2 : 0, __ATOMIC_RELEASE);
-@@ -337,7 +368,7 @@
+@@ -338,7 +369,7 @@
  	   frames acquired. */
  	long err = src_callback_read(d->src,
  		d->o.src_ratio,
@@ -84,7 +84,7 @@ of the file), and no overlap.
  		d->j_buffer);
  	die_when(err == 0,
  		"rju-play: sample rate converter failed: %s\n",
-@@ -356,9 +387,14 @@
+@@ -357,9 +388,14 @@
  	}
  
  	/* Uninterleave available data to the output buffers. */
@@ -100,7 +100,7 @@ of the file), and no overlap.
  		}
  	}
  
-@@ -366,13 +402,25 @@
+@@ -367,13 +403,25 @@
  	   output buffers.  The print statement is not correct, a this
  	   should set a flag and have another thread take appropriate
  	   action. */
@@ -129,7 +129,7 @@ of the file), and no overlap.
  	}
  
  	/* Control mode: a short ramp when playing starts or stops, so that
-@@ -527,6 +575,11 @@
+@@ -537,6 +585,11 @@
  		r->last_pos = pos;
  		r->last_state = state;
  	}
@@ -138,10 +138,10 @@ of the file), and no overlap.
 +		printf("end %u\n", (unsigned)d->end_time);
 +		__atomic_store_n(&d->end_state, 2, __ATOMIC_RELEASE);
 +	}
- 	/* The levels: take them, and say them while there is sound (and once more, with the zeros). */
- 	bool sound = false;
- 	float peaks[256];
-@@ -566,14 +619,21 @@
+ 	/* The levels are said about thirty times a second, whatever the rate this is called at: a peak is the highest sample since the
+ 	 * last line, and a window shorter than an audio cycle would show a level and then zeros. */
+ 	i64 now = monotonic_ns();
+@@ -584,14 +637,21 @@
  static void control_command(struct player *d, const char *line)
  {
  	long n;
@@ -163,7 +163,7 @@ of the file), and no overlap.
  		__atomic_store_n(&d->ctl_seek, (i64)(n < 0 ? 0 : n), __ATOMIC_RELEASE);
  	} else if (strcmp(line, "quit") == 0) {
  		__atomic_store_n(&d->quit, 1, __ATOMIC_RELEASE);
-@@ -624,6 +684,8 @@
+@@ -642,6 +702,8 @@
  	d.out_frames = 0;
  	d.ctl_seek = -1;
  	d.ctl_play = 0;

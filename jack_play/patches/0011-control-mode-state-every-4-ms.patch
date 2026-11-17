@@ -4,9 +4,60 @@ The control thread wakes up to say where the player is. At 33 ms the end of the
 file was reported up to 33 ms late, and a program that chains files starts the
 next one on that report: the gap between two files varied by that much. At 4 ms it
 varies by at most that, at no measurable cost.
+
+The levels keep their own pace: about thirty times a second, whatever the rate the
+loop wakes up at (a peak is the highest sample since the last line, and a window of
+4 ms is shorter than a cycle of the server: it would say a level, then zeros).
+
 --- a/cmd/rju-play.c
 +++ b/cmd/rju-play.c
-@@ -588,7 +588,8 @@
+@@ -7,6 +7,7 @@
+ #include <math.h>
+ #include <pthread.h> /* Posix */
+ #include <poll.h>
++#include <time.h>
+ #include <unistd.h>
+ 
+ #include <jack/jack.h> /* Jack */
+@@ -508,13 +509,22 @@
+ 	i64 last_pos;
+ 	int last_state;
+ 	bool last_sound;
++	i64 last_lev_ns;
+ };
++
++static i64 monotonic_ns(void)
++{
++	struct timespec t;
++	clock_gettime(CLOCK_MONOTONIC, &t);
++	return (i64)t.tv_sec * 1000000000 + t.tv_nsec;
++}
+ 
+ static void report_init(struct report_state *r)
+ {
+ 	r->last_pos = -1;
+ 	r->last_state = -1;
+ 	r->last_sound = false;
++	r->last_lev_ns = -1;
+ }
+ 
+ static void report(struct player *d, struct report_state *r)
+@@ -527,6 +537,14 @@
+ 		r->last_pos = pos;
+ 		r->last_state = state;
+ 	}
++	/* The levels are said about thirty times a second, whatever the rate this is called at: a peak is the highest sample since the
++	 * last line, and a window shorter than an audio cycle would show a level and then zeros. */
++	i64 now = monotonic_ns();
++	if (r->last_lev_ns >= 0 && now - r->last_lev_ns < 30000000) {
++		fflush(stdout);
++		return;
++	}
++	r->last_lev_ns = now;
+ 	/* The levels: take them, and say them while there is sound (and once more, with the zeros). */
+ 	bool sound = false;
+ 	float peaks[256];
+@@ -588,7 +606,8 @@
  	report_init(&rs);
  	while (!stopping(d)) {
  		struct pollfd p = { 0, POLLIN, 0 };
