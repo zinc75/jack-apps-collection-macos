@@ -169,6 +169,62 @@
         }
       }
     },
+    "%lld/%lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld/%lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld/%lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld/%lld"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld/%lld"
+          }
+        }
+      }
+    },
+    "%lld/%lld reliées" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld/%lld verbunden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld/%lld connected"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld/%lld conectadas"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld/%lld collegate"
+          }
+        }
+      }
+    },
     "1 entrée" : {
       "localizations" : {
         "de" : {
@@ -529,6 +585,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ferma la riproduzione (o mettila in pausa) per cambiare questa impostazione."
+          }
+        }
+      }
+    },
+    "Arrêtez la lecture, ou ouvrez ce fichier, pour modifier ses branchements." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wiedergabe anhalten oder diese Datei öffnen, um ihre Verbindungen zu ändern."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop playback, or open this file, to change its connections."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Detenga la reproducción, o abra este archivo, para cambiar sus conexiones."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ferma la riproduzione, o apri questo file, per modificarne le connessioni."
           }
         }
       }
@@ -1289,6 +1373,62 @@
         }
       }
     },
+    "Dans la voie" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Im Kanal"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In the channel"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En el canal"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nel canale"
+          }
+        }
+      }
+    },
+    "Dessous" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Darunter"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Below"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Debajo"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sotto"
+          }
+        }
+      }
+    },
     "Double-clic pour lire à partir d'un fichier. Glissez les lignes pour changer l'ordre." : {
       "localizations" : {
         "de" : {
@@ -1453,6 +1593,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "disattivo"
+          }
+        }
+      }
+    },
+    "Désactivés, les niveaux ne sont plus mesurés." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ausgeschaltet werden die Pegel nicht mehr gemessen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When off, the levels are no longer measured."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desactivados, los niveles dejan de medirse."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disattivati, i livelli non vengono più misurati."
           }
         }
       }
@@ -1789,6 +1957,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Forma d'onda"
+          }
+        }
+      }
+    },
+    "Forme d'onde et niveaux" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wellenform und Pegel"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waveform and levels"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forma de onda y niveles"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forma d'onda e livelli"
           }
         }
       }
@@ -2549,6 +2745,34 @@
         }
       }
     },
+    "Modifier les branchements de ce fichier" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verbindungen dieser Datei ändern"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change the connections of this file"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambiar las conexiones de este archivo"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifica le connessioni di questo file"
+          }
+        }
+      }
+    },
     "Modifier…" : {
       "localizations" : {
         "de" : {
@@ -2629,6 +2853,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Livello all'uscita di jack_play, indipendente dai collegamenti."
+          }
+        }
+      }
+    },
+    "Niveaux" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pegel"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Levels"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Niveles"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Livelli"
           }
         }
       }
@@ -3765,6 +4017,34 @@
         }
       }
     },
+    "Sous la forme d'onde, ou dans chaque voie à droite." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unter der Wellenform oder rechts neben jedem Kanal."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Under the waveform, or beside each channel on the right."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bajo la forma de onda, o junto a cada canal a la derecha."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sotto la forma d'onda, o accanto a ogni canale a destra."
+          }
+        }
+      }
+    },
     "Système" : {
       "localizations" : {
         "de" : {
@@ -4181,6 +4461,62 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mostra la lista"
+          }
+        }
+      }
+    },
+    "Vumètres" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pegelanzeigen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meters"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Medidores"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indicatori di livello"
+          }
+        }
+      }
+    },
+    "Vumètres désactivés : les niveaux ne sont plus mesurés. La lecture n'est pas affectée." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pegelanzeigen aus: die Pegel werden nicht mehr gemessen. Die Wiedergabe ist nicht betroffen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meters off: the levels are no longer measured. Playback is not affected."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Medidores desactivados: los niveles dejan de medirse. La reproducción no se ve afectada."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indicatori disattivati: i livelli non vengono più misurati. La riproduzione non è influenzata."
           }
         }
       }

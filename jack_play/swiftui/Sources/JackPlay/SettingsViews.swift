@@ -321,6 +321,7 @@ struct AdvancedView: View {
 // MARK: Display
 
 struct DisplayView: View {
+    @Environment(AppModel.self) private var model
     @Environment(AppearanceSettings.self) private var appearance
 
     var body: some View {
@@ -329,6 +330,19 @@ struct DisplayView: View {
             SettingsGroup("Apparence") {
                 OptionRow("Apparence") { AppearanceModePicker(settings: appearance) }
                 OptionRow("Couleur d'accent") { AccentSwatches(settings: appearance) }
+            }
+            SettingsGroup("Forme d'onde et niveaux") {
+                OptionRow("Niveaux de sortie", "Sous la forme d'onde, ou dans chaque voie à droite.") {
+                    Picker("Niveaux de sortie", selection: Binding(get: { model.levelsPlacement }, set: { model.set(levelsPlacement: $0) })) {
+                        Text("Dessous").tag(LevelsPlacement.below)
+                        Text("Dans la voie").tag(LevelsPlacement.inline)
+                    }
+                    .labelsHidden().pickerStyle(.segmented).fixedSize().accentTint()
+                }
+                OptionRow("Vumètres", "Désactivés, les niveaux ne sont plus mesurés.") {
+                    Toggle("Vumètres", isOn: Binding(get: { model.player.metersEnabled }, set: { model.set(metersEnabled: $0) }))
+                        .labelsHidden().toggleStyle(.switch).accentTint()
+                }
             }
         }
     }

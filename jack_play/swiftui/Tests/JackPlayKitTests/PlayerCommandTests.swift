@@ -78,6 +78,8 @@ final class PlayerCommandTests: XCTestCase {
         var parser = PlayerLogParser()
         XCTAssertEqual(parser.feed(Data("end 4294967000\nend nonsense\n".utf8)), [.endAnnounced(4_294_967_000), .message("end nonsense")])
         XCTAssertEqual(PlayerControl.playAt(123).line, "play at 123")
+        XCTAssertEqual(PlayerControl.levels(false).line, "levels off")
+        XCTAssertEqual(PlayerControl.levels(true).line, "levels on")
     }
 
     func testTheProgramSaysTheNameOfItsClient() {

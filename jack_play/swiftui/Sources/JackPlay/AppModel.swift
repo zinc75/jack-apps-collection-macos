@@ -12,6 +12,11 @@ enum Page: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
+/// Where the output levels are shown: under the waveform, or beside the lane of each channel.
+enum LevelsPlacement: String {
+    case below, inline
+}
+
 /// What the window needs besides the player: the page shown, the settings kept between launches, opening a file.
 @MainActor
 @Observable
@@ -20,6 +25,7 @@ final class AppModel {
     let graph = PlaybackGraph()
     let player: PlayerModel
     let playlist: PlaylistModel
+    var levelsPlacement: LevelsPlacement = .inline
     private let defaults: UserDefaults?
     /// A move on the waveform that is waiting to be sent: scrubbing sends at most one every 30 ms.
     @ObservationIgnored private var pendingSeek: Double?
@@ -27,6 +33,7 @@ final class AppModel {
 
     private enum Key {
         static let converter = "converter", buffer = "bufferFrames", name = "clientName", loop = "loop"
+        static let metersEnabled = "metersEnabled", levelsPlacement = "levelsPlacement"
         static let list = "playlist", listCurrent = "playlistCurrent", repeatMode = "repeatMode"
         static let mode = "mode", autoConnect = "autoConnect", commandsTransport = "commandsTransport", lastFolder = "lastFolder"
     }
@@ -48,6 +55,8 @@ final class AppModel {
         }
         if d.object(forKey: Key.autoConnect) != nil { player.autoConnect = d.bool(forKey: Key.autoConnect) }
         if d.object(forKey: Key.commandsTransport) != nil { player.commandsTransport = d.bool(forKey: Key.commandsTransport) }
+        if d.object(forKey: Key.metersEnabled) != nil { player.metersEnabled = d.bool(forKey: Key.metersEnabled) }
+        levelsPlacement = d.string(forKey: Key.levelsPlacement).flatMap(LevelsPlacement.init(rawValue:)) ?? .inline
         self.player = player
         let playlist = PlaylistModel(player: player)
         self.playlist = playlist
@@ -218,6 +227,16 @@ final class AppModel {
     }
 
     // MARK: Settings, kept as they change
+
+    func set(metersEnabled: Bool) {
+        player.metersEnabled = metersEnabled
+        defaults?.set(metersEnabled, forKey: Key.metersEnabled)
+    }
+
+    func set(levelsPlacement: LevelsPlacement) {
+        self.levelsPlacement = levelsPlacement
+        defaults?.set(levelsPlacement.rawValue, forKey: Key.levelsPlacement)
+    }
 
     func set(repeatMode: RepeatMode) {
         playlist.setRepeat(repeatMode)

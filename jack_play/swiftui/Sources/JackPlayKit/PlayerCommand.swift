@@ -114,6 +114,8 @@ public enum PlayerControl: Equatable, Sendable {
     /// Play from the beginning of the cycle in which this time of JACK comes (see `PlayerEvent.endAnnounced`).
     case playAt(UInt32)
     case pause
+    /// Measure the levels (the default) or not: the program then says no more levels and does no work for them.
+    case levels(Bool)
     /// A frame of the file (not of the server).
     case seek(Int64)
     case quit
@@ -124,6 +126,7 @@ public enum PlayerControl: Equatable, Sendable {
         case .play: return "play"
         case .playAt(let time): return "play at \(time)"
         case .pause: return "pause"
+        case .levels(let on): return on ? "levels on" : "levels off"
         case .seek(let frame): return "seek \(max(frame, 0))"
         case .quit: return "quit"
         }

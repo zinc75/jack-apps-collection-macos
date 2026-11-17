@@ -10,10 +10,14 @@ public struct MeterBars: View {
     let scale: any MeterScale
     let label: LocalizedStringKey
     let scaleMarks: [Double]
+    let requestedColumns: Int?
 
     /// `scale` places the levels, and the `scaleMarks` (dBFS) under the bars; `label` is read by VoiceOver.
+    /// `columns`: how many columns the channels go in, when the application lays them out like another view (the lanes of a
+    /// waveform); nil puts them in two columns from 17 channels, and then the rows get thinner as channels are added.
     public init(meters: [ChannelMeter], channels: Int, scale: any MeterScale, label: LocalizedStringKey,
-                scaleMarks: [Double] = [-50, -40, -30, -20, -10, -3, 0]) {
+                scaleMarks: [Double] = [-50, -40, -30, -20, -10, -3, 0], columns: Int? = nil) {
+        self.requestedColumns = columns
         self.meters = meters
         self.channels = channels
         self.scale = scale
@@ -24,10 +28,13 @@ public struct MeterBars: View {
     private static let labelWidth: CGFloat = 30
 
     private var count: Int { max(channels, meters.count) }
-    private var columns: Int { count > 16 ? 2 : 1 }
+    private var columns: Int { max(requestedColumns ?? (count > 16 ? 2 : 1), 1) }
     private var rowsPerColumn: Int { (count + columns - 1) / columns }
-    /// Rows get thinner as channels are added.
-    private var rowHeight: CGFloat { count <= 2 ? 34 : count <= 4 ? 28 : count <= 8 ? 22 : count <= 16 ? 17 : 15 }
+    /// Rows get thinner as channels are added (as the rows of a column, when the columns are asked for).
+    private var rowHeight: CGFloat {
+        let n = requestedColumns == nil ? count : rowsPerColumn
+        return n <= 2 ? 34 : n <= 4 ? 28 : n <= 8 ? 22 : n <= 16 ? 17 : 15
+    }
     private var totalHeight: CGFloat { CGFloat(rowsPerColumn) * rowHeight + 18 }
 
     public var body: some View {

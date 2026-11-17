@@ -3,6 +3,7 @@
 import AppearanceKit
 import JackPlayKit
 import MatrixKit
+import MeterKit
 import SwiftUI
 import WaveformKit
 
@@ -156,7 +157,7 @@ extension PlaylistView {
 
 /// The widths of the columns, shared by the header and the rows.
 private enum PlaylistColumns {
-    static let grip: CGFloat = 14, place: CGFloat = 22, channels: CGFloat = 62, rate: CGFloat = 76, duration: CGFloat = 60, trash: CGFloat = 24, rowHeight: CGFloat = 52
+    static let grip: CGFloat = 14, place: CGFloat = 22, channels: CGFloat = 62, rate: CGFloat = 76, duration: CGFloat = 60, levels: CGFloat = 80, outputs: CGFloat = 120, trash: CGFloat = 24, rowHeight: CGFloat = 52
 
     static var header: some View {
         HStack(spacing: 10) {
@@ -166,6 +167,8 @@ private enum PlaylistColumns {
             Text("Voies").frame(width: channels, alignment: .trailing)
             Text("Fréquence").frame(width: rate, alignment: .trailing)
             Text("Durée").frame(width: duration, alignment: .trailing)
+            Text("Sorties").frame(width: outputs, alignment: .leading)
+            Text("Niveaux").frame(width: levels, alignment: .center)
             Color.clear.frame(width: trash)
         }
         .font(.caption).foregroundStyle(.secondary)
@@ -213,6 +216,16 @@ private struct PlaylistRow: View {
                     .foregroundStyle(differs ? Color.orange : Color.primary).frame(width: PlaylistColumns.rate, alignment: .trailing)
                     .help(differs ? Text("La fréquence du fichier diffère de celle de JACK : il est rééchantillonné.") : Text(verbatim: ""))
                 Text(verbatim: TimeFormat.clock(info.duration)).frame(width: PlaylistColumns.duration, alignment: .trailing)
+                outputs(info, current: current)
+                // The levels of the file that is open, all the time, after the outputs as they are measured just before the ports.
+                Group {
+                    if current, model.player.metersEnabled {
+                        MiniMeters(meters: model.player.meters, channels: info.channels)
+                            .padding(.horizontal, 6).padding(.vertical, 5)
+                            .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 6))
+                    } else { Color.clear }
+                }
+                .frame(width: PlaylistColumns.levels, height: 34)
             } else {
                 Chip(text: Text("Introuvable"), kind: .warn, symbol: "exclamationmark.triangle.fill")
             }
@@ -241,6 +254,35 @@ private struct PlaylistRow: View {
             .onEnded { _ in dragEnded() })
         .offset(y: offset)
         .animation(isDragged ? nil : .snappy(duration: 0.15), value: offset)
+    }
+
+    /// Where the file goes: the clients it is connected to, and how many of its channels are. A click shows the connections.
+    private func outputs(_ info: SoundFileInfo, current: Bool) -> some View {
+        let routing = model.player.routing(for: url, channels: info.channels)
+        let used = routing.connectedChannels
+        let complete = used == info.channels
+        // The connections of a file that is not open are changed by opening it, which would stop the one that plays.
+        let canEdit = current || !model.player.isPlaying
+        return Button {
+            if !current { model.playlist.select(index, play: false) }
+            model.page = .outputs
+        } label: {
+            HStack(spacing: 6) {
+                HStack(spacing: -5) {
+                    ForEach(Array(routing.clients.prefix(3).enumerated()), id: \.offset) { _, name in
+                        let known = model.graph.destinations.first { $0.name == name }
+                        BadgeView(client: name, isPlayback: name == "system", isJackMoebiusMaster: known?.isJackMoebiusMaster ?? false,
+                                  size: 16, bundleID: known?.bundleID)
+                    }
+                }
+                Text(complete ? Plural.connectedFraction(used, info.channels) : Plural.partiallyConnected(used, info.channels))
+                    .font(.caption).foregroundStyle(complete ? Color.secondary : Color.orange)
+            }
+            .frame(width: PlaylistColumns.outputs, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).disabled(!canEdit)
+        .help(canEdit ? Text("Modifier les branchements de ce fichier") : Text("Arrêtez la lecture, ou ouvrez ce fichier, pour modifier ses branchements."))
     }
 
     /// The place of the file, or what it does if it is the one that plays.
@@ -292,5 +334,43 @@ private struct LiftedRowBackground: View {
         } else {
             Rectangle().fill(.regularMaterial).shadow(radius: 6)
         }
+    }
+}
+
+/// The levels of every channel of the file that plays, in a small space: one thin bar per channel, as many as there are
+/// channels (at 64 channels of an ambisonic file the bars are a pixel wide: they show the shape of the levels, not each one).
+private struct MiniMeters: View {
+    let meters: [ChannelMeter]
+    let channels: Int
+
+    var body: some View {
+        let meters = self.meters   // read here, so that the view is rebuilt when they change
+        Canvas { context, size in
+            let n = max(channels, 1)
+            let gap: CGFloat = n > 16 ? 0 : 1
+            // At most 6 points wide: one or two channels are thin bars, not a rectangle that fills the column.
+            let width = min(max((size.width - gap * CGFloat(n - 1)) / CGFloat(n), 1), 6)
+            // The bars as a group are centred in the column.
+            let origin = (size.width - (width * CGFloat(n) + gap * CGFloat(n - 1))) / 2
+            let gradient = Gradient(stops: [
+                .init(color: Color(red: 0.13, green: 0.77, blue: 0.37), location: 0),
+                .init(color: Color(red: 0.13, green: 0.77, blue: 0.37), location: 0.55),
+                .init(color: Color(red: 0.98, green: 0.80, blue: 0.08), location: 0.78),
+                .init(color: Color(red: 0.94, green: 0.27, blue: 0.27), location: 1),
+            ])
+            for i in 0..<n {
+                let x = origin + CGFloat(i) * (width + gap)
+                let level = i < meters.count ? min(meters[i].level, 1) : 0
+                context.fill(Path(CGRect(x: x, y: 0, width: width, height: size.height)), with: .color(.primary.opacity(0.09)))
+                if level > 0 {
+                    let h = size.height * level
+                    var layer = context
+                    layer.clip(to: Path(CGRect(x: x, y: 0, width: width, height: size.height)))
+                    layer.fill(Path(CGRect(x: x, y: size.height - h, width: width, height: h)),
+                               with: .linearGradient(gradient, startPoint: CGPoint(x: 0, y: size.height), endPoint: CGPoint(x: 0, y: 0)))
+                }
+            }
+        }
+        .accessibilityHidden(true)
     }
 }

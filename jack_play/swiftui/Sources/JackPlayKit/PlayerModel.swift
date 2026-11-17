@@ -82,6 +82,21 @@ public final class PlayerModel {
     /// Frame of the file the player is at.
     public private(set) var position: Int64 = 0
     public private(set) var meters: [ChannelMeter] = []
+    /// Whether the levels are measured. Off, the program is told so (in the mode where the application drives it) and the
+    /// meters stay empty: nothing is measured, nothing is shown.
+    public var metersEnabled = true {
+        didSet {
+            guard metersEnabled != oldValue else { return }
+            if mode == .independent {
+                runner?.send(.levels(metersEnabled))
+                standby?.runner.send(.levels(metersEnabled))
+            }
+            if !metersEnabled {
+                tracker.reset()
+                meters = []
+            }
+        }
+    }
     public private(set) var routing = ChannelRouting.empty(channels: 0)
     /// The warnings the program wrote ("disk thread late"), since the file was opened.
     public private(set) var warnings = 0
@@ -201,6 +216,14 @@ public final class PlayerModel {
     public var commandLine: String? { file.map { command(for: $0.url, frame: nil, number: currentNumber).display() } }
     /// A destination of the routing is connected twice over: several channels feed the same port.
     public var summedPorts: Set<String> { routing.summedPorts }
+
+    /// Where the channels of a file go: the routing that is in use if it is the file that is open, else the one kept for the
+    /// file, else the one it gets the first time (the first outputs of the system). For the list, which shows it.
+    public func routing(for url: URL, channels: Int) -> ChannelRouting {
+        if let file, file.url == url, file.info.channels == channels { return routing }
+        return store.routing(for: FileKey(url: url), channels: channels)
+            ?? DefaultRouting.make(channels: channels, playbackPorts: server.playbackPorts)
+    }
 
     // MARK: Opening
 
@@ -440,6 +463,7 @@ public final class PlayerModel {
                 manager.attach(client: client, routing: autoConnect ? routing : .empty(channels: file?.info.channels ?? 0))
                 missingPorts = manager.missingPorts
             }
+            if mode == .independent, !metersEnabled { runner?.send(.levels(false)) }
             if playAtReady { mode == .independent ? runner?.send(.play) : server.transportStart() }
             refreshStandby()
         case .position(let frame, let state):
@@ -458,6 +482,7 @@ public final class PlayerModel {
                 endReported = false
             }
         case .levels(let peaks):
+            guard metersEnabled else { return }
             lastLevelAt = Date()
             tracker.update(peaks: peaks)
             meters = tracker.meters
@@ -537,6 +562,7 @@ public final class PlayerModel {
             s.ready = true
             s.serverRate = serverRate
             standby = s
+            if !metersEnabled { s.runner.send(.levels(false)) }
             if let client = s.runner.clientName {
                 s.manager.attach(client: client, routing: autoConnect ? s.routing : .empty(channels: s.file.info.channels))
             }

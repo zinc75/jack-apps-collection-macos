@@ -236,6 +236,32 @@ final class PlayerModelTests: XCTestCase {
         XCTAssertTrue(model.meters[0].clipped)
     }
 
+    func testSwitchingTheMetersOffTellsTheProgramAndEmptiesThem() throws {
+        let (model, _) = make()
+        model.open(try wav())
+        runner.ready()
+        runner.say(.levels([0.5, 0.5]))
+        XCTAssertEqual(model.meters.count, 2)
+        model.metersEnabled = false
+        XCTAssertEqual(runner.controls.last, .levels(false))
+        XCTAssertTrue(model.meters.isEmpty)
+        runner.say(.levels([0.9, 0.9]))
+        XCTAssertTrue(model.meters.isEmpty, "what a slow program still says is not shown")
+        model.metersEnabled = true
+        XCTAssertEqual(runner.controls.last, .levels(true))
+        runner.say(.levels([0.5, 0.5]))
+        XCTAssertEqual(model.meters.count, 2)
+    }
+
+    func testAProgramStartedWithTheMetersOffIsToldWhenItIsReady() throws {
+        let (model, _) = make()
+        model.metersEnabled = false
+        model.open(try wav())
+        XCTAssertTrue(runner.controls.isEmpty)
+        runner.ready()
+        XCTAssertEqual(runner.controls, [.levels(false)])
+    }
+
     func testTheMetersFallByThemselvesWhenTheProgramSaysNothing() throws {
         let (model, _) = make()
         model.open(try wav())

@@ -135,6 +135,18 @@ final class PlaylistModelTests: XCTestCase {
         XCTAssertTrue(runners[0].controls.isEmpty)
     }
 
+    func testTheListKnowsWhereEachFileGoes() throws {
+        let (list, player) = make()
+        let u = try urls(2)
+        list.replace(with: u)
+        runners[0].ready()
+        // The file that is open: the routing in use. The other one: what it gets the first time.
+        XCTAssertEqual(player.routing(for: u[0], channels: 2).connectedChannels, 2)
+        XCTAssertEqual(player.routing(for: u[1], channels: 2), DefaultRouting.make(channels: 2, playbackPorts: ["system:playback_1", "system:playback_2"]))
+        player.setRouting(ChannelRouting(channels: [["Carla:in1"], []]))
+        XCTAssertEqual(player.routing(for: u[0], channels: 2).connectedChannels, 1)
+    }
+
     func testTheApplicationIsToldAboutChanges() throws {
         let (list, _) = make()
         var changes = 0

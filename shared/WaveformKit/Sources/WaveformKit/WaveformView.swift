@@ -27,6 +27,7 @@ public struct WaveformView: View {
     let clipColor: Color
     let accessibilityLabel: LocalizedStringKey
     let onSeek: ((Double) -> Void)?
+    let channelRange: Range<Int>?
 
     /// - Parameters:
     ///   - peaks: the peaks, which can be incomplete while the file is being read; nil shows empty lanes.
@@ -34,9 +35,12 @@ public struct WaveformView: View {
     ///   - position: from 0 to 1.
     ///   - playedColor: take it from the accent of the application, not from the system one.
     ///   - onSeek: called with the position asked, from 0 to 1.
+    ///   - channelRange: show only these channels (a column of a file with many channels); nil shows them all.
     public init(peaks: WaveformPeaks?, channels: Int = 2, position: Double, laneHeight: CGFloat = 60,
                 playedColor: Color, unplayedColor: Color = .secondary.opacity(0.55), clipColor: Color = .red,
-                accessibilityLabel: LocalizedStringKey = "Waveform", onSeek: ((Double) -> Void)? = nil) {
+                accessibilityLabel: LocalizedStringKey = "Waveform", onSeek: ((Double) -> Void)? = nil,
+                channelRange: Range<Int>? = nil) {
+        self.channelRange = channelRange
         self.peaks = peaks
         self.channels = channels
         self.position = position
@@ -48,7 +52,8 @@ public struct WaveformView: View {
         self.onSeek = onSeek
     }
 
-    private var laneCount: Int { max(peaks?.channels ?? channels, 1) }
+    private var firstLane: Int { channelRange?.lowerBound ?? 0 }
+    private var laneCount: Int { channelRange?.count ?? max(peaks?.channels ?? channels, 1) }
     public var height: CGFloat { CGFloat(laneCount) * laneHeight }
 
     public var body: some View {
@@ -56,9 +61,9 @@ public struct WaveformView: View {
         GeometryReader { geometry in
             let width = geometry.size.width
             ZStack(alignment: .leading) {
-                BarsLayer(peaks: peaks, laneCount: laneCount, laneHeight: laneHeight, color: unplayedColor, clipColor: clipColor, grid: true)
+                BarsLayer(peaks: peaks, firstLane: firstLane, laneCount: laneCount, laneHeight: laneHeight, color: unplayedColor, clipColor: clipColor, grid: true)
                     .equatable()
-                BarsLayer(peaks: peaks, laneCount: laneCount, laneHeight: laneHeight, color: playedColor, clipColor: clipColor, grid: false)
+                BarsLayer(peaks: peaks, firstLane: firstLane, laneCount: laneCount, laneHeight: laneHeight, color: playedColor, clipColor: clipColor, grid: false)
                     .equatable()
                     .mask(alignment: .leading) { Rectangle().frame(width: width * fraction) }
                 Rectangle()
@@ -91,6 +96,8 @@ public struct WaveformView: View {
 /// only the position of the playback moves.
 private struct BarsLayer: View, Equatable {
     let peaks: WaveformPeaks?
+    /// The channel drawn in the first lane (a column that starts at channel 33 has 32).
+    let firstLane: Int
     let laneCount: Int
     let laneHeight: CGFloat
     let color: Color
@@ -101,7 +108,7 @@ private struct BarsLayer: View, Equatable {
         a.peaks?.filledFrames == b.peaks?.filledFrames && a.peaks?.readColumnCount == b.peaks?.readColumnCount
             && a.peaks?.totalFrames == b.peaks?.totalFrames
             && a.peaks?.channels == b.peaks?.channels && a.peaks?.columns == b.peaks?.columns
-            && a.laneCount == b.laneCount && a.laneHeight == b.laneHeight
+            && a.firstLane == b.firstLane && a.laneCount == b.laneCount && a.laneHeight == b.laneHeight
             && a.color == b.color && a.clipColor == b.clipColor && a.grid == b.grid
     }
 
@@ -117,8 +124,8 @@ private struct BarsLayer: View, Equatable {
                     context.fill(Path(CGRect(x: 0, y: mid - 0.25, width: size.width, height: 0.5)), with: .color(.secondary.opacity(0.25)))
                     context.fill(Path(CGRect(x: 0, y: top + laneHeight - 0.25, width: size.width, height: 0.5)), with: .color(.secondary.opacity(0.18)))
                 }
-                guard let peaks, lane < peaks.channels else { continue }
-                let bars = peaks.bars(channel: lane, count: count)
+                guard let peaks, firstLane + lane < peaks.channels else { continue }
+                let bars = peaks.bars(channel: firstLane + lane, count: count)
                 for i in 0..<count where bars.read[i] {
                     let lo = bars.minimums[i], hi = bars.maximums[i]
                     let y0 = mid - CGFloat(min(hi, 1)) * half, y1 = mid - CGFloat(max(lo, -1)) * half

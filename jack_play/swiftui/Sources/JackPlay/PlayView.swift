@@ -17,7 +17,7 @@ struct PlayView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     header(file)
                     timePanel(file)
-                    levelsPanel(file)
+                    if model.levelsPlacement == .below { levelsPanel(file) }
                     connectionsPanel(file)
                 }
                 .padding(.horizontal, 26).padding(.top, 6).padding(.bottom, 16)
@@ -74,7 +74,6 @@ struct PlayView: View {
     private func timePanel(_ file: OpenFile) -> some View {
         let player = model.player
         let wf = player.waveform
-        let lane: CGFloat = file.info.channels > 8 ? 18 : file.info.channels > 2 ? 30 : 60
         return Card {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .firstTextBaseline, spacing: 12) {
@@ -88,26 +87,50 @@ struct PlayView: View {
                     Text(verbatim: "−" + TimeFormat.clock(max(player.duration - player.positionSeconds, 0)))
                         .font(.system(size: 13)).monospacedDigit().foregroundStyle(.secondary)
                 }
-                HStack(alignment: .top, spacing: 10) {
-                    VStack(spacing: 0) {
-                        Color.clear.frame(height: TimeRulerView.height)
-                        ForEach(0..<file.info.channels, id: \.self) { channel in
-                            ChannelNumber(number: channel + 1).frame(height: lane)
-                        }
-                    }
-                    .frame(width: 30)
-                    VStack(spacing: 0) {
-                        TimeRulerView(duration: player.duration)
-                        ZStack {
-                            WaveformView(peaks: wf.finishedPeaks, channels: file.info.channels, position: player.fraction,
-                                         laneHeight: lane, playedColor: accent, accessibilityLabel: "Forme d'onde",
-                                         onSeek: { model.scrub(to: $0) })
-                            if wf.state == .loading {
-                                ProgressView(value: wf.progress).progressViewStyle(.linear).frame(width: 220).accentTint()
-                            }
-                        }
+                // A file with many channels is shown in columns, each with its own ruler: the lanes keep a height that can be read.
+                let layout = LaneLayout(channels: file.info.channels)
+                HStack(alignment: .top, spacing: 18) {
+                    ForEach(0..<layout.columns, id: \.self) { column in
+                        laneColumn(file, range: layout.range(column), lane: layout.laneHeight, wf: wf)
                     }
                 }
+            }
+        }
+    }
+
+    /// The lanes of some channels: their numbers, the ruler and the waveform, and the levels beside them when they are asked for there.
+    private func laneColumn(_ file: OpenFile, range: Range<Int>, lane: CGFloat, wf: WaveformModel) -> some View {
+        let player = model.player
+        return HStack(alignment: .top, spacing: 10) {
+            VStack(spacing: 0) {
+                Color.clear.frame(height: TimeRulerView.height)
+                ForEach(Array(range), id: \.self) { channel in
+                    ChannelNumber(number: channel + 1).frame(height: lane)
+                }
+            }
+            .frame(width: 30)
+            VStack(spacing: 0) {
+                TimeRulerView(duration: player.duration)
+                ZStack {
+                    WaveformView(peaks: wf.finishedPeaks, channels: file.info.channels, position: player.fraction,
+                                 laneHeight: lane, playedColor: accent, accessibilityLabel: "Forme d'onde",
+                                 onSeek: { model.scrub(to: $0) }, channelRange: range)
+                    if wf.state == .loading, range.lowerBound == 0 {
+                        ProgressView(value: wf.progress).progressViewStyle(.linear).frame(width: 220).accentTint()
+                    }
+                }
+            }
+            // The levels beside the lanes, when they are asked for there.
+            if model.levelsPlacement == .inline, player.metersEnabled {
+                VStack(spacing: 0) {
+                    Color.clear.frame(height: TimeRulerView.height)
+                    ForEach(Array(range), id: \.self) { channel in
+                        VerticalMeter(meter: channel < player.meters.count ? player.meters[channel] : .silent)
+                            .frame(width: 8, height: lane - (lane < 14 ? 3 : 6)).padding(.vertical, lane < 14 ? 1.5 : 3)
+                    }
+                }
+                .frame(width: 8)   // a fixed column: the spacer above would otherwise take half of the width
+                .help("Niveaux de sortie (dBFS)")
             }
         }
     }
@@ -119,7 +142,13 @@ struct PlayView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Niveaux de sortie (dBFS)").font(.headline)
                     .help("Niveau à la sortie de jack_play, indépendant des branchements.")
-                MeterBars(meters: model.player.meters, channels: file.info.channels, scale: IECScale(), label: "Niveaux de sortie")
+                if model.player.metersEnabled {
+                    MeterBars(meters: model.player.meters, channels: file.info.channels, scale: IECScale(), label: "Niveaux de sortie",
+                              columns: LaneLayout(channels: file.info.channels).columns)
+                } else {
+                    Text("Vumètres désactivés : les niveaux ne sont plus mesurés. La lecture n'est pas affectée.")
+                        .font(.callout).foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.vertical, 14)
+                }
             }
         }
     }
