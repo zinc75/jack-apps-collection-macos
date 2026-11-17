@@ -88,7 +88,7 @@ Jack Capture is free and open source. If it saves you time, you can buy me a cof
 | Author | Kjetil Matheussen |
 | Source | https://github.com/kmatheussen/jack_capture |
 | Version | commit `a539d444d388c4cfed7279e385830e7767d59c41` (2023-01-04, 40 commits after tag 0.9.73), upstream branch `master` |
-| Copy here | `upstream/` = a `git clone` of the commit above with its `.git` removed (2026-10-31), **unmodified** |
+| Copy here | `upstream/` = a Git submodule of the repository above, at the commit above, **unmodified** (clone with `--recurse-submodules`) |
 
 ## Licence
 
@@ -108,7 +108,7 @@ The program is built from the upstream sources, as published by Kjetil Matheusse
 
 ## Layout
 
-- `upstream/`: the original sources, never edited (changes go to `patches/` or to new files).
+- `upstream/`: the original sources, a Git submodule of the official repository, never edited (changes go to `patches/` or to new files).
 - `patches/`: changes to the upstream sources, as unified diffs that apply with `git apply` from the `upstream/` directory.
 - `screenshots/`: the images of this README.
 - `swiftui/`: the Jack Capture application (GPL-2.0-or-later, as `jack_capture`), with its tests and build script.
