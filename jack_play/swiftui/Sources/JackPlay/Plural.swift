@@ -13,6 +13,10 @@ enum Plural {
         n == 1 ? "1 voie sans sortie" : "\(n) voies sans sortie"
     }
 
+    static func files(_ n: Int) -> LocalizedStringKey {
+        n == 1 ? "1 fichier" : "\(n) fichiers"
+    }
+
     static func inputs(_ n: Int) -> LocalizedStringKey {
         n == 1 ? "1 entrée" : "\(n) entrées"
     }

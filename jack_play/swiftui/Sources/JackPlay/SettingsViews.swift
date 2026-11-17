@@ -253,10 +253,9 @@ struct LoopView: View {
         SettingsPage {
             Text("Boucle et transport").font(.title2).fontWeight(.semibold)
             SettingsGroup("Boucle") {
-                OptionRow("Répéter le fichier", "Le fichier recommence sans interruption.", locked: player.mode == .followTransport,
+                OptionRow("Répétition", "Répéter le fichier, ou toute la liste de lecture, sans interruption.", locked: player.mode == .followTransport,
                           lockMessage: "Sans effet avec le transport JACK : le transport décide. Passez en mode Indépendant pour répéter.") {
-                    Toggle("Répéter le fichier", isOn: Binding(get: { player.settings.loop }, set: { model.set(loop: $0) }))
-                        .labelsHidden().toggleStyle(.switch).accentTint()
+                    RepeatPicker()
                 }
             }
             SettingsGroup("Transport") {

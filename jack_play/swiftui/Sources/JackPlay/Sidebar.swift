@@ -10,6 +10,7 @@ struct Sidebar: View {
     var body: some View {
         List {
             row("Lecture", "play.circle", .play)
+            row("Liste de lecture", "list.bullet", .playlist)
             Section("Réglages") {
                 row("Sorties", "circle.grid.3x3", .outputs)
                 row("Boucle et transport", "repeat", .loop)

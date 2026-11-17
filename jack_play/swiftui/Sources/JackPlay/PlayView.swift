@@ -35,6 +35,9 @@ struct PlayView: View {
         let rate = Self.kHz(info.sampleRate)
         return HStack(alignment: .bottom, spacing: 16) {
             VStack(alignment: .leading, spacing: 6) {
+                if model.playlist.playlist.count > 1, let place = model.playlist.playlist.current {
+                    Text("Fichier \(place + 1) sur \(model.playlist.playlist.count)").font(.caption).fontWeight(.medium).foregroundStyle(.secondary)
+                }
                 Text(verbatim: file.url.lastPathComponent)
                     .font(.system(size: 22, weight: .semibold)).lineLimit(1).truncationMode(.middle)
                 HStack(spacing: 6) {
@@ -48,9 +51,19 @@ struct PlayView: View {
                     }
                     Chip(text: Text(verbatim: TimeFormat.clock(info.duration)))
                 }
+                nextLine
             }
             Spacer(minLength: 12)
+            if model.playlist.playlist.count > 1 { Button("Voir la liste") { model.page = .playlist } }
             Button("Ouvrir…") { model.chooseFile() }
+        }
+    }
+
+    /// The file that comes after this one.
+    @ViewBuilder private var nextLine: some View {
+        if model.player.mode == .independent, let next = model.playlist.nextFile {
+            (Text("Ensuite : ") + Text(verbatim: next.lastPathComponent).fontWeight(.medium))
+                .font(.callout).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
         }
     }
 
@@ -68,7 +81,9 @@ struct PlayView: View {
                     Text(verbatim: TimeFormat.clock(player.positionSeconds, tenths: true))
                         .font(.system(size: 56, weight: .ultraLight)).monospacedDigit().tracking(-1)
                     Text(verbatim: "/ \(TimeFormat.clock(player.duration))").font(.system(size: 15)).monospacedDigit().foregroundStyle(.secondary)
-                    if player.settings.loop, player.mode == .independent { Chip(text: Text("Boucle"), kind: .accent, symbol: "repeat").padding(.leading, 8) }
+                    if model.playlist.repeatMode != .off, player.mode == .independent {
+                        Chip(text: Text(model.playlist.repeatMode == .list ? "Répète la liste" : "Répète le fichier"), kind: .accent, symbol: "repeat").padding(.leading, 8)
+                    }
                     Spacer()
                     Text(verbatim: "−" + TimeFormat.clock(max(player.duration - player.positionSeconds, 0)))
                         .font(.system(size: 13)).monospacedDigit().foregroundStyle(.secondary)
@@ -156,6 +171,9 @@ struct ControlsBar: View {
         HStack(spacing: 16) {
             transportState.frame(maxWidth: .infinity, alignment: .leading)
             HStack(spacing: 14) {
+                Button { model.playlist.previous() } label: { Image(systemName: "backward.end.fill").font(.system(size: 13)).frame(width: 42, height: 42) }
+                    .buttonStyle(PressStyle()).glassCircle().help("Fichier précédent")
+                    .disabled(!listPlays || model.playlist.playlist.current == nil)
                 Button { player.stop() } label: { Image(systemName: "stop.fill").font(.system(size: 14)).frame(width: 42, height: 42) }
                     .buttonStyle(PressStyle()).glassCircle().help("Retour au début")
                 Button { player.togglePlay() } label: {
@@ -164,14 +182,18 @@ struct ControlsBar: View {
                         .accentGlassDisc(accent)
                 }
                 .buttonStyle(PressStyle()).help(player.isPlaying ? "Pause" : "Lecture")
-                Button { model.set(loop: !player.settings.loop) } label: {
-                    Image(systemName: "repeat").font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(player.settings.loop && player.mode == .independent ? accent : Color.primary).frame(width: 42, height: 42)
+                Button { model.playlist.next() } label: { Image(systemName: "forward.end.fill").font(.system(size: 13)).frame(width: 42, height: 42) }
+                    .buttonStyle(PressStyle()).glassCircle().help("Fichier suivant")
+                    .disabled(!listPlays || !model.playlist.hasNext)
+                let repeating = model.playlist.repeatMode != .off && player.mode == .independent
+                Button { model.cycleRepeat() } label: {
+                    Image(systemName: model.playlist.repeatMode == .file ? "repeat.1" : "repeat").font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(repeating ? accent : Color.primary).frame(width: 42, height: 42)
                 }
                 .buttonStyle(PressStyle()).glassCircle()
-                    .overlay { if player.settings.loop, player.mode == .independent { Circle().strokeBorder(accent, lineWidth: 2) } }
+                    .overlay { if repeating { Circle().strokeBorder(accent, lineWidth: 2) } }
                     .disabled(player.mode == .followTransport)
-                    .help(player.mode == .followTransport ? "Sans effet avec le transport JACK : passez en mode Indépendant pour répéter." : "Boucle")
+                    .help(player.mode == .followTransport ? "Sans effet avec le transport JACK : passez en mode Indépendant pour répéter." : repeatHelp)
             }
             .disabled(!player.canCommand)
             CommandButton().frame(maxWidth: .infinity, alignment: .trailing)
@@ -179,6 +201,16 @@ struct ControlsBar: View {
         .padding(.horizontal, 26).frame(height: 84)
         .background(Color.windowFill)
         .overlay(alignment: .top) { Divider() }
+    }
+
+    private var listPlays: Bool { model.player.mode == .independent }
+
+    private var repeatHelp: LocalizedStringKey {
+        switch model.playlist.repeatMode {
+        case .off: "Répétition : aucune"
+        case .list: "Répétition : la liste"
+        case .file: "Répétition : le fichier"
+        }
     }
 
     /// In the mode that follows the transport: the state of the transport, and who drives it.

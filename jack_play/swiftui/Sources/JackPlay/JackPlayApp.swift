@@ -13,7 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// A file dropped on the icon, or opened from the Finder.
     func application(_ application: NSApplication, open urls: [URL]) {
-        if let url = urls.first { Self.model?.open(url) }
+        Self.model?.open(urls)
     }
 }
 
@@ -61,6 +61,10 @@ struct JackPlayApp: App {
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("Ouvrir…") { model.chooseFile() }.keyboardShortcut("o", modifiers: .command)
+                Button("Ajouter à la liste…") { model.addFiles() }.keyboardShortcut("o", modifiers: [.command, .shift])
+                Divider()
+                Button("Ouvrir une liste…") { model.openPlaylistFile() }
+                Button("Enregistrer la liste…") { model.savePlaylist() }.disabled(model.playlist.playlist.isEmpty)
             }
             CommandGroup(replacing: .saveItem) {}
             CommandGroup(replacing: .importExport) {}
@@ -70,11 +74,12 @@ struct JackPlayApp: App {
             CommandGroup(replacing: .help) {}
             CommandGroup(replacing: .toolbar) {
                 Button("Lecture") { model.page = .play }.keyboardShortcut("1", modifiers: .command)
+                Button("Liste de lecture") { model.page = .playlist }.keyboardShortcut("2", modifiers: .command)
                 Divider()
-                Button("Sorties") { model.page = .outputs }.keyboardShortcut("2", modifiers: .command)
-                Button("Boucle et transport") { model.page = .loop }.keyboardShortcut("3", modifiers: .command)
-                Button("Avancé") { model.page = .advanced }.keyboardShortcut("4", modifiers: .command)
-                Button("Affichage") { model.page = .display }.keyboardShortcut("5", modifiers: .command)
+                Button("Sorties") { model.page = .outputs }.keyboardShortcut("3", modifiers: .command)
+                Button("Boucle et transport") { model.page = .loop }.keyboardShortcut("4", modifiers: .command)
+                Button("Avancé") { model.page = .advanced }.keyboardShortcut("5", modifiers: .command)
+                Button("Affichage") { model.page = .display }.keyboardShortcut("6", modifiers: .command)
             }
             CommandGroup(replacing: .appSettings) {
                 Button("Réglages…") { model.page = .display }.keyboardShortcut(",", modifiers: .command)
@@ -85,6 +90,11 @@ struct JackPlayApp: App {
                 Button(model.player.isPlaying ? "Pause" : "Lecture") { model.player.togglePlay() }
                     .keyboardShortcut(.space, modifiers: [])
                 Button("Retour au début") { model.player.stop() }.keyboardShortcut(".", modifiers: .command)
+                Divider()
+                Button("Fichier suivant") { model.playlist.next() }.keyboardShortcut(.rightArrow, modifiers: .command)
+                    .disabled(!model.playlist.hasNext || model.player.mode == .followTransport)
+                Button("Fichier précédent") { model.playlist.previous() }.keyboardShortcut(.leftArrow, modifiers: .command)
+                    .disabled(model.playlist.playlist.current == nil || model.player.mode == .followTransport)
             }
         }
         .commands {

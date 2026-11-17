@@ -204,8 +204,8 @@ public final class PlayerModel {
 
     // MARK: Opening
 
-    /// Opens a file, and starts the program for it. The one that was open is closed.
-    public func open(_ url: URL) {
+    /// Opens a file, and starts the program for it, which plays at once when `play` is set. The one that was open is closed.
+    public func open(_ url: URL, play: Bool = false) {
         closeFile()
         let info: SoundFileInfo
         do { info = try SoundFile.probe(url) } catch {
@@ -221,7 +221,7 @@ public final class PlayerModel {
         meters = []
         waveform.load { try SoundFile(url: url) }
         chooseRouting()
-        launch(frame: nil, playing: false)
+        launch(frame: nil, playing: play)
         startDecay()
     }
 
