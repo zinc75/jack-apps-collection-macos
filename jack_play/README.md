@@ -1,6 +1,6 @@
 <div align="center">
 
-  <img src="screenshots/icon.png" width="128" alt="Jack Play icon">
+  <img src="screenshots/icon.png" width="192" alt="Jack Play icon">
   <h1>Jack Play</h1>
   <p>A native macOS interface for <code>jack_play</code>, the JACK sound file player (<code>rju-play</code> by Rohan Drape).</p>
 

@@ -1,6 +1,6 @@
 <div align="center">
 
-  <img src="screenshots/icon.png" width="128" alt="Jack Capture icon">
+  <img src="screenshots/icon.png" width="192" alt="Jack Capture icon">
   <h1>Jack Capture</h1>
   <p>A native macOS interface for <code>jack_capture</code>, the JACK recorder by Kjetil Matheussen.</p>
   <p>

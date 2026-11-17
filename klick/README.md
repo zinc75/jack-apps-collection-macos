@@ -1,6 +1,6 @@
 <div align="center">
 
-  <img src="screenshots/icon.png" width="128" alt="Klick icon">
+  <img src="screenshots/icon.png" width="192" alt="Klick icon">
   <h1>Klick</h1>
   <p>A native macOS interface for <code>klick</code>, the JACK metronome by Dominic Sacré.</p>
   <p>
