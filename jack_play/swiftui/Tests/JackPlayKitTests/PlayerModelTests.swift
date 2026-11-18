@@ -335,6 +335,108 @@ final class PlayerModelTests: XCTestCase {
         XCTAssertTrue(runner.stopped)
     }
 
+    /// The program dies with the server: the model hears the program first, then the server.
+    func testAProgramThatEndsBeforeTheServerIsHeardGoneStartsAgainWhenTheServerIsBack() throws {
+        let (model, server) = make()
+        model.open(try wav())
+        runner.ready()
+        let first = runner
+        first.say(.exited(status: 1, requested: false))   // the server is still thought to be there
+        XCTAssertEqual(model.phase, .failed(.playerEnded(status: 1)))
+        server.isConnected = false
+        server.onChange?()
+        XCTAssertEqual(model.phase, .failed(.noJack), "the server is the reason: the banner says so")
+        server.isConnected = true
+        server.onChange?()
+        XCTAssertEqual(model.phase, .starting)
+        XCTAssertEqual(runners.count, 2)
+        XCTAssertFalse(runner === first)
+        runner.ready()
+        XCTAssertEqual(model.phase, .running(.paused))
+        XCTAssertTrue(model.canCommand)
+    }
+
+    /// Same, the server being known gone when the program is heard to end.
+    func testAProgramThatEndsOnceTheServerIsGoneWaitsForTheServer() throws {
+        let (model, server) = make()
+        model.open(try wav())
+        runner.ready()
+        let first = runner
+        server.isConnected = false
+        first.say(.exited(status: 1, requested: false))
+        XCTAssertEqual(model.phase, .failed(.noJack))
+        server.onChange?()
+        XCTAssertEqual(model.phase, .failed(.noJack))
+        XCTAssertEqual(runners.count, 1, "nothing starts without a server")
+        server.isConnected = true
+        server.onChange?()
+        XCTAssertEqual(runners.count, 2)
+        runner.ready()
+        XCTAssertEqual(model.phase, .running(.paused))
+    }
+
+    /// The server is heard gone first, then the program, which is not the player any more.
+    func testAProgramThatEndsAfterTheServerIsHeardGoneChangesNothing() throws {
+        let (model, server) = make()
+        model.open(try wav())
+        runner.ready()
+        let first = runner
+        first.leavesAtOnce = false
+        server.isConnected = false
+        server.onChange?()
+        XCTAssertEqual(model.phase, .failed(.noJack))
+        first.leave()
+        XCTAssertEqual(model.phase, .failed(.noJack))
+        server.isConnected = true
+        server.onChange?()
+        XCTAssertEqual(runners.count, 2)
+        runner.ready()
+        XCTAssertEqual(model.phase, .running(.paused))
+    }
+
+    /// A program that has really failed, while the server stays, is not started again by itself: it would loop.
+    func testAProgramThatFailsWithTheServerThereIsNotStartedAgain() throws {
+        let (model, server) = make()
+        model.open(try wav())
+        runner.ready()
+        runner.say(.exited(status: 1, requested: false))
+        XCTAssertEqual(model.phase, .failed(.playerEnded(status: 1)))
+        server.onChange?()   // the graph moves, the server is there
+        server.onChange?()
+        XCTAssertEqual(model.phase, .failed(.playerEnded(status: 1)))
+        XCTAssertEqual(runners.count, 1)
+    }
+
+    /// A file that plays when the server goes, with the program of the next file waiting: both go, and one program comes back.
+    func testAPlayingFileAndTheNextOneComeBackWithTheServer() throws {
+        let (model, server) = make()
+        let next = try wav()
+        model.open(try wav())
+        runner.ready()
+        model.nextFile = next
+        XCTAssertEqual(runners.count, 2)
+        let standby = runners[1]
+        standby.ready()
+        model.play()
+        runner.say(.position(frame: 9600, state: .playing))
+        let first = runners[0]
+        first.say(.exited(status: 1, requested: false))
+        server.isConnected = false
+        server.onChange?()
+        XCTAssertEqual(model.phase, .failed(.noJack))
+        XCTAssertTrue(standby.stopped, "the program of the next file goes too")
+        XCTAssertFalse(model.nextIsReady)
+        server.isConnected = true
+        server.onChange?()
+        XCTAssertEqual(model.phase, .starting)
+        XCTAssertEqual(runners.count, 3)
+        XCTAssertEqual(runners[2].command.file, model.file?.url)
+        runners[2].ready()
+        XCTAssertEqual(model.phase, .running(.paused), "back at the start, paused")
+        XCTAssertEqual(runners.count, 4, "the program of the next file is made again")
+        XCTAssertEqual(runners[3].command.file, next)
+    }
+
     func testChangingTheLoopStartsTheProgramAgainWhereItWasAndPlaying() throws {
         let (model, _) = make()
         model.open(try wav())

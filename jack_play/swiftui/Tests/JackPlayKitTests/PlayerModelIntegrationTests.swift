@@ -98,4 +98,60 @@ final class PlayerModelIntegrationTests: XCTestCase {
         XCTAssertTrue(model.commandLine?.contains(" -l ") == true)
         XCTAssertEqual(Double(model.position), Double(resting), accuracy: 4800)
     }
+
+    /// The server is closed and opened again while a file is armed: the program goes with the server, and a new one is
+    /// started for the file when the server is back, whatever the order of the two news.
+    func testAnArmedFileGoesOnAfterTheServerIsClosedAndOpenedAgain() async throws {
+        let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let program = repo.appendingPathComponent("build/jack_play")
+        guard FileManager.default.isExecutableFile(atPath: program.path) else { throw XCTSkip("jack_play/build/jack_play is not built") }
+        guard let jackd = ["/usr/local/bin/jackd", "/opt/homebrew/bin/jackd"].first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else {
+            throw XCTSkip("jackd is not installed")
+        }
+        let serverName = "jptest\(UUID().uuidString.prefix(6))"
+        func startServer() throws -> Process {
+            let server = Process()
+            server.executableURL = URL(fileURLWithPath: jackd)
+            server.arguments = ["-n", serverName, "-d", "dummy", "-r", "48000", "-p", "1024"]
+            server.standardOutput = FileHandle.nullDevice
+            server.standardError = FileHandle.nullDevice
+            try server.run()
+            return server
+        }
+        var server = try startServer()
+        defer { server.terminate(); server.waitUntilExit() }
+        try await Task.sleep(nanoseconds: 2_000_000_000)
+        setenv("JACK_DEFAULT_SERVER", serverName, 1)
+        defer { unsetenv("JACK_DEFAULT_SERVER") }
+
+        let graph = PlaybackGraph()
+        graph.start()
+        defer { graph.stop() }
+        await wait("the graph connects") { graph.isConnected }
+        let suite = "jackplay-int-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        var env = ProcessInfo.processInfo.environment
+        env["JACK_DEFAULT_SERVER"] = serverName
+        let model = PlayerModel(server: graph, store: ConnectionStore(defaults: defaults)) { command in
+            PlayerProcess(executable: program, command: command, environment: env)
+        }
+        defer { model.closeFile() }
+        let files = try TestFiles()
+        model.open(try files.write(TestFiles.all[0], channels: 2, frames: 48000 * 12))
+        await wait("the player is ready") { model.phase == .running(.paused) }
+
+        server.terminate(); server.waitUntilExit()
+        await wait("the server is gone") { !graph.isConnected }
+        await wait("the banner says the server is gone") { model.phase == .failed(.noJack) }
+        try await Task.sleep(nanoseconds: 1_500_000_000)
+        XCTAssertEqual(model.phase, .failed(.noJack), "it stays so while there is no server")
+
+        server = try startServer()
+        await wait("the server is back") { graph.isConnected }
+        await wait("the player is ready again") { model.phase == .running(.paused) }
+        XCTAssertTrue(model.canCommand)
+        model.play()
+        await wait("it plays") { model.isPlaying && model.position > 4800 }
+    }
 }

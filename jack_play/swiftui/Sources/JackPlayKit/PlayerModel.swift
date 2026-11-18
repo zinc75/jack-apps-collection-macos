@@ -500,7 +500,8 @@ public final class PlayerModel {
         case .exited(let status, _):
             manager.detach()
             runner = nil
-            if file != nil { phase = .failed(.playerEnded(status: status)) }
+            // The program dies with the server, and the two news come in any order: with no server, the server is the reason.
+            if file != nil { phase = server.isConnected ? .failed(.playerEnded(status: status)) : .failed(.noJack) }
         }
     }
 
@@ -517,12 +518,19 @@ public final class PlayerModel {
         // The program could not start without a server: it starts now.
         if phase == .failed(.noJack), server.isConnected { launch(frame: nil, playing: false) }
         // The server has gone: the program goes with it.
-        if !server.isConnected, runner != nil {
-            stopRunner()
-            phase = .failed(.noJack)
+        if !server.isConnected {
+            if runner != nil {
+                stopRunner()
+                phase = .failed(.noJack)
+            } else if case .failed(.playerEnded) = phase {
+                // The program was heard to end before the server was heard gone: it was the server that took it away,
+                // and it starts again when the server is back. (A program that ends while the server stays is not started
+                // again: that would be a loop.)
+                stopStandby()
+                phase = .failed(.noJack)
+            }
         }
     }
-
 
     // MARK: The next file
 
