@@ -82,13 +82,13 @@ Jack Play is free and open source. If it saves you time, you can buy me a coffee
 
 ## Changes compared with upstream
 
-**CLI.** The program is upstream's, with thirteen patches. Three are fixes:
+**CLI.** The program is upstream's, with ten patches that are specific to this edition. Three fixes found while porting were sent to the author and are in upstream since the commit below, so they are no longer patches:
 
-- The end of the file is played in full. Upstream closed the JACK client as soon as the last block had been read from disk, which cut the end of every file by the size of the ring buffer (about 85 ms with the default `-b`, more with a larger one).
-- In transport mode, a start or a locate empties the ring buffer. Upstream played the audio read before the seek first, so after a start from the beginning the first block of the file was heard twice.
-- In transport mode, the position is converted from the frames of the server to the frames of the file. Upstream used the number of the transport frame as it was: with a file at 44.1 kHz on a server at 48 kHz, a locate to 2.000 s started 2.177 s into the file.
+- The end of the file is played in full. Before, the JACK client was closed as soon as the last block had been read from disk, which cut the end of every file by the size of the ring buffer (about 85 ms with the default `-b`, more with a larger one).
+- In transport mode, a start or a locate empties the ring buffer. Before, the audio read before the seek was played first, so after a start from the beginning the first block of the file was heard twice.
+- In transport mode, the position is converted from the frames of the server to the frames of the file. Before, the number of the transport frame was used as it was: with a file at 44.1 kHz on a server at 48 kHz, a locate to 2.000 s started 2.177 s into the file.
 
-Ten are specific to this edition:
+The patches:
 
 - The default client name is `jack_play` instead of `rju-play`.
 - A new option, `-M`, makes the program say where it is and how loud it is, on standard output, for a program that shows it. It works alone, with `-l` and with `-t`. Without `-M` (and without `-C`) nothing is written, as before. One line each:
@@ -134,10 +134,10 @@ Nothing else changes. It is a universal binary (arm64 and x86_64), linked static
 | Project | rju (`rju-play`) |
 | Author | Rohan Drape |
 | Source | https://gitlab.com/rd--/rju (mirror: https://github.com/rd--/rju) |
-| Version | tag `0.19` (2021-06-16) plus 19 commits, git `master` at commit `38a59ccc337367c2817b4b7e22e005a816f1fe9a` (2026-09-26) |
-| Copy here | `upstream/` = a `git clone --recurse-submodules` of that commit with the `.git` files removed, **unmodified** |
+| Version | tag `0.19` (2021-06-16) plus later commits, git `master` at commit `6b37546ad5a498c106a86269f542c4bb46d25355` |
+| Copy here | `upstream/` = a Git submodule of the repository above, at the commit above, **unmodified** (clone with `--recurse-submodules`) |
 
-The `cmd/r-common` folder is a submodule, `r-common` by the same author (https://gitlab.com/rd--/r-common), at commit `3b29186d24c5110e00ce80ab2fe9b5e79f835ff1` (2023-12-09).
+The `cmd/r-common` folder is a submodule of `rju`, `r-common` by the same author (https://gitlab.com/rd--/r-common), at commit `2f87349b058578f5f7fa0877df0c3ef2862ecfc8`.
 
 ## Licence
 
@@ -153,25 +153,22 @@ Files are played to their exact length with any ring buffer size, `-t` starts, s
 
 | Patch | |
 |---|---|
-| `0001-play-the-end-of-the-file.patch` | The end of the file is no longer cut. |
-| `0002-empty-the-ring-buffer-on-seek.patch` | A transport seek no longer replays buffered audio. |
-| `0003-default-client-name-jack_play.patch` | Default client name `jack_play`. Specific to this edition. |
-| `0004-transport-seek-scaled-by-the-sample-rate.patch` | A transport seek lands at the right place in a file whose rate is not the server's. |
-| `0005-control-mode-on-standard-input.patch` | The `-C` option. Specific to this edition. |
-| `0006-monitor-mode-position-and-levels.patch` | The `-M` option. Specific to this edition. |
-| `0007-fade-in-after-a-seek-in-control-mode.patch` | No click, and no overshoot of the converter, after a seek with `-C`. Specific to this edition. |
-| `0008-control-mode-paused-after-the-end.patch` | With `-C`, a seek after the end of the file moves without playing. Specific to this edition. |
-| `0009-monitor-mode-client-name.patch` | With `-M`, a `client NAME` line gives the name JACK gave to the client. Specific to this edition. |
-| `0010-transport-mode-position-stops-at-the-end.patch` | With `-M` and `-t`, the position stops at the end of the file instead of following the transport past it. Specific to this edition. |
-| `0011-control-mode-state-every-4-ms.patch` | With `-C`, the state is looked at every 4 ms instead of 33 ms. Specific to this edition. |
-| `0012-control-mode-start-at-a-given-time.patch` | With `-C`, the `end T` line and the `play at T` command, to play files one after the other with no gap. Specific to this edition. |
-| `0013-control-mode-levels-on-and-off.patch` | With `-C`, the `levels on` and `levels off` commands: when off, the levels are not measured. Specific to this edition. |
+| `0001-default-client-name-jack_play.patch` | Default client name `jack_play`. Specific to this edition. |
+| `0002-control-mode-on-standard-input.patch` | The `-C` option. Specific to this edition. |
+| `0003-monitor-mode-position-and-levels.patch` | The `-M` option. Specific to this edition. |
+| `0004-fade-in-after-a-seek-in-control-mode.patch` | No click, and no overshoot of the converter, after a seek with `-C`. Specific to this edition. |
+| `0005-control-mode-paused-after-the-end.patch` | With `-C`, a seek after the end of the file moves without playing. Specific to this edition. |
+| `0006-monitor-mode-client-name.patch` | With `-M`, a `client NAME` line gives the name JACK gave to the client. Specific to this edition. |
+| `0007-transport-mode-position-stops-at-the-end.patch` | With `-M` and `-t`, the position stops at the end of the file instead of following the transport past it. Specific to this edition. |
+| `0008-control-mode-state-every-4-ms.patch` | With `-C`, the state is looked at every 4 ms instead of 33 ms. Specific to this edition. |
+| `0009-control-mode-start-at-a-given-time.patch` | With `-C`, the `end T` line and the `play at T` command, to play files one after the other with no gap. Specific to this edition. |
+| `0010-control-mode-levels-on-and-off.patch` | With `-C`, the `levels on` and `levels off` commands: when off, the levels are not measured. Specific to this edition. |
 
 ## Layout
 
 | | |
 |---|---|
-| `upstream/` | `rju` sources, with `r-common`, as published by Rohan Drape |
+| `upstream/` | `rju` sources, with `r-common`, as published by Rohan Drape: a Git submodule, never edited |
 | `patches/` | changes for macOS, unified diffs against `upstream/` |
 | `build_universal.sh` | builds the universal binary |
 | `swiftui/` | the SwiftUI application, with its own `README.md` for building it |

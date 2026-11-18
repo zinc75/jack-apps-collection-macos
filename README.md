@@ -52,6 +52,7 @@ Some folders are Git submodules, each fixed at a given commit of its own reposit
 | Submodule | What it is |
 |---|---|
 | `jack_capture/upstream` | `jack_capture` by Kjetil Matheussen, from its [official repository](https://github.com/kmatheussen/jack_capture), unmodified |
+| `jack_play/upstream` | `rju` (`rju-play`) by Rohan Drape, from its [repository](https://github.com/rd--/rju), unmodified, with its own `r-common` submodule |
 | `klick/klick-tempo` | [klick-tempo](https://github.com/zinc75/klick-tempo), the core of Klick and the same application without JACK, in its own repository |
 | `klick/klick-tempo/klick/upstream` | `klick` by Dominic Sacré, from its [official repository](https://github.com/dsacre/klick), unmodified, inside klick-tempo |
 
