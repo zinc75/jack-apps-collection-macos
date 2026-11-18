@@ -22,7 +22,7 @@ Dependencies: JACK, zita-resampler (`libs/zita-resampler`).
 
 ## Install
 
-Download `ZitaNjbridge-0.4.8-macOS.pkg` from the [Releases](https://github.com/zinc75/jack-apps-collection-macos/releases) page and open it. The package is signed and notarized by Apple. It installs `zita-j2n` and `zita-n2j` in `/usr/local/bin`, with their manual pages. JACK has to be installed.
+Download `zita-njbridge-0.4.8-macOS.pkg` from the [Releases](https://github.com/zinc75/jack-apps-collection-macos/releases) page and open it. The package is signed and notarized by Apple. It installs `zita-j2n` and `zita-n2j` in `/usr/local/bin`, with their manual pages. JACK has to be installed.
 
 ## Use
 
