@@ -82,7 +82,7 @@ Jack Play is free and open source. If it saves you time, you can buy me a coffee
 
 ## Changes compared with upstream
 
-**CLI.** The program is upstream's, with ten patches that are specific to this edition. Three fixes found while porting were sent to the author and are in upstream since the commit below, so they are no longer patches:
+**CLI.** The program is upstream's, with eleven patches. Three fixes found while porting were sent to the author and are in upstream since the commit below, so they are no longer patches:
 
 - The end of the file is played in full. Before, the JACK client was closed as soon as the last block had been read from disk, which cut the end of every file by the size of the ring buffer (about 85 ms with the default `-b`, more with a larger one).
 - In transport mode, a start or a locate empties the ring buffer. Before, the audio read before the seek was played first, so after a start from the beginning the first block of the file was heard twice.
@@ -90,6 +90,7 @@ Jack Play is free and open source. If it saves you time, you can buy me a coffee
 
 The patches:
 
+- When the file and the server have the same sample rate (and no `-r`), the audio is copied to the output as it is. Upstream always passes it through libsamplerate, even at a ratio of 1.0, so the output was not the file: the largest difference was 0.0375 (about -28 dBFS) on a test signal with high frequency content, and after a locate with `-t` the filter rang for about ten frames. Sent to the author. Nothing changes when the rates differ.
 - The default client name is `jack_play` instead of `rju-play`.
 - A new option, `-M`, makes the program say where it is and how loud it is, on standard output, for a program that shows it. It works alone, with `-l` and with `-t`. Without `-M` (and without `-C`) nothing is written, as before. One line each:
 
@@ -163,6 +164,7 @@ Files are played to their exact length with any ring buffer size, `-t` starts, s
 | `0008-control-mode-state-every-4-ms.patch` | With `-C`, the state is looked at every 4 ms instead of 33 ms. Specific to this edition. |
 | `0009-control-mode-start-at-a-given-time.patch` | With `-C`, the `end T` line and the `play at T` command, to play files one after the other with no gap. Specific to this edition. |
 | `0010-control-mode-levels-on-and-off.patch` | With `-C`, the `levels on` and `levels off` commands: when off, the levels are not measured. Specific to this edition. |
+| `0011-copy-the-frames-at-equal-rates.patch` | At equal rates the frames are copied, not resampled: the output is the file, sample for sample. |
 
 ## Layout
 
