@@ -4,3 +4,6 @@
 [submodule "jack_capture/upstream"]
 	path = jack_capture/upstream
 	url = https://github.com/kmatheussen/jack_capture.git
+[submodule "jack_play/upstream"]
+	path = jack_play/upstream
+	url = https://github.com/rd--/rju.git
