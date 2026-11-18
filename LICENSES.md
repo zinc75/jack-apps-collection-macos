@@ -7,6 +7,8 @@ Each tool keeps the licence of its upstream. A patch to a file is under the lice
 | jack_capture 0.9.73+ | GPL-2.0-or-later | `COPYING` is the GPL v2; source headers: "or any later version" |
 | klick 0.13.0-pre | GPL-2.0-or-later | `COPYING` is the GPL v2; source headers: "or (at your option) any later version" |
 | rju (`rju-play`, built as jack_play) 0.19+ | GPL-3.0 | `COPYING` is the GPL v3; `rju.cabal` declares GPL-3.0-only, the source files say "gpl" without a version number |
+| zita-njbridge 0.4.8 | GPL-3.0-or-later | `COPYING` is the GPL v3; source headers: "version 3 ... or (at your option) any later version" |
+| zita-resampler 1.11.2 | GPL-3.0-or-later | `COPYING` is the GPL v3; source headers: "version 3 ... or (at your option) any later version"; linked statically into `zita-n2j` |
 | libsndfile 1.2.2 | LGPL-2.1-or-later | `COPYING`, header of `src/sndfile.c` |
 | libogg 1.3.6 | BSD-3-Clause | |
 | libvorbis 1.3.7 | BSD-3-Clause | |

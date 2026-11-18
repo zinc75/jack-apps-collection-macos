@@ -29,6 +29,12 @@ Tools are built for Apple Silicon and Intel, and get a SwiftUI application where
   <br><em>Jack Capture</em>
 </div>
 
+## Command-line tools
+
+| Name | Description | Notarized package |
+|---|---|---|
+| [zita-njbridge](zita-njbridge/) | Carries multichannel audio between two JACK servers over a network, with adaptive resampling. `zita-j2n` and `zita-n2j` by Fons Adriaensen ([upstream](https://kokkinizita.linuxaudio.org/linuxaudio/)). | [Download 0.4.8](https://github.com/zinc75/jack-apps-collection-macos/releases/download/zita-njbridge-v0.4.8-macOS/ZitaNjbridge-0.4.8-macOS.pkg) |
+
 ---
 
 <div align="center">
