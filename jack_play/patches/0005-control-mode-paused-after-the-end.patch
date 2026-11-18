@@ -6,12 +6,12 @@ the player is paused, a seek only moves, and play starts again from the
 beginning as before.
 --- a/cmd/rju-play.c
 +++ b/cmd/rju-play.c
-@@ -348,6 +348,8 @@
- 	if (__atomic_load_n(&d->eof, __ATOMIC_ACQUIRE) && d->out_frames >= (i64)(d->in_frames * d->o.src_ratio)) {
+@@ -357,6 +357,8 @@ int signal_proc(jack_nframes_t nframes, void *PTR)
+ 		&& d->player_frame_count >= (i64)(d->reader_frame_count * d->o.src_ratio)) {
  		if (d->o.control) {
  			d->ended = 1;
 +			/* After the end the player is paused: a seek then moves without playing. */
 +			__atomic_store_n(&d->ctl_play, 0, __ATOMIC_RELEASE);
  		} else {
- 			__atomic_store_n(&d->done, 1, __ATOMIC_RELEASE);
+ 			atomic_store_explicit(&d->player_done, true, memory_order_release);
  		}

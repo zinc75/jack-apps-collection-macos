@@ -11,9 +11,9 @@ Checked with three seeks during playback of a file that peaks at 0.5: the
 highest level on the output was 0.502, it is 0.500 now.
 --- a/cmd/rju-play.c
 +++ b/cmd/rju-play.c
-@@ -286,9 +286,12 @@
- 			d->in_frames = 0;
- 			d->out_frames = 0;
+@@ -293,9 +293,12 @@ int signal_proc(jack_nframes_t nframes, void *PTR)
+ 			d->reader_frame_count = 0;
+ 			d->player_frame_count = 0;
  			d->ended = 0;
 +			/* The output starts again from silence: it fades in, instead of
 +			   starting in the middle of the waveform with a click. */
@@ -22,6 +22,6 @@ highest level on the output was 0.502, it is 0.500 now.
  			__atomic_store_n(&d->pub_pos, s, __ATOMIC_RELEASE);
 -			__atomic_store_n(&d->pub_state, d->playing, __ATOMIC_RELEASE);
 +			__atomic_store_n(&d->pub_state, __atomic_load_n(&d->ctl_play, __ATOMIC_ACQUIRE), __ATOMIC_RELEASE);
- 			__atomic_store_n(&d->o.seek_request, s, __ATOMIC_RELEASE);
+ 			atomic_store_explicit(&d->o.seek_request, s, memory_order_release);
  		}
  	}

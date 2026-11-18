@@ -34,7 +34,7 @@ for arch in $UB_ARCHS; do
   rm -rf "$dir"; cp -R "$UB_SRC" "$dir"
   ub_patch "$dir"
   libs=$(ub_env "$arch" pkg-config --static --libs sndfile samplerate)
-  cflags="-arch $arch -O2 -Wall -std=c99 -D_POSIX_C_SOURCE=200809 -I$prefix/include -I$jack/include"
+  cflags="-arch $arch -O2 -Wall -std=c11 -D_POSIX_C_SOURCE=200809 -I$prefix/include -I$jack/include"
   ( cd "$dir/cmd"
     srcs="rju-play.c"
     for c in $common; do srcs="$srcs r-common/c/$c.c"; done

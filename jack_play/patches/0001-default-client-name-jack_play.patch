@@ -3,7 +3,7 @@ Subject: name the JACK client jack_play by default
 Used by the macOS edition, where the program is installed as jack_play.
 --- a/cmd/rju-play.c
 +++ b/cmd/rju-play.c
-@@ -470,7 +470,7 @@
+@@ -486,7 +486,7 @@ int main(int argc, char *argv[])
  	o.ampl = 1.0;
  	o.dst_pattern = NULL;
  	o.loop = false;

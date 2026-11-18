@@ -6,7 +6,7 @@ the name asked for unless another client has it already, so a program that
 connects the ports must not guess it.
 --- a/cmd/rju-play.c
 +++ b/cmd/rju-play.c
-@@ -723,6 +723,8 @@
+@@ -732,6 +732,8 @@ int jackplay(const char *file_name,
  	/* Wait for disk thread to end, which it does when it reaches the
  	   end of the file or is interrupted. */
  	if (d.o.monitor) {

@@ -9,7 +9,7 @@ A display that does not show the levels can say so, and the program does no work
 for them.
 --- a/cmd/rju-play.c
 +++ b/cmd/rju-play.c
-@@ -73,6 +73,7 @@
+@@ -76,6 +76,7 @@ struct player {
  	   at the start of a cycle and publishes where it is in pub_pos and pub_state. */
  	i64 ctl_seek; /* frame of the file to go to, -1 for none */
  	int ctl_play; /* 1 to play, 0 to pause */
@@ -17,7 +17,7 @@ for them.
  	/* A start at a given time (play at T): the frame time of JACK (it wraps: compared as a difference). */
  	uint32_t start_at;
  	int start_armed; /* control thread: start_at is set and has not come yet */
-@@ -457,7 +458,9 @@
+@@ -466,7 +467,9 @@ int signal_proc(jack_nframes_t nframes, void *PTR)
  		}
  		__atomic_store_n(&d->pub_pos, (i64)d->play_pos, __ATOMIC_RELEASE);
  		__atomic_store_n(&d->pub_state, finished ? 2 : (d->o.control ? d->playing : 1), __ATOMIC_RELEASE);
@@ -28,7 +28,7 @@ for them.
  	}
  
  	/* Indicate to the disk thread that the ring buffer has been read
-@@ -550,6 +553,8 @@
+@@ -559,6 +562,8 @@ long read_input_from_rb(void *PTR, float **buf)
       play        play, or go on playing (from the start if the end had been reached)
       pause       stop playing, the position is kept
       seek N      go to frame N of the file (a frame of the file, not of the server)
@@ -37,7 +37,7 @@ for them.
       quit        leave
  
     The end of the input is a quit. */
-@@ -653,6 +658,10 @@
+@@ -662,6 +667,10 @@ static void control_command(struct player *d, const char *line)
  	} else if (sscanf(line, "seek %ld", &n) == 1) {
  		__atomic_store_n(&d->start_armed, 0, __ATOMIC_RELEASE);
  		__atomic_store_n(&d->ctl_seek, (i64)(n < 0 ? 0 : n), __ATOMIC_RELEASE);
@@ -48,8 +48,8 @@ for them.
  	} else if (strcmp(line, "quit") == 0) {
  		__atomic_store_n(&d->quit, 1, __ATOMIC_RELEASE);
  	}
-@@ -702,6 +711,7 @@
- 	d.out_frames = 0;
+@@ -711,6 +720,7 @@ int jackplay(const char *file_name,
+ 	d.player_frame_count = 0;
  	d.ctl_seek = -1;
  	d.ctl_play = 0;
 +	d.levels_off = 0;
