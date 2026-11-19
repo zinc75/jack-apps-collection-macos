@@ -19,8 +19,8 @@ struct ContentView: View {
                 case .link: LinkView()
                 case .network: NetworkView()
                 case .lanes: LanesView()
-                case .flow: PlaceholderView(title: "Flux")
-                case .display: PlaceholderView(title: "Affichage")
+                case .flow: FlowView()
+                case .display: DisplayView()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -124,13 +124,5 @@ struct FailureBanner: View {
             .background(Color.alert.opacity(0.12))
             .overlay(alignment: .bottom) { Rectangle().fill(Color.alert.opacity(0.35)).frame(height: 0.5) }
         }
-    }
-}
-
-/// A page that is not written yet.
-struct PlaceholderView: View {
-    let title: LocalizedStringKey
-    var body: some View {
-        Text(title).font(.title2).foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

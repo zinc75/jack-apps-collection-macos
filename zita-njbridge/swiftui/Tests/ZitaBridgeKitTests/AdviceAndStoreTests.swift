@@ -19,6 +19,14 @@ final class AdviceAndStoreTests: XCTestCase {
         XCTAssertTrue(BufferAdvice.isMeasured(period: 1024)); XCTAssertFalse(BufferAdvice.isMeasured(period: 2048))
     }
 
+    func testTheAutomaticFilterFollowsTheFormulaOfTheProgram() {
+        XCTAssertEqual(BufferAdvice.automaticFilterDelay(localRate: 48000, senderRate: 48000), 32, "the delay the real program printed at 48 kHz")
+        XCTAssertEqual(BufferAdvice.automaticFilterDelay(localRate: 48000, senderRate: 44100), 48, "the lower rate decides")
+        XCTAssertEqual(BufferAdvice.automaticFilterDelay(localRate: 44100, senderRate: 48000), 48)
+        XCTAssertEqual(BufferAdvice.automaticFilterDelay(localRate: 96000, senderRate: 96000), 16, "never below 16")
+        XCTAssertEqual(BufferAdvice.automaticFilterDelay(localRate: 22050, senderRate: 22050), 48, "rates under 44.1 kHz count as 44.1 kHz")
+    }
+
     func testTheMarginIsJudgedOnTheLastSeconds() {
         XCTAssertEqual(BufferAdvice.assess(history: [5, 5, 5]), .unknown, "too few lines")
         XCTAssertEqual(BufferAdvice.assess(history: Array(repeating: 4.0, count: 20)), .comfortable)

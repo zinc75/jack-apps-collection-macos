@@ -31,6 +31,13 @@ public enum BufferAdvice {
         }
     }
 
+    /// The length of the resampler filter that `zita-n2j` takes when it is not told (the formula of its source): longer when the
+    /// lower of the two rates is close to 44.1 kHz, never below 16.
+    public static func automaticFilterDelay(localRate: Int, senderRate: Int) -> Int {
+        let k = Double(max(min(localRate, senderRate), 44100))
+        return max(16, Int((6.7 * k) / (k - 38000)))
+    }
+
     /// Whether the advice rests on a measure (periods 128 to 1024) or only on an estimate.
     public static func isMeasured(period: Int) -> Bool { (1...1024).contains(period) }
 
