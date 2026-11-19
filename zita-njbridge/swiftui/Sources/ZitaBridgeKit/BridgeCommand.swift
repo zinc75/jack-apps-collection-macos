@@ -36,7 +36,7 @@ public struct BridgeCommand: Equatable, Sendable {
         program = .receiver
         var a = ["--jname", r.clientName]
         if let jackServer { a += ["--jserv", jackServer] }
-        a += ["--chan", ChannelList.format(r.channels), "--buff", "\(r.bufferMilliseconds)"]
+        a += ["--chan", ChannelList.format(r.effectiveChannels), "--buff", "\(r.bufferMilliseconds)"]
         if let delay = r.filterDelay { a += ["--filt", "\(delay)"] }
         a.append("--info")
         Self.append(ipVersion: r.ipVersion, to: &a)

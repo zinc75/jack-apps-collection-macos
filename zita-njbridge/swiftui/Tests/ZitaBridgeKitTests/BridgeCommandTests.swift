@@ -33,7 +33,7 @@ final class BridgeCommandTests: XCTestCase {
     }
 
     func testTheReceiverOptions() {
-        let c = BridgeCommand(receiver: receiver { $0.channels = [1, 2, 3, 4, 7]; $0.bufferMilliseconds = 30; $0.filterDelay = 48; $0.ipVersion = .ipv4 })
+        let c = BridgeCommand(receiver: receiver { $0.automaticChannels = false; $0.channels = [1, 2, 3, 4, 7]; $0.bufferMilliseconds = 30; $0.filterDelay = 48; $0.ipVersion = .ipv4 })
         XCTAssertEqual(c.arguments, ["--jname", "zita-n2j", "--chan", "1-4,7", "--buff", "30", "--filt", "48", "--info", "--ipv4", "10.10.10.1", "9999"])
     }
 
@@ -57,6 +57,46 @@ final class BridgeCommandTests: XCTestCase {
     func testTheDisplayQuotesWhatNeedsIt() {
         let c = BridgeCommand(sender: sender { $0.clientName = "mon envoi"; $0.address = "it's.local" })
         XCTAssertEqual(c.display(), "zita-j2n --jname 'mon envoi' --chan 2 --24bit 'it'\\''s.local' 9999")
+    }
+
+    // MARK: Address format
+
+    func testWhatIsTypedInAnAddressFieldIsAnAddressOrAName() {
+        for ok in ["10.10.10.1", "169.254.81.9", "0.0.0.0", "224.0.0.9"] { XCTAssertEqual(AddressCheck.syntax(of: ok), .ipv4, ok) }
+        for ok in ["fe80::1", "fe80::1873:3dbc:1c96:41ce%en8", "::1", "ff02::1", "2001:db8::1", "fe80::1%bridge0"] { XCTAssertEqual(AddressCheck.syntax(of: ok), .ipv6, ok) }
+        for ok in ["studio.local", "branquignole.com", "mac-mini", "a.b.c", "Studio_A.example.org", "studio.local."] { XCTAssertEqual(AddressCheck.syntax(of: ok), .hostname, ok) }
+        XCTAssertEqual(AddressCheck.syntax(of: "  10.10.10.1  "), .ipv4); XCTAssertEqual(AddressCheck.syntax(of: ""), .empty); XCTAssertEqual(AddressCheck.syntax(of: "   "), .empty)
+        for bad in ["10.10.10.999", "10.10.10", "10.10.10.1.1", "1.2.3", "mon adresse", "a..b", "-studio", "studio-", "école.fr", "fe80::zz", "fe80::1%", "fe80::1%en 8",
+                    "1:2:3:4:5:6:7:8:9", "http://studio", "10.10.10.1:9999", "a@b", "mac!"] {
+            XCTAssertEqual(AddressCheck.syntax(of: bad), .invalid, bad)
+        }
+    }
+
+    func testAnInvalidAddressIsAnIssueOfTheSettings() {
+        XCTAssertEqual(sender { $0.address = "10.10.10.999" }.issues, [.invalidAddress])
+        XCTAssertEqual(receiver { $0.address = "mon adresse" }.issues, [.invalidAddress])
+        XCTAssertEqual(sender { $0.address = "" }.issues, [.emptyAddress])
+        XCTAssertEqual(sender { $0.address = "studio.local" }.issues, [], "a name is judged by whether it is found, not by its form")
+    }
+
+    // MARK: Multicast addresses
+
+    func testMulticastGroupsAreRecognised() {
+        for group in ["224.0.0.9", "239.255.255.250", " 232.1.2.3 ", "ff02::1", "FF05::abcd"] { XCTAssertTrue(MulticastAddress.isGroup(group), group) }
+        for other in ["10.10.10.1", "223.255.255.255", "240.0.0.1", "192.168.1.20", "fe80::1", "", "224.0.0", "224.0.0.300", "studio.local"] {
+            XCTAssertFalse(MulticastAddress.isGroup(other), other)
+        }
+        XCTAssertTrue(MulticastAddress.isNumeric("10.10.10.1")); XCTAssertTrue(MulticastAddress.isNumeric("fe80::1"))
+        XCTAssertFalse(MulticastAddress.isNumeric("studio.local")); XCTAssertFalse(MulticastAddress.isNumeric("10.10.10"))
+    }
+
+    func testTheAddressDecidesWhetherTheLinkIsMulticast() async {
+        let yes = await MulticastAddress.isGroupResolving("239.1.2.3"); XCTAssertEqual(yes, true)
+        let v6 = await MulticastAddress.isGroupResolving("ff02::1"); XCTAssertEqual(v6, true)
+        let no = await MulticastAddress.isGroupResolving("10.10.10.1"); XCTAssertEqual(no, false)
+        let local = await MulticastAddress.isGroupResolving("localhost"); XCTAssertEqual(local, false, "a name is resolved, and it is not a group")
+        let unknown = await MulticastAddress.isGroupResolving("no.such.host.invalid"); XCTAssertNil(unknown)
+        let empty = await MulticastAddress.isGroupResolving("  "); XCTAssertNil(empty)
     }
 
     // MARK: Channel lists
@@ -99,9 +139,40 @@ final class BridgeCommandTests: XCTestCase {
         XCTAssertEqual(receiver { $0.filterDelay = 15 }.issues, [.filterOutOfRange])
         XCTAssertEqual(receiver { $0.filterDelay = 97 }.issues, [.filterOutOfRange])
         XCTAssertEqual(receiver { $0.filterDelay = 16 }.issues, [])
-        XCTAssertEqual(receiver { $0.channels = [] }.issues, [.channelsOutOfRange])
-        XCTAssertEqual(receiver { $0.channels = [1, 65] }.issues, [.channelsOutOfRange])
-        XCTAssertEqual(receiver { $0.channels = [2, 2] }.issues, [.channelsOutOfRange])
+        XCTAssertEqual(receiver { $0.automaticChannels = false; $0.channels = [] }.issues, [.channelsOutOfRange])
+        XCTAssertEqual(receiver { $0.automaticChannels = false; $0.channels = [1, 65] }.issues, [.channelsOutOfRange])
+        XCTAssertEqual(receiver { $0.automaticChannels = false; $0.channels = [2, 2] }.issues, [.channelsOutOfRange])
+    }
+
+    // MARK: Automatic channels
+
+    func testAnAutomaticReceiverTakesTheChannelsTheSenderHadLastTime() {
+        var r = receiver()
+        XCTAssertTrue(r.automaticChannels)
+        XCTAssertEqual(r.effectiveChannels, [1, 2], "stereo the first time")
+        r.knownSenderChannels = 8
+        XCTAssertEqual(r.effectiveChannels, Array(1...8))
+        XCTAssertEqual(BridgeCommand(receiver: r).arguments.prefix(4).suffix(2), ["--chan", "1-8"])
+        r.knownSenderChannels = 500
+        XCTAssertEqual(r.effectiveChannels.count, 64, "never more than the programs take")
+        r.knownSenderChannels = 0
+        XCTAssertEqual(r.effectiveChannels, [1])
+    }
+
+    func testChosenChannelsAreUsedWhenNotAutomatic() {
+        var r = receiver { $0.automaticChannels = false; $0.channels = [9, 10, 11] }
+        r.knownSenderChannels = 8
+        XCTAssertEqual(r.effectiveChannels, [9, 10, 11])
+        XCTAssertEqual(BridgeCommand(receiver: r).arguments.prefix(4).suffix(2), ["--chan", "9-11"])
+    }
+
+    func testSettingsSavedByAnEarlierVersionStillLoad() throws {
+        // A receiver saved before the channels became automatic: no key for them.
+        let old = Data(#"{"address":"10.10.10.1","port":9999,"channels":[1,2],"bufferMilliseconds":20,"multicast":false,"interface":"","ipVersion":"automatic","clientName":"zita-n2j"}"#.utf8)
+        let r = try JSONDecoder().decode(ReceiveSettings.self, from: old)
+        XCTAssertEqual(r.address, "10.10.10.1"); XCTAssertEqual(r.bufferMilliseconds, 20)
+        XCTAssertTrue(r.automaticChannels); XCTAssertEqual(r.knownSenderChannels, 2)
+        XCTAssertEqual(try JSONDecoder().decode(ReceiveSettings.self, from: Data("{}".utf8)), ReceiveSettings(), "an empty record is the defaults")
     }
 
     func testSettingsSurviveBeingSaved() throws {

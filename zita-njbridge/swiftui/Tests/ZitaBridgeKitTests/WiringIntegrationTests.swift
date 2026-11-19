@@ -52,7 +52,7 @@ final class WiringIntegrationTests: XCTestCase {
         // The two programs, on a link of their own.
         let port = 20000 + Int.random(in: 0..<20000)
         var s = SendSettings(); s.address = "127.0.0.1"; s.port = port
-        var r = ReceiveSettings(); r.address = "127.0.0.1"; r.port = port; r.channels = [1, 3]
+        var r = ReceiveSettings(); r.address = "127.0.0.1"; r.port = port; r.automaticChannels = false; r.channels = [1, 3]
         let receiver = ReceiverModel(settings: r, executable: n2j, jackServer: serverName)
         let sender = SenderModel(settings: s, executable: j2n, jackServer: serverName)
         receiver.start(); sender.start()

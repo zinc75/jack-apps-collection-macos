@@ -91,6 +91,25 @@ final class NetworkTests: XCTestCase {
         XCTAssertTrue(interfaces[0].isInSystemSettings); XCTAssertFalse(interfaces[2].isInSystemSettings)
     }
 
+    func testALinkLocalIPv6AddressNeedsItsInterface() {
+        for lacking in ["fe80::1", " FE80::1873:3dbc:1c96:41ce ", "febf::1", "fe90::2"] { XCTAssertTrue(LinkLocalAddress.lacksZone(lacking), lacking) }
+        for fine in ["fe80::1%en8", "10.10.10.1", "169.254.1.2", "2001:db8::1", "fec0::1", "studio.local", "ff02::1", ""] { XCTAssertFalse(LinkLocalAddress.lacksZone(fine), fine) }
+        XCTAssertEqual(LinkLocalAddress.withoutZone("fe80::1873:3dbc:1c96:41ce%en8"), "fe80::1873:3dbc:1c96:41ce")
+        XCTAssertEqual(LinkLocalAddress.withoutZone("10.10.10.1"), "10.10.10.1")
+        XCTAssertEqual(LinkLocalAddress.adding(zone: "en0", to: "fe80::1"), "fe80::1%en0")
+        XCTAssertEqual(LinkLocalAddress.adding(zone: "en0", to: "fe80::1%en8"), "fe80::1%en0", "the zone of the other Mac is replaced")
+    }
+
+    func testOnlyRealInterfacesWithALinkLocalAddressCompleteAnAddress() {
+        func iface(_ name: String, display: String, loop: Bool = false, v6: Bool) -> NetworkInterface {
+            NetworkInterface(name: name, displayName: display, isLoopback: loop, supportsMulticast: true,
+                             addresses: [NetworkAddress(address: v6 ? "fe80::1%\(name)" : "10.0.0.1", interface: name, family: v6 ? .ipv6 : .ipv4, kind: v6 ? .linkLocal : .privateNetwork)])
+        }
+        let list = [iface("en8", display: "USB LAN", v6: true), iface("utun1", display: "utun1", v6: true), iface("lo0", display: "lo0", loop: true, v6: true),
+                    iface("en7", display: "Câble", v6: false), iface("en0", display: "Wi-Fi", v6: true)]
+        XCTAssertEqual(NetworkInventory.linkLocalInterfaces(from: list).map(\.name), ["en8", "en0"])
+    }
+
     // MARK: Ping output (captured from the real programs)
 
     func testAPingThatAnswers() {

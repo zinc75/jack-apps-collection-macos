@@ -14,6 +14,8 @@ public enum SampleFormat: String, Codable, Equatable, Sendable, CaseIterable {
 /// Why a set of settings cannot be run. The limits are those of the programs.
 public enum SettingsIssue: Equatable, Sendable {
     case emptyAddress
+    /// Neither an address nor a name (see `AddressCheck`).
+    case invalidAddress
     case portOutOfRange
     case channelsOutOfRange
     case bufferOutOfRange
@@ -65,6 +67,56 @@ public enum ChannelList {
     }
 }
 
+/// Multicast sends to a group: one address that every receiver listens to, instead of the address of each receiver.
+public enum MulticastAddress {
+    /// Whether an address is one of a multicast group: 224.0.0.0 to 239.255.255.255 for IPv4, ff00::/8 for IPv6. A name is not judged
+    /// (it may resolve to a group).
+    public static func isGroup(_ text: String) -> Bool {
+        let address = text.trimmingCharacters(in: .whitespaces)
+        if address.contains(":") { return address.lowercased().hasPrefix("ff") }
+        let parts = address.split(separator: ".", omittingEmptySubsequences: false)
+        guard parts.count == 4, let first = Int(parts[0]), parts.dropFirst().allSatisfy({ Int($0).map { (0...255).contains($0) } ?? false }) else { return false }
+        return (224...239).contains(first)
+    }
+
+    /// Whether an address or a name designates a multicast group, as the programs decide: after resolving it, and by the first result they
+    /// take. A numeric address is judged at once; a name is resolved off the calling thread (it may take a moment). Nil when the name does
+    /// not resolve, or is empty.
+    public static func isGroupResolving(_ host: String) async -> Bool? {
+        let name = host.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty else { return nil }
+        if isNumeric(name) { return isGroup(name) }
+        return await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .utility).async {
+                var hints = addrinfo()
+                hints.ai_socktype = SOCK_DGRAM
+                var result: UnsafeMutablePointer<addrinfo>?
+                guard getaddrinfo(name, nil, &hints, &result) == 0, let first = result else { continuation.resume(returning: nil); return }
+                defer { freeaddrinfo(result) }
+                guard let address = first.pointee.ai_addr else { continuation.resume(returning: nil); return }
+                switch Int32(address.pointee.sa_family) {
+                case AF_INET:
+                    let value = address.withMemoryRebound(to: sockaddr_in.self, capacity: 1) { UInt32(bigEndian: $0.pointee.sin_addr.s_addr) }
+                    continuation.resume(returning: value & 0xF000_0000 == 0xE000_0000)
+                case AF_INET6:
+                    let first = address.withMemoryRebound(to: sockaddr_in6.self, capacity: 1) { $0.pointee.sin6_addr.__u6_addr.__u6_addr8.0 }
+                    continuation.resume(returning: first == 0xFF)
+                default:
+                    continuation.resume(returning: nil)
+                }
+            }
+        }
+    }
+
+    /// Whether the text looks like a numeric address (not a name), so that a wrong one can be said.
+    public static func isNumeric(_ text: String) -> Bool {
+        let address = text.trimmingCharacters(in: .whitespaces)
+        if address.contains(":") { return true }
+        let parts = address.split(separator: ".", omittingEmptySubsequences: false)
+        return parts.count == 4 && parts.allSatisfy { Int($0) != nil }
+    }
+}
+
 /// What the sender (`zita-j2n`) needs.
 public struct SendSettings: Equatable, Codable, Sendable {
     /// The address of the receiver, or its name.
@@ -87,7 +139,11 @@ public struct SendSettings: Equatable, Codable, Sendable {
 
     public var issues: [SettingsIssue] {
         var found = [SettingsIssue]()
-        if address.trimmingCharacters(in: .whitespaces).isEmpty { found.append(.emptyAddress) }
+        switch AddressCheck.syntax(of: address) {
+        case .empty: found.append(.emptyAddress)
+        case .invalid: found.append(.invalidAddress)
+        default: break
+        }
         if !(1...65535).contains(port) { found.append(.portOutOfRange) }
         if !(1...ChannelList.maximum).contains(channels) { found.append(.channelsOutOfRange) }
         if !(576...9216).contains(packetSize) { found.append(.packetSizeOutOfRange) }
@@ -102,9 +158,19 @@ public struct ReceiveSettings: Equatable, Codable, Sendable {
     /// An address of this Mac to listen on (the one the sender is given), or the address of a multicast group.
     public var address = ""
     public var port = 9999
-    /// The channels to receive, from 1 to 64: JACK outputs `out_N`, named after the channel number. A channel the sender does
-    /// not send stays silent. The ports exist from the start, before any sender is there, so they can be wired at once.
+    /// Receive every channel the sender sends (the default). The program has to be told the channels when it starts, and the
+    /// sender's number is only known once it is heard: so the program starts with the number the sender had last time, and is
+    /// started again, once, when the sender turns out to have another.
+    public var automaticChannels = true
+    /// How many channels the sender sent when it was last heard (2 the first time): what an automatic receiver starts with.
+    public var knownSenderChannels = 2
+    /// The channels to receive when they are chosen, from 1 to 64: JACK outputs `out_N`, named after the channel number. A channel
+    /// the sender does not send stays silent. The ports exist from the start, before any sender is there, so they can be wired at once.
     public var channels = [1, 2]
+    /// The channels the program is started with: all of the sender's, or the chosen ones.
+    public var effectiveChannels: [Int] {
+        automaticChannels ? Array(1...min(max(knownSenderChannels, 1), ChannelList.maximum)) : channels
+    }
     /// Extra buffering, in milliseconds, from 0 to 4000.
     public var bufferMilliseconds = 10
     /// The length of the resampler filter, 16 to 96; nil lets the program choose.
@@ -116,11 +182,36 @@ public struct ReceiveSettings: Equatable, Codable, Sendable {
 
     public init() {}
 
+    // Settings saved by an earlier version have no key for what was added since: each one has its default.
+    private enum CodingKeys: String, CodingKey {
+        case address, port, automaticChannels, knownSenderChannels, channels, bufferMilliseconds, filterDelay, multicast, interface, ipVersion, clientName
+    }
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let d = ReceiveSettings()
+        address = try c.decodeIfPresent(String.self, forKey: .address) ?? d.address
+        port = try c.decodeIfPresent(Int.self, forKey: .port) ?? d.port
+        automaticChannels = try c.decodeIfPresent(Bool.self, forKey: .automaticChannels) ?? d.automaticChannels
+        knownSenderChannels = try c.decodeIfPresent(Int.self, forKey: .knownSenderChannels) ?? d.knownSenderChannels
+        channels = try c.decodeIfPresent([Int].self, forKey: .channels) ?? d.channels
+        bufferMilliseconds = try c.decodeIfPresent(Int.self, forKey: .bufferMilliseconds) ?? d.bufferMilliseconds
+        filterDelay = try c.decodeIfPresent(Int.self, forKey: .filterDelay)
+        multicast = try c.decodeIfPresent(Bool.self, forKey: .multicast) ?? d.multicast
+        interface = try c.decodeIfPresent(String.self, forKey: .interface) ?? d.interface
+        ipVersion = try c.decodeIfPresent(IPVersion.self, forKey: .ipVersion) ?? d.ipVersion
+        clientName = try c.decodeIfPresent(String.self, forKey: .clientName) ?? d.clientName
+    }
+
     public var issues: [SettingsIssue] {
         var found = [SettingsIssue]()
-        if address.trimmingCharacters(in: .whitespaces).isEmpty { found.append(.emptyAddress) }
+        switch AddressCheck.syntax(of: address) {
+        case .empty: found.append(.emptyAddress)
+        case .invalid: found.append(.invalidAddress)
+        default: break
+        }
         if !(1...65535).contains(port) { found.append(.portOutOfRange) }
-        if channels.isEmpty || Set(channels).count != channels.count || channels.contains(where: { !(1...ChannelList.maximum).contains($0) }) {
+        let list = effectiveChannels
+        if list.isEmpty || Set(list).count != list.count || list.contains(where: { !(1...ChannelList.maximum).contains($0) }) {
             found.append(.channelsOutOfRange)
         }
         if !(0...4000).contains(bufferMilliseconds) { found.append(.bufferOutOfRange) }

@@ -43,6 +43,8 @@ public final class ReceiverModel {
     }
     /// Called each time the state changes.
     @ObservationIgnored public var onStateChange: ((LinkState) -> Void)?
+    /// Called when a sender is heard: the receiver then knows what the sender sends.
+    @ObservationIgnored public var onSenderFound: ((SenderInfo) -> Void)?
     public private(set) var sender: SenderInfo?
     /// The length of the resampler filter in use, in samples.
     public private(set) var filterDelay: Int?
@@ -73,8 +75,12 @@ public final class ReceiverModel {
         self.jackServer = jackServer
     }
 
+    /// The address is a name that no machine answers to (found out by the application, which resolves it): the program would say "Address
+    /// resolution failed", so it is not started.
+    public var addressNotFound = false
+
     public var command: BridgeCommand { BridgeCommand(receiver: settings, jackServer: jackServer) }
-    public var canStart: Bool { settings.issues.isEmpty && !state.isRunning }
+    public var canStart: Bool { settings.issues.isEmpty && !addressNotFound && !state.isRunning }
     /// Settings were changed since the program started: it has to be restarted for them to apply.
     public var needsRestart: Bool { runningSettings != nil && runningSettings != settings }
 
@@ -107,7 +113,9 @@ public final class ReceiverModel {
         case .waitingForSender:
             state = .waiting
         case .senderFound(let address, let channels, let rate):
-            sender = SenderInfo(address: address, channels: channels, rate: rate)
+            let info = SenderInfo(address: address, channels: channels, rate: rate)
+            sender = info
+            onSenderFound?(info)
         case .filterDelay(let n):
             filterDelay = n
         case .syncing:
@@ -171,8 +179,11 @@ public final class SenderModel {
         self.jackServer = jackServer
     }
 
+    /// The address is a name that no machine answers to: see `ReceiverModel.addressNotFound`.
+    public var addressNotFound = false
+
     public var command: BridgeCommand { BridgeCommand(sender: settings, jackServer: jackServer) }
-    public var canStart: Bool { settings.issues.isEmpty && !state.isRunning }
+    public var canStart: Bool { settings.issues.isEmpty && !addressNotFound && !state.isRunning }
     public var needsRestart: Bool { runningSettings != nil && runningSettings != settings }
 
     public func start() {

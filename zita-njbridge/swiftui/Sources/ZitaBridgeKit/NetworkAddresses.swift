@@ -58,7 +58,32 @@ public struct NetworkInterface: Equatable, Sendable, Identifiable {
     public var isInSystemSettings: Bool { displayName != name }
 }
 
+/// A link-local IPv6 address (fe80::/10) only means something on one link: the system needs to know which interface, written after a "%"
+/// ("fe80::1%en8"). That name belongs to the Mac it is read on: the one that sends must write its own, not the one of the receiver.
+public enum LinkLocalAddress {
+    /// Whether the text is a link-local IPv6 address written without its interface.
+    public static func lacksZone(_ text: String) -> Bool {
+        let address = text.trimmingCharacters(in: .whitespaces)
+        guard address.contains(":"), !address.contains("%") else { return false }
+        let lower = address.lowercased()
+        return lower.hasPrefix("fe8") || lower.hasPrefix("fe9") || lower.hasPrefix("fea") || lower.hasPrefix("feb")
+    }
+
+    /// The address without its interface: what is given to another Mac, which has its own.
+    public static func withoutZone(_ text: String) -> String {
+        text.trimmingCharacters(in: .whitespaces).split(separator: "%", maxSplits: 1, omittingEmptySubsequences: false).first.map(String.init) ?? text
+    }
+
+    public static func adding(zone: String, to text: String) -> String { withoutZone(text) + "%" + zone }
+}
+
 public enum NetworkInventory {
+    /// The interfaces of the networks of System Settings that have a link-local IPv6 address: where such an address typed without its
+    /// interface can be completed. The cables come first.
+    public static func linkLocalInterfaces(from interfaces: [NetworkInterface] = NetworkInventory.interfaces()) -> [NetworkInterface] {
+        interfaces.filter { i in !i.isLoopback && i.isInSystemSettings && i.addresses.contains { $0.family == .ipv6 && $0.kind == .linkLocal } }
+    }
+
     /// The interfaces that are up and have an address, the real ones first, and each with its addresses, the usable first.
     public static func interfaces() -> [NetworkInterface] {
         let system = systemInterfaces()

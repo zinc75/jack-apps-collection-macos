@@ -46,6 +46,7 @@ public final class BridgeController {
 
         graph.onChange = { [weak self] in self?.graphChanged() }
         receiver.onStateChange = { [weak self] in self?.stateChanged(.receive, $0) }
+        receiver.onSenderFound = { [weak self] in self?.senderHeard($0) }
         sender.onStateChange = { [weak self] in self?.stateChanged(.send, $0) }
     }
 
@@ -116,7 +117,7 @@ public final class BridgeController {
 
     /// The channels of a direction as they are set now (what the matrix shows).
     public func channels(for direction: LinkDirection) -> [Int] {
-        direction == .receive ? receiver.settings.channels : Array(1...max(1, sender.settings.channels))
+        direction == .receive ? receiver.settings.effectiveChannels : Array(1...max(1, sender.settings.channels))
     }
 
     public func toggleWire(_ direction: LinkDirection, channel: Int, port: String) {
@@ -148,13 +149,23 @@ public final class BridgeController {
         if state.isRunning {
             // Its ports exist, or will in a moment: the manager waits for them.
             let (client, channels): (String, [Int]) = direction == .receive
-                ? (receiver.runningSettings?.clientName ?? receiver.settings.clientName, receiver.runningSettings?.channels ?? receiver.settings.channels)
+                ? (receiver.runningSettings?.clientName ?? receiver.settings.clientName, receiver.runningSettings?.effectiveChannels ?? receiver.settings.effectiveChannels)
                 : (sender.runningSettings?.clientName ?? sender.settings.clientName, Array(1...max(1, sender.runningSettings?.channels ?? sender.settings.channels)))
             manager.attach(client: client, channels: channels, wiring: wiring(for: direction))
         } else {
             manager.detach()
             if pendingRestart.remove(direction) != nil { start(direction) }
         }
+    }
+
+    /// A sender is heard. An automatic receiver takes all of its channels: when the sender has another number than the one the program
+    /// was started with, that number is remembered and the program is started again, once (the next time it starts with it).
+    private func senderHeard(_ sender: SenderInfo) {
+        guard receiver.settings.automaticChannels else { return }
+        let n = min(max(sender.channels, 1), ChannelList.maximum)
+        if receiver.settings.knownSenderChannels != n { receiver.settings.knownSenderChannels = n }
+        let running = receiver.runningSettings?.effectiveChannels.count ?? n
+        if running != n { restart(.receive) }
     }
 
     private func graphChanged() {
