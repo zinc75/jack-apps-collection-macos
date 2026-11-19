@@ -1066,6 +1066,34 @@
         }
       }
     },
+    "Ce Mac reçoit du son depuis le réseau": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Mac receives sound from the network"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieser Mac empfängt Ton aus dem Netzwerk"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questo Mac riceve l'audio dalla rete"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este Mac recibe sonido de la red"
+          }
+        }
+      }
+    },
     "Ce Mac reçoit et envoie en même temps.": {
       "localizations": {
         "en": {
@@ -1090,34 +1118,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Este Mac recibe y envía al mismo tiempo."
-          }
-        }
-      }
-    },
-    "Ce Mac reçoit le son du réseau": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This Mac receives sound from the network"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dieser Mac empfängt Ton aus dem Netzwerk"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Questo Mac riceve l'audio dalla rete"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Este Mac recibe sonido de la red"
           }
         }
       }
@@ -1482,6 +1482,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Clientes JACK"
+          }
+        }
+      }
+    },
+    "Code source": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source code"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quellcode"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codice sorgente"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Código fuente"
           }
         }
       }
@@ -1930,6 +1958,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Destinatario"
+          }
+        }
+      }
+    },
+    "Documentation Zita Network Bridge": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zita Network Bridge Documentation"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokumentation zu Zita Network Bridge"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Documentazione di Zita Network Bridge"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Documentación de Zita Network Bridge"
           }
         }
       }
@@ -2746,30 +2802,30 @@
         }
       }
     },
-    "Interface non officielle de zita-njbridge, de Fons Adriaensen.\nPortage macOS et interface : Éric Bavu.\nLicence GPL, version 3.": {
+    "Interface non officielle de zita-njbridge, de Fons Adriaensen.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Unofficial interface for zita-njbridge, by Fons Adriaensen.\nmacOS port and interface: Éric Bavu.\nGPL licence, version 3."
+            "value": "Unofficial interface for zita-njbridge, by Fons Adriaensen."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Inoffizielle Oberfläche für zita-njbridge von Fons Adriaensen.\nmacOS-Portierung und Oberfläche: Éric Bavu.\nGPL-Lizenz, Version 3."
+            "value": "Inoffizielle Oberfläche für zita-njbridge von Fons Adriaensen."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Interfaccia non ufficiale di zita-njbridge, di Fons Adriaensen.\nPorting per macOS e interfaccia: Éric Bavu.\nLicenza GPL, versione 3."
+            "value": "Interfaccia non ufficiale di zita-njbridge, di Fons Adriaensen."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Interfaz no oficial de zita-njbridge, de Fons Adriaensen.\nPortado a macOS e interfaz: Éric Bavu.\nLicencia GPL, versión 3."
+            "value": "Interfaz no oficial de zita-njbridge, de Fons Adriaensen."
           }
         }
       }
@@ -3358,6 +3414,62 @@
           "stringUnit": {
             "state": "translated",
             "value": "Enlace"
+          }
+        }
+      }
+    },
+    "Licence": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licence"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lizenz"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licenza"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licencia"
+          }
+        }
+      }
+    },
+    "Licence GPL, version 3 ou ultérieure.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GPL licence, version 3 or later."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GPL-Lizenz, Version 3 oder später."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licenza GPL, versione 3 o successiva."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licencia GPL, versión 3 o posterior."
           }
         }
       }
@@ -4030,6 +4142,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Puerto"
+          }
+        }
+      }
+    },
+    "Portage macOS et interface : Éric Bavu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS port and interface: Éric Bavu."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS-Portierung und Oberfläche: Éric Bavu."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Porting per macOS e interfaccia: Éric Bavu."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Portado a macOS e interfaz: Éric Bavu."
           }
         }
       }
@@ -4982,6 +5122,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Oscuro"
+          }
+        }
+      }
+    },
+    "Soutenir ☕": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Support ☕"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unterstützen ☕"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sostieni ☕"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apoyar ☕"
           }
         }
       }
@@ -6386,30 +6554,30 @@
         }
       }
     },
-    "À propos de Zita Network Bridge": {
+    "À propos de %@": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "About Zita Network Bridge"
+            "value": "About %@"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Über Zita Network Bridge"
+            "value": "Über %@"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Informazioni su Zita Network Bridge"
+            "value": "Informazioni su %@"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Acerca de Zita Network Bridge"
+            "value": "Acerca de %@"
           }
         }
       }

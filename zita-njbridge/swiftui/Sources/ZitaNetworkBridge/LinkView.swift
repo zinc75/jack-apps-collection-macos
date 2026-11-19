@@ -90,7 +90,7 @@ struct ReceiveBlock: View {
         let controller = model.controller
         let r = controller.receiver
         let state = r.state
-        DirectionContainer(direction: .receive, detail: "Ce Mac reçoit le son du réseau") {
+        DirectionContainer(direction: .receive, detail: "Ce Mac reçoit du son depuis le réseau") {
             DirectionHeader(direction: .receive, title: title(state), state: state, detail: detail(state),
                             where_: Text("Écoute sur **\(r.settings.address.isEmpty ? "—" : r.settings.address) : \(r.settings.port)**"))
             Group {
