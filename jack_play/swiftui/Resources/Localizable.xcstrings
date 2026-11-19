@@ -1205,6 +1205,34 @@
         }
       }
     },
+    "Code source" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Source code"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quellcode"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codice sorgente"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Código fuente"
+          }
+        }
+      }
+    },
     "Commander le transport" : {
       "localizations" : {
         "de" : {
@@ -1425,6 +1453,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sotto"
+          }
+        }
+      }
+    },
+    "Documentation Jack Play" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jack Play Documentation"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dokumentation zu Jack Play"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Documentazione di Jack Play"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Documentación de Jack Play"
           }
         }
       }
@@ -1739,28 +1795,28 @@
     },
     "Fermer" : {
       "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Schließen"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Close"
           }
         },
-        "es" : {
+        "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cerrar"
+            "value" : "Schließen"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chiudi"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerrar"
           }
         }
       }
@@ -2073,30 +2129,30 @@
         }
       }
     },
-    "Interface non officielle de jack_play (rju-play de Rohan Drape).\nPortage macOS et interface : Éric Bavu.\nLicence GPL, version 3." : {
+    "Interface non officielle de jack_play (rju-play de Rohan Drape)." : {
       "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Inoffizielle Oberfläche für jack_play (rju-play von Rohan Drape).\nmacOS-Portierung und Oberfläche: Éric Bavu.\nGPL-Lizenz, Version 3."
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Unofficial interface for jack_play (rju-play by Rohan Drape).\nmacOS port and interface: Éric Bavu.\nGPL licence, version 3."
+            "value" : "Unofficial interface for jack_play (rju-play by Rohan Drape)."
           }
         },
-        "es" : {
+        "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Interfaz no oficial de jack_play (rju-play, de Rohan Drape).\nPortado a macOS e interfaz: Éric Bavu.\nLicencia GPL, versión 3."
+            "value" : "Inoffizielle Oberfläche für jack_play (rju-play von Rohan Drape)."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Interfaccia non ufficiale per jack_play (rju-play di Rohan Drape).\nPorting macOS e interfaccia: Éric Bavu.\nLicenza GPL, versione 3."
+            "value" : "Interfaccia non ufficiale di jack_play (rju-play di Rohan Drape)."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Interfaz no oficial de jack_play (rju-play, de Rohan Drape)."
           }
         }
       }
@@ -2517,6 +2573,62 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "I file si riproducono uno dopo l'altro, senza interruzioni. Ognuno mantiene le proprie connessioni."
+          }
+        }
+      }
+    },
+    "Licence" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Licence"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lizenz"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Licenza"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Licencia"
+          }
+        }
+      }
+    },
+    "Licence GPL, version 3." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GPL licence, version 3."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GPL-Lizenz, Version 3."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Licenza GPL, versione 3."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Licencia GPL, versión 3."
           }
         }
       }
@@ -3345,6 +3457,34 @@
         }
       }
     },
+    "Portage macOS et interface : Éric Bavu." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS port and interface: Éric Bavu."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS-Portierung und Oberfläche: Éric Bavu."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Porting per macOS e interfaccia: Éric Bavu."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Portado a macOS e interfaz: Éric Bavu."
+          }
+        }
+      }
+    },
     "Ports JACK de destination" : {
       "localizations" : {
         "de" : {
@@ -4045,6 +4185,34 @@
         }
       }
     },
+    "Soutenir ☕" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Support ☕"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unterstützen ☕"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sostieni ☕"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apoyar ☕"
+          }
+        }
+      }
+    },
     "Système" : {
       "localizations" : {
         "de" : {
@@ -4583,30 +4751,30 @@
         }
       }
     },
-    "À propos de Jack Play" : {
+    "À propos de %@" : {
       "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Über Jack Play"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "About Jack Play"
+            "value" : "About %@"
           }
         },
-        "es" : {
+        "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Acerca de Jack Play"
+            "value" : "Über %@"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Informazioni su Jack Play"
+            "value" : "Informazioni su %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acerca de %@"
           }
         }
       }

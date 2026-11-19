@@ -24,7 +24,7 @@ struct JackPlayApp: App {
     @State private var appearance: AppearanceSettings
 
     init() {
-        NSWindow.allowsAutomaticWindowTabbing = false
+        CollectionMenus.disableSystemMenuAdditions()
         let env = ProcessInfo.processInfo.environment
         var keeps = true
         #if DEBUG
@@ -71,7 +71,6 @@ struct JackPlayApp: App {
             CommandGroup(replacing: .printItem) {}
             CommandGroup(replacing: .textEditing) {}
             CommandGroup(replacing: .textFormatting) {}
-            CommandGroup(replacing: .help) {}
             CommandGroup(replacing: .toolbar) {
                 Button("Lecture") { model.page = .play }.keyboardShortcut("1", modifiers: .command)
                 Button("Liste de lecture") { model.page = .playlist }.keyboardShortcut("2", modifiers: .command)
@@ -98,23 +97,21 @@ struct JackPlayApp: App {
             }
         }
         .commands {
-            CommandGroup(replacing: .appInfo) {
-                Button("À propos de Jack Play") {
-                    let credits = String(localized: "Interface non officielle de jack_play (rju-play de Rohan Drape).\nPortage macOS et interface : Éric Bavu.\nLicence GPL, version 3.")
-                    let style = NSMutableParagraphStyle()
-                    style.alignment = .center
-                    let upstream = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
-                    NSApplication.shared.orderFrontStandardAboutPanel(options: [
-                        .applicationVersion: "\(upstream) macOS Edition",
-                        .version: "",
-                        .credits: NSAttributedString(string: credits, attributes: [
-                            .font: NSFont.systemFont(ofSize: NSFont.smallSystemFontSize),
-                            .foregroundColor: NSColor.labelColor,
-                            .paragraphStyle: style,
-                        ]),
-                    ])
-                }
-            }
+            CollectionMenus(
+                about: AboutInfo(
+                    name: "Jack Play",
+                    // The version shown is the one of the program, then "macOS Edition"; the build number is not shown.
+                    version: "\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "") macOS Edition",
+                    summary: String(localized: "Interface non officielle de jack_play (rju-play de Rohan Drape)."),
+                    lines: [String(localized: "Portage macOS et interface : Éric Bavu."), String(localized: "Licence GPL, version 3.")],
+                    copyright: "© 2026 Éric Bavu",
+                    sourceURL: URL(string: "https://github.com/zinc75/jack-apps-collection-macos"),
+                    supportURL: URL(string: "https://buymeacoffee.com/zinc75"),
+                    licenseFile: "jack_play-COPYING.txt",
+                    licenseURL: URL(string: "https://www.gnu.org/licenses/gpl-3.0.html")),
+                appearance: appearance,
+                documentationTitle: String(localized: "Documentation Jack Play"),
+                documentationURL: URL(string: "https://github.com/zinc75/jack-apps-collection-macos/tree/main/jack_play")!)
         }
     }
 }
