@@ -19,7 +19,7 @@ loop wakes up at (a peak is the highest sample since the last line, and a window
  #include <unistd.h>
  
  #include <jack/jack.h> /* Jack */
-@@ -517,13 +518,22 @@ struct report_state {
+@@ -545,13 +546,22 @@ struct report_state {
  	i64 last_pos;
  	int last_state;
  	bool last_sound;
@@ -42,7 +42,7 @@ loop wakes up at (a peak is the highest sample since the last line, and a window
  }
  
  static void report(struct player *d, struct report_state *r)
-@@ -536,6 +546,14 @@ static void report(struct player *d, struct report_state *r)
+@@ -564,6 +574,14 @@ static void report(struct player *d, struct report_state *r)
  		r->last_pos = pos;
  		r->last_state = state;
  	}
@@ -57,7 +57,7 @@ loop wakes up at (a peak is the highest sample since the last line, and a window
  	/* The levels: take them, and say them while there is sound (and once more, with the zeros). */
  	bool sound = false;
  	float peaks[256];
-@@ -597,7 +615,8 @@ static void control_loop(struct player *d)
+@@ -625,7 +643,8 @@ static void control_loop(struct player *d)
  	report_init(&rs);
  	while (!stopping(d)) {
  		struct pollfd p = { 0, POLLIN, 0 };

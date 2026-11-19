@@ -75,16 +75,26 @@ of the file), and no overlap.
  		if (d->ended || (!d->playing && !want)) {
  			signal_set(d->out, nframes, d->channels, 0.0);
  			__atomic_store_n(&d->pub_state, d->ended ? 2 : 0, __ATOMIC_RELEASE);
-@@ -345,7 +376,7 @@ int signal_proc(jack_nframes_t nframes, void *PTR)
- 	   frames acquired. */
- 	long err = src_callback_read(d->src,
- 		d->o.src_ratio,
--		(long)nframes,
-+		(long)nframes - offset,
- 		d->j_buffer);
- 	die_when(err == 0,
- 		"rju-play: sample rate converter failed: %s\n",
-@@ -366,9 +397,14 @@ int signal_proc(jack_nframes_t nframes, void *PTR)
+@@ -349,7 +380,8 @@ int signal_proc(jack_nframes_t nframes, void *PTR)
+ 	bool reader_at_eof = atomic_load_explicit(&d->reader_at_eof, memory_order_acquire);
+ 	i64 frame_count;
+ 	if (copy) {
+-		size_t byte_count = ringbuffer_read(d->rb, (char *)d->j_buffer, nbytes);
++		size_t byte_count = ringbuffer_read(d->rb, (char *)d->j_buffer,
++			(size_t)((long)nframes - offset) * d->channels * sizeof(float));
+ 		frame_count = byte_count / (d->channels * sizeof(float));
+ 		d->reader_frame_count += frame_count;
+ 		d->player_frame_count += frame_count;
+@@ -370,7 +402,7 @@ int signal_proc(jack_nframes_t nframes, void *PTR)
+ 		   frames acquired. */
+ 		frame_count = src_callback_read(d->src,
+ 			d->o.src_ratio,
+-			(long)nframes,
++			(long)nframes - offset,
+ 			d->j_buffer);
+ 		die_when(frame_count == 0,
+ 			"rju-play: sample rate converter failed: %s\n",
+@@ -392,9 +424,14 @@ int signal_proc(jack_nframes_t nframes, void *PTR)
  	}
  
  	/* Uninterleave available data to the output buffers. */
@@ -93,23 +103,25 @@ of the file), and no overlap.
 +			d->out[j][i] = 0.0;
 +		}
 +	}
- 	for (i = 0; i < err; i++) {
+ 	for (i = 0; i < frame_count; i++) {
  		for (j = 0; j < d->channels; j++) {
 -			d->out[j][i] = d->j_buffer[(i * d->channels) + j];
 +			d->out[j][offset + i] = d->j_buffer[(i * d->channels) + j];
  		}
  	}
  
-@@ -376,15 +412,27 @@ int signal_proc(jack_nframes_t nframes, void *PTR)
+@@ -402,17 +439,29 @@ int signal_proc(jack_nframes_t nframes, void *PTR)
  	   output buffers.  The print statement is not correct, a this
  	   should set a flag and have another thread take appropriate
  	   action. */
--	if (err < nframes) {
--		fprintf(stderr, "rju-play: disk thread late (%ld < %d)\n", err, nframes);
--		for (i = err; i < nframes; i++) {
-+	if (err < (long)nframes - offset) {
-+		fprintf(stderr, "rju-play: disk thread late (%ld < %d)\n", err, nframes - offset);
-+		for (i = offset + err; i < nframes; i++) {
+-	if (frame_count < nframes) {
++	if (frame_count < (long)nframes - offset) {
+ 		if (!(copy && reader_at_eof)) {
+-			fprintf(stderr, "rju-play: disk thread late (%ld < %d)\n", frame_count, nframes);
++			fprintf(stderr, "rju-play: disk thread late (%ld < %d)\n", frame_count, nframes - offset);
+ 		}
+-		for (i = frame_count; i < nframes; i++) {
++		for (i = offset + frame_count; i < nframes; i++) {
  			for (j = 0; j < d->channels; j++) {
  				d->out[j][i] = 0.0;
  			}
@@ -131,7 +143,7 @@ of the file), and no overlap.
  	/* Control mode: a short ramp when playing starts or stops, so that
  	   the output does not click. */
  	if (d->o.control && want != d->playing) {
-@@ -546,6 +594,11 @@ static void report(struct player *d, struct report_state *r)
+@@ -574,6 +623,11 @@ static void report(struct player *d, struct report_state *r)
  		r->last_pos = pos;
  		r->last_state = state;
  	}
@@ -143,7 +155,7 @@ of the file), and no overlap.
  	/* The levels are said about thirty times a second, whatever the rate this is called at: a peak is the highest sample since the
  	 * last line, and a window shorter than an audio cycle would show a level and then zeros. */
  	i64 now = monotonic_ns();
-@@ -593,14 +646,21 @@ static void *report_proc(void *PTR)
+@@ -621,14 +675,21 @@ static void *report_proc(void *PTR)
  static void control_command(struct player *d, const char *line)
  {
  	long n;
@@ -165,7 +177,7 @@ of the file), and no overlap.
  		__atomic_store_n(&d->ctl_seek, (i64)(n < 0 ? 0 : n), __ATOMIC_RELEASE);
  	} else if (strcmp(line, "quit") == 0) {
  		__atomic_store_n(&d->quit, 1, __ATOMIC_RELEASE);
-@@ -651,6 +711,8 @@ int jackplay(const char *file_name,
+@@ -679,6 +740,8 @@ int jackplay(const char *file_name,
  	d.player_frame_count = 0;
  	d.ctl_seek = -1;
  	d.ctl_play = 0;

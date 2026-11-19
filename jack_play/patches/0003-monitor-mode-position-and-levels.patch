@@ -92,7 +92,7 @@ With -l the position goes back to the start of the file at each turn.
  			return 0;
  		}
  	}
-@@ -348,19 +380,23 @@ int signal_proc(jack_nframes_t nframes, void *PTR)
+@@ -374,19 +406,23 @@ int signal_proc(jack_nframes_t nframes, void *PTR)
  	}
  
  	/* Control mode: a short ramp when playing starts or stops, so that
@@ -126,8 +126,8 @@ With -l the position goes back to the start of the file at each turn.
 +		if (finished) {
  			d->play_pos = (double)d->file_frames;
  		} else {
- 			d->play_pos += (double)err / d->o.src_ratio;
-@@ -371,7 +407,8 @@ int signal_proc(jack_nframes_t nframes, void *PTR)
+ 			d->play_pos += (double)frame_count / d->o.src_ratio;
+@@ -397,7 +433,8 @@ int signal_proc(jack_nframes_t nframes, void *PTR)
  			}
  		}
  		__atomic_store_n(&d->pub_pos, (i64)d->play_pos, __ATOMIC_RELEASE);
@@ -137,7 +137,7 @@ With -l the position goes back to the start of the file at each turn.
  	}
  
  	/* Indicate to the disk thread that the ring buffer has been read
-@@ -394,7 +431,8 @@ void usage(void)
+@@ -420,7 +457,8 @@ void usage(void)
  	printf("    -b N : Ring buffer size in frames (default=4096).\n");
  	printf("    -c N : ID of conversion algorithm (default=2, SRC_SINC_FASTEST).\n");
  	printf("    -C   : Control mode: commands on standard input (play, pause, seek N, quit),\n");
@@ -147,8 +147,8 @@ With -l the position goes back to the start of the file at each turn.
  	printf("    -d N : Destination port pattern (default=NULL).\n");
  	printf("    -g N : amplitude gain (multiplier, default=1).\n");
  	printf("    -i N : Initial disk seek in frames (default=0).\n");
-@@ -442,35 +480,87 @@ long read_input_from_rb(void *PTR, float **buf)
- 	return (long)err;
+@@ -468,35 +506,87 @@ long read_input_from_rb(void *PTR, float **buf)
+ 	return (long)frame_count;
  }
  
 -/* Control mode.  Commands arrive on standard input, one per line:
@@ -250,7 +250,7 @@ With -l the position goes back to the start of the file at each turn.
  }
  
  static void control_command(struct player *d, const char *line)
-@@ -494,11 +584,8 @@ static void control_loop(struct player *d)
+@@ -520,11 +610,8 @@ static void control_loop(struct player *d)
  {
  	char buf[256];
  	size_t fill = 0;
@@ -264,7 +264,7 @@ With -l the position goes back to the start of the file at each turn.
  	while (!stopping(d)) {
  		struct pollfd p = { 0, POLLIN, 0 };
  		int r = poll(&p, 1, 33);
-@@ -521,7 +608,7 @@ static void control_loop(struct player *d)
+@@ -547,7 +634,7 @@ static void control_loop(struct player *d)
  				fill = 0; /* a line that is too long is dropped */
  			}
  		}
@@ -273,7 +273,7 @@ With -l the position goes back to the start of the file at each turn.
  	}
  }
  
-@@ -542,6 +629,7 @@ int jackplay(const char *file_name,
+@@ -568,6 +655,7 @@ int jackplay(const char *file_name,
  	d.play_pos = 0;
  	d.pub_pos = 0;
  	d.pub_state = 0;
@@ -281,7 +281,7 @@ With -l the position goes back to the start of the file at each turn.
  	observe_signals();
  
  	/* Open sound file. */
-@@ -554,6 +642,7 @@ int jackplay(const char *file_name,
+@@ -580,6 +668,7 @@ int jackplay(const char *file_name,
  	/* Allocate channel based data. */
  	die_when(d.channels < 1, "rju-play: channels < 1: %d\n", d.channels);
  	d.out = xmalloc(d.channels * sizeof(float *));
@@ -289,7 +289,7 @@ With -l the position goes back to the start of the file at each turn.
  	d.output_port = xmalloc(d.channels * sizeof(jack_port_t *));
  
  	/* Allocate buffers. */
-@@ -637,16 +726,19 @@ int jackplay(const char *file_name,
+@@ -663,16 +752,19 @@ int jackplay(const char *file_name,
  
  	/* Wait for disk thread to end, which it does when it reaches the
  	   end of the file or is interrupted. */
@@ -311,7 +311,7 @@ With -l the position goes back to the start of the file at each turn.
  		pthread_join(d.disk_thread, NULL);
  
  		/* The disk thread ends when the whole file is in the ring buffer.
-@@ -658,6 +750,10 @@ int jackplay(const char *file_name,
+@@ -684,6 +776,10 @@ int jackplay(const char *file_name,
  			struct timespec rem;
  			nanosleep(&req, &rem);
  		}
@@ -322,7 +322,7 @@ With -l the position goes back to the start of the file at each turn.
  	}
  
  	/* Close sound file, free ring buffer, close Jack connection, close
-@@ -671,6 +767,7 @@ int jackplay(const char *file_name,
+@@ -697,6 +793,7 @@ int jackplay(const char *file_name,
  	free(d.j_buffer);
  	free(d.k_buffer);
  	free(d.out);
@@ -330,7 +330,7 @@ With -l the position goes back to the start of the file at each turn.
  	free(d.output_port);
  	src_delete(d.src);
  	return 0;
-@@ -694,13 +791,17 @@ int main(int argc, char *argv[])
+@@ -720,13 +817,17 @@ int main(int argc, char *argv[])
  	o.dst_pattern = NULL;
  	o.loop = false;
  	o.control = false;
@@ -349,7 +349,7 @@ With -l the position goes back to the start of the file at each turn.
  		case 'b':
  			o.buffer_frames = (int)strtol(optarg, NULL, 0);
  			break;
-@@ -760,10 +861,14 @@ int main(int argc, char *argv[])
+@@ -786,10 +887,14 @@ int main(int argc, char *argv[])
  			fprintf(stderr, "rju-play: -C cannot be used with -t\n");
  			usage();
  		}

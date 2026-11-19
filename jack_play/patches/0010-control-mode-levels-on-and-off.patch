@@ -17,7 +17,7 @@ for them.
  	/* A start at a given time (play at T): the frame time of JACK (it wraps: compared as a difference). */
  	uint32_t start_at;
  	int start_armed; /* control thread: start_at is set and has not come yet */
-@@ -466,7 +467,9 @@ int signal_proc(jack_nframes_t nframes, void *PTR)
+@@ -495,7 +496,9 @@ int signal_proc(jack_nframes_t nframes, void *PTR)
  		}
  		__atomic_store_n(&d->pub_pos, (i64)d->play_pos, __ATOMIC_RELEASE);
  		__atomic_store_n(&d->pub_state, finished ? 2 : (d->o.control ? d->playing : 1), __ATOMIC_RELEASE);
@@ -28,7 +28,7 @@ for them.
  	}
  
  	/* Indicate to the disk thread that the ring buffer has been read
-@@ -559,6 +562,8 @@ long read_input_from_rb(void *PTR, float **buf)
+@@ -588,6 +591,8 @@ long read_input_from_rb(void *PTR, float **buf)
       play        play, or go on playing (from the start if the end had been reached)
       pause       stop playing, the position is kept
       seek N      go to frame N of the file (a frame of the file, not of the server)
@@ -37,7 +37,7 @@ for them.
       quit        leave
  
     The end of the input is a quit. */
-@@ -662,6 +667,10 @@ static void control_command(struct player *d, const char *line)
+@@ -691,6 +696,10 @@ static void control_command(struct player *d, const char *line)
  	} else if (sscanf(line, "seek %ld", &n) == 1) {
  		__atomic_store_n(&d->start_armed, 0, __ATOMIC_RELEASE);
  		__atomic_store_n(&d->ctl_seek, (i64)(n < 0 ? 0 : n), __ATOMIC_RELEASE);
@@ -48,7 +48,7 @@ for them.
  	} else if (strcmp(line, "quit") == 0) {
  		__atomic_store_n(&d->quit, 1, __ATOMIC_RELEASE);
  	}
-@@ -711,6 +720,7 @@ int jackplay(const char *file_name,
+@@ -740,6 +749,7 @@ int jackplay(const char *file_name,
  	d.player_frame_count = 0;
  	d.ctl_seek = -1;
  	d.ctl_play = 0;

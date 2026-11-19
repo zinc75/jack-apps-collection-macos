@@ -163,20 +163,33 @@ a play. -C cannot be used with -t. Without -C nothing changes.
  	/* Write silence if the transport is stopped.  If stopped the disk
  	   thread will sleep and signals will be ignored, so check here
  	   also. */
-@@ -255,7 +320,11 @@ int signal_proc(jack_nframes_t nframes, void *PTR)
- 	   as the reader read, scaled by the sample rate conversion ratio. */
- 	if (atomic_load_explicit(&d->reader_at_eof, memory_order_acquire)
- 		&& d->player_frame_count >= (i64)(d->reader_frame_count * d->o.src_ratio)) {
--		atomic_store_explicit(&d->player_done, true, memory_order_release);
-+		if (d->o.control) {
-+			d->ended = 1;
-+		} else {
-+			atomic_store_explicit(&d->player_done, true, memory_order_release);
-+		}
+@@ -256,7 +321,11 @@ int signal_proc(jack_nframes_t nframes, void *PTR)
+ 		/* Everything is played once the disk thread has finished and
+ 		   the ring buffer is empty. */
+ 		if (reader_at_eof && ringbuffer_read_space(d->rb) == 0) {
+-			atomic_store_explicit(&d->player_done, true, memory_order_release);
++			if (d->o.control) {
++				d->ended = 1;
++			} else {
++				atomic_store_explicit(&d->player_done, true, memory_order_release);
++			}
+ 		}
+ 	} else {
+ 		/* Get data from sample rate converter, this returns the number of
+@@ -274,7 +343,11 @@ int signal_proc(jack_nframes_t nframes, void *PTR)
+ 		   as the reader read, scaled by the sample rate conversion ratio. */
+ 		if (reader_at_eof
+ 			&& d->player_frame_count >= (i64)(d->reader_frame_count * d->o.src_ratio)) {
+-			atomic_store_explicit(&d->player_done, true, memory_order_release);
++			if (d->o.control) {
++				d->ended = 1;
++			} else {
++				atomic_store_explicit(&d->player_done, true, memory_order_release);
++			}
+ 		}
  	}
  
- 	/* Uninterleave available data to the output buffers. */
-@@ -278,6 +347,33 @@ int signal_proc(jack_nframes_t nframes, void *PTR)
+@@ -300,6 +373,33 @@ int signal_proc(jack_nframes_t nframes, void *PTR)
  		}
  	}
  
@@ -196,7 +209,7 @@ a play. -C cannot be used with -t. Without -C nothing changes.
 +		if (d->ended) {
 +			d->play_pos = (double)d->file_frames;
 +		} else {
-+			d->play_pos += (double)err / d->o.src_ratio;
++			d->play_pos += (double)frame_count / d->o.src_ratio;
 +			if (d->o.loop && d->file_frames > 0) {
 +				while (d->play_pos >= (double)d->file_frames) {
 +					d->play_pos -= (double)d->file_frames;
@@ -210,7 +223,7 @@ a play. -C cannot be used with -t. Without -C nothing changes.
  	/* Indicate to the disk thread that the ring buffer has been read
  	   from.  This is done by writing a single byte to a communication
  	   pipe.  Once the disk thread gets so far ahead that the ring
-@@ -297,6 +393,8 @@ void usage(void)
+@@ -319,6 +419,8 @@ void usage(void)
  	printf("Usage: rju-play [ options ] sound-file...\n");
  	printf("    -b N : Ring buffer size in frames (default=4096).\n");
  	printf("    -c N : ID of conversion algorithm (default=2, SRC_SINC_FASTEST).\n");
@@ -219,8 +232,8 @@ a play. -C cannot be used with -t. Without -C nothing changes.
  	printf("    -d N : Destination port pattern (default=NULL).\n");
  	printf("    -g N : amplitude gain (multiplier, default=1).\n");
  	printf("    -i N : Initial disk seek in frames (default=0).\n");
-@@ -344,6 +442,89 @@ long read_input_from_rb(void *PTR, float **buf)
- 	return (long)err;
+@@ -366,6 +468,89 @@ long read_input_from_rb(void *PTR, float **buf)
+ 	return (long)frame_count;
  }
  
 +/* Control mode.  Commands arrive on standard input, one per line:
@@ -309,7 +322,7 @@ a play. -C cannot be used with -t. Without -C nothing changes.
  int jackplay(const char *file_name,
  	struct player_opt o)
  {
-@@ -353,12 +534,22 @@ int jackplay(const char *file_name,
+@@ -375,12 +560,22 @@ int jackplay(const char *file_name,
  	d.player_done = false;
  	d.reader_frame_count = 0;
  	d.player_frame_count = 0;
@@ -332,7 +345,7 @@ a play. -C cannot be used with -t. Without -C nothing changes.
  
  	/* Allocate channel based data. */
  	die_when(d.channels < 1, "rju-play: channels < 1: %d\n", d.channels);
-@@ -425,6 +616,11 @@ int jackplay(const char *file_name,
+@@ -447,6 +642,11 @@ int jackplay(const char *file_name,
  		d.o.seek_request = (i64)(isr * d.o.seek_request_sec);
  		d.o.seek_request_sec = -1;
  	}
@@ -344,7 +357,7 @@ a play. -C cannot be used with -t. Without -C nothing changes.
  
  	/* Create output ports, connect if env variable set and activate
  	   client. */
-@@ -441,16 +637,27 @@ int jackplay(const char *file_name,
+@@ -463,16 +663,27 @@ int jackplay(const char *file_name,
  
  	/* Wait for disk thread to end, which it does when it reaches the
  	   end of the file or is interrupted. */
@@ -382,7 +395,7 @@ a play. -C cannot be used with -t. Without -C nothing changes.
  	}
  
  	/* Close sound file, free ring buffer, close Jack connection, close
-@@ -486,10 +693,14 @@ int main(int argc, char *argv[])
+@@ -508,10 +719,14 @@ int main(int argc, char *argv[])
  	o.ampl = 1.0;
  	o.dst_pattern = NULL;
  	o.loop = false;
@@ -398,7 +411,7 @@ a play. -C cannot be used with -t. Without -C nothing changes.
  		case 'b':
  			o.buffer_frames = (int)strtol(optarg, NULL, 0);
  			break;
-@@ -544,6 +755,15 @@ int main(int argc, char *argv[])
+@@ -566,6 +781,15 @@ int main(int argc, char *argv[])
  	if (optind > argc - 1) {
  		usage();
  	}

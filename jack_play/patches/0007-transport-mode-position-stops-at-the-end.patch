@@ -5,7 +5,7 @@ reported with -M went on with it, past the last frame. It now stays at the last
 frame with the state ended, until the transport is moved.
 --- a/cmd/rju-play.c
 +++ b/cmd/rju-play.c
-@@ -401,6 +401,10 @@ int signal_proc(jack_nframes_t nframes, void *PTR)
+@@ -429,6 +429,10 @@ int signal_proc(jack_nframes_t nframes, void *PTR)
  	   each channel, for the reporting thread. */
  	if (d->o.monitor) {
  		int finished = d->o.control ? d->ended : atomic_load_explicit(&d->player_done, memory_order_acquire);

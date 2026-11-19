@@ -6,12 +6,21 @@ the player is paused, a seek only moves, and play starts again from the
 beginning as before.
 --- a/cmd/rju-play.c
 +++ b/cmd/rju-play.c
-@@ -357,6 +357,8 @@ int signal_proc(jack_nframes_t nframes, void *PTR)
- 		&& d->player_frame_count >= (i64)(d->reader_frame_count * d->o.src_ratio)) {
- 		if (d->o.control) {
- 			d->ended = 1;
-+			/* After the end the player is paused: a seek then moves without playing. */
-+			__atomic_store_n(&d->ctl_play, 0, __ATOMIC_RELEASE);
- 		} else {
- 			atomic_store_explicit(&d->player_done, true, memory_order_release);
- 		}
+@@ -358,6 +358,8 @@ int signal_proc(jack_nframes_t nframes, void *PTR)
+ 		if (reader_at_eof && ringbuffer_read_space(d->rb) == 0) {
+ 			if (d->o.control) {
+ 				d->ended = 1;
++				/* After the end the player is paused: a seek then moves without playing. */
++				__atomic_store_n(&d->ctl_play, 0, __ATOMIC_RELEASE);
+ 			} else {
+ 				atomic_store_explicit(&d->player_done, true, memory_order_release);
+ 			}
+@@ -380,6 +382,8 @@ int signal_proc(jack_nframes_t nframes, void *PTR)
+ 			&& d->player_frame_count >= (i64)(d->reader_frame_count * d->o.src_ratio)) {
+ 			if (d->o.control) {
+ 				d->ended = 1;
++				/* After the end the player is paused: a seek then moves without playing. */
++				__atomic_store_n(&d->ctl_play, 0, __ATOMIC_RELEASE);
+ 			} else {
+ 				atomic_store_explicit(&d->player_done, true, memory_order_release);
+ 			}
