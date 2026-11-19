@@ -38,7 +38,11 @@ public final class ReceiverModel {
     public static let historyLength = 240
 
     public var settings: ReceiveSettings
-    public private(set) var state = LinkState.stopped
+    public private(set) var state = LinkState.stopped {
+        didSet { if state != oldValue { onStateChange?(state) } }
+    }
+    /// Called each time the state changes.
+    @ObservationIgnored public var onStateChange: ((LinkState) -> Void)?
     public private(set) var sender: SenderInfo?
     /// The length of the resampler filter in use, in samples.
     public private(set) var filterDelay: Int?
@@ -149,7 +153,11 @@ public final class ReceiverModel {
 @Observable
 public final class SenderModel {
     public var settings: SendSettings
-    public private(set) var state = LinkState.stopped
+    public private(set) var state = LinkState.stopped {
+        didSet { if state != oldValue { onStateChange?(state) } }
+    }
+    /// Called each time the state changes.
+    @ObservationIgnored public var onStateChange: ((LinkState) -> Void)?
     public private(set) var log = [String]()
     public private(set) var runningSettings: SendSettings?
 
