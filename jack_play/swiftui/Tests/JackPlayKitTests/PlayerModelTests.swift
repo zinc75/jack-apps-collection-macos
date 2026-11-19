@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import MeterKit
+import JackBridge
 import XCTest
 @testable import JackPlayKit
 
@@ -52,6 +53,7 @@ final class FakeServer: PlaybackServer {
     private(set) var transport: [String] = []
 
     var playbackPorts: [String] { inputs.filter { $0.hasPrefix("system:") }.sorted() }
+    func outputPorts() -> Set<String> { [] }
     func inputPorts() -> Set<String> { inputs }
     func destinations(of output: String) -> Set<String> {
         Set(links.compactMap { $0.hasPrefix(output + ">") ? String($0.dropFirst(output.count + 1)) : nil })

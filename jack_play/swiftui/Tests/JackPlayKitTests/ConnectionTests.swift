@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+import JackBridge
 import XCTest
 @testable import JackPlayKit
 
@@ -141,6 +142,7 @@ final class FakeLinking: JackLinking {
     var connectCalls = 0
     var refuse: Set<String> = []         // inputs that JACK refuses
 
+    func outputPorts() -> Set<String> { [] }   // the player says its ports exist before it is attached: not checked
     func inputPorts() -> Set<String> { inputs }
     func destinations(of output: String) -> Set<String> {
         Set(links.compactMap { $0.hasPrefix(output + ">") ? String($0.dropFirst(output.count + 1)) : nil })

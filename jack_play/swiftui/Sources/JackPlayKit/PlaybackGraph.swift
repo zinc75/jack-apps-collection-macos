@@ -4,29 +4,17 @@ import Foundation
 import JackBridge
 import Observation
 
-/// A JACK client that has audio inputs: somewhere the player can be connected.
-public struct JackDestinationClient: Identifiable, Equatable, Sendable {
-    public var id: String { name }
-    public let name: String
-    /// Port names without the client part, in the order JACK lists them.
-    public var ports: [String]
-    /// The sound card: its inputs are the playback ports of the system, shown as "system (playback)".
-    public let isPlayback: Bool
-    /// Bundle identifier of the application a JackMoebius box stands for, if any.
-    public var bundleID: String?
-    /// The system node of JackMoebius, whose inputs are shared by the applications: it gets the picto of JackMoebius.
-    public var isJackMoebiusMaster: Bool
+/// A JACK client that has audio inputs: somewhere the player can be connected. The type is the one the tools of the collection
+/// share; for the player the sound card is the "playback" one.
+public typealias JackDestinationClient = JackPortClient
 
+extension JackPortClient {
     public init(name: String, ports: [String], isPlayback: Bool, bundleID: String? = nil, isJackMoebiusMaster: Bool = false) {
-        self.name = name
-        self.ports = ports
-        self.isPlayback = isPlayback
-        self.bundleID = bundleID
-        self.isJackMoebiusMaster = isJackMoebiusMaster
+        self.init(name: name, ports: ports, isSystem: isPlayback, bundleID: bundleID, isJackMoebiusMaster: isJackMoebiusMaster)
     }
-
-    public var displayName: String { isPlayback ? "system (playback)" : name }
-    public func fullName(of port: String) -> String { "\(name):\(port)" }
+    /// The sound card: its inputs are the playback ports of the system, shown as "system (playback)".
+    public var isPlayback: Bool { isSystem }
+    public var displayName: String { isSystem ? "system (playback)" : name }
 }
 
 /// The JACK graph as the player needs it: the audio inputs by client, where its outputs can go, and the state of the
@@ -114,6 +102,10 @@ public final class PlaybackGraph: PlaybackServer {
 
     // MARK: JackLinking
 
+    public func outputPorts() -> Set<String> {
+        Set(bridge.getPorts().filter { $0.direction == .output && $0.type == .audio }.map(\.id))
+    }
+
     public func inputPorts() -> Set<String> {
         Set(bridge.getPorts().filter { $0.direction == .input && $0.type == .audio }.map(\.id))
     }
@@ -184,18 +176,6 @@ public final class PlaybackGraph: PlaybackServer {
 
     /// Groups input ports by client. The system (the sound card) comes first, the others by name.
     nonisolated static func groupClients(inputPorts: [String]) -> [JackDestinationClient] {
-        var order: [String] = []
-        var ports: [String: [String]] = [:]
-        for full in inputPorts {
-            guard let colon = full.firstIndex(of: ":") else { continue }
-            let client = String(full[..<colon]), port = String(full[full.index(after: colon)...])
-            if ports[client] == nil { order.append(client) }
-            ports[client, default: []].append(port)
-        }
-        let groups = order.map { JackDestinationClient(name: $0, ports: ports[$0] ?? [], isPlayback: $0 == "system") }
-        return groups.sorted {
-            if $0.isPlayback != $1.isPlayback { return $0.isPlayback }
-            return $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-        }
+        JackPortClient.group(ports: inputPorts)
     }
 }
