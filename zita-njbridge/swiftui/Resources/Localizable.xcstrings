@@ -2354,30 +2354,30 @@
         }
       }
     },
-    "Envoi vers **%@ : %lld**": {
+    "Envoi vers **%@ : %@**": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sending to **%@ : %lld**"
+            "value": "Sending to **%@ : %@**"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sendet an **%@ : %lld**"
+            "value": "Sendet an **%@ : %@**"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Invio a **%@ : %lld**"
+            "value": "Invio a **%@ : %@**"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enviando a **%@ : %lld**"
+            "value": "Enviando a **%@ : %@**"
           }
         }
       }
@@ -6526,30 +6526,30 @@
         }
       }
     },
-    "vers %@ : %lld · %lld voies · %@": {
+    "vers %@ : %@ · %lld voies · %@": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "to %@ : %lld · %lld channels · %@"
+            "value": "to %@ : %@ · %lld channels · %@"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "an %@ : %lld · %lld Kanäle · %@"
+            "value": "an %@ : %@ · %lld Kanäle · %@"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "verso %@ : %lld · %lld canali · %@"
+            "value": "verso %@ : %@ · %lld canali · %@"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "hacia %@ : %lld · %lld canales · %@"
+            "value": "hacia %@ : %@ · %lld canales · %@"
           }
         }
       }
@@ -6638,30 +6638,30 @@
         }
       }
     },
-    "Écoute sur **%@ : %lld**": {
+    "Écoute sur **%@ : %@**": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Listening on **%@ : %lld**"
+            "value": "Listening on **%@ : %@**"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hört auf **%@ : %lld**"
+            "value": "Hört auf **%@ : %@**"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "In ascolto su **%@ : %lld**"
+            "value": "In ascolto su **%@ : %@**"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Escuchando en **%@ : %lld**"
+            "value": "Escuchando en **%@ : %@**"
           }
         }
       }

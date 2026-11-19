@@ -61,9 +61,13 @@ struct ContentView: View {
         #if DEBUG
         .task {
             // Development aid: ZITABRIDGE_SNAPSHOT=<file.png> writes the number of the window to <file.png>.id after 7 s, waits 4 s and quits.
-            guard let path = ProcessInfo.processInfo.environment["ZITABRIDGE_SNAPSHOT"] else { return }
-            try? await Task.sleep(for: .seconds(7))
+            let env = ProcessInfo.processInfo.environment
+            guard let path = env["ZITABRIDGE_SNAPSHOT"] else { return }
+            // ZITABRIDGE_SNAPSHOT_DELAY=<seconds> waits longer (the margin graph needs time); ZITABRIDGE_WINDOW=<width>x<height> sizes the window.
+            try? await Task.sleep(for: .seconds(env["ZITABRIDGE_SNAPSHOT_DELAY"].flatMap(Double.init) ?? 7))
             if let window = NSApp.windows.first(where: { $0.isVisible }) {
+                let size = env["ZITABRIDGE_WINDOW"]?.split(separator: "x").compactMap { Double($0) }
+                if let size, size.count == 2 { window.setContentSize(NSSize(width: size[0], height: size[1])); try? await Task.sleep(for: .milliseconds(800)) }
                 NSApp.activate()
                 window.makeKeyAndOrderFront(nil)
                 try? await Task.sleep(for: .milliseconds(600))

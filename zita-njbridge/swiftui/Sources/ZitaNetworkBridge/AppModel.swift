@@ -81,6 +81,7 @@ final class AppModel {
         }
         if let list = env["ZITABRIDGE_RECV_CHANNELS"].flatMap(ChannelList.parse) { controller.receiver.settings.automaticChannels = false; controller.receiver.settings.channels = list }
         if let address = env["ZITABRIDGE_SENDADDR"] { controller.sender.settings.address = address }
+        if let address = env["ZITABRIDGE_RECVADDR"] { controller.receiver.settings.address = address }
         if let arm = env["ZITABRIDGE_ARM"] {
             controller.receiveArmed = arm.contains("r"); controller.sendArmed = arm.contains("s")
         }

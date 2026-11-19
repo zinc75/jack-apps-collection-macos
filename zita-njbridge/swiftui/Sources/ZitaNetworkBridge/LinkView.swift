@@ -92,7 +92,7 @@ struct ReceiveBlock: View {
         let state = r.state
         DirectionContainer(direction: .receive, detail: "Ce Mac reçoit du son depuis le réseau") {
             DirectionHeader(direction: .receive, title: title(state), state: state, detail: detail(state),
-                            where_: Text("Écoute sur **\(r.settings.address.isEmpty ? "—" : r.settings.address) : \(r.settings.port)**"))
+                            where_: Text("Écoute sur **\(r.settings.address.isEmpty ? "—" : ShownAddress.listening(r.settings.address)) : \(ShownAddress.port(r.settings.port))**"))
             Group {
                 MarginCard()
                 ReceiveDetails()
@@ -121,7 +121,7 @@ struct ReceiveBlock: View {
         case .syncing: return Text("L'émetteur est trouvé : réglage du tampon et du rééchantillonneur…")
         case .linked:
             let s = r.sender
-            return Text("depuis \(s?.address ?? "—") · \(s?.channels ?? 0) voies · \((s?.rate ?? 0).formatted(.number.grouping(.automatic))) Hz")
+            return Text("depuis \(s.map { ShownAddress.other($0.address) } ?? "—") · \(s?.channels ?? 0) voies · \((s?.rate ?? 0).formatted(.number.grouping(.automatic))) Hz")
         case .failed(let text): return Text(verbatim: text)
         }
     }
@@ -358,15 +358,15 @@ struct SendBlock: View {
         let state = s.state
         DirectionContainer(direction: .send, detail: "Ce Mac envoie du son vers le réseau") {
             DirectionHeader(direction: .send, title: title(state), state: state, detail: detail(state),
-                            where_: Text("Envoi vers **\(s.settings.address.isEmpty ? "—" : s.settings.address) : \(s.settings.port)**"))
+                            where_: Text("Envoi vers **\(s.settings.address.isEmpty ? "—" : ShownAddress.other(s.settings.address)) : \(ShownAddress.port(s.settings.port))**"))
             Group {
                 Card {
                     VStack(alignment: .leading, spacing: 12) {
                         Label("Flux envoyé", systemImage: LinkDirection.send.symbol).font(.headline)
                         Grid(alignment: .leading, horizontalSpacing: 18, verticalSpacing: 12) {
                             GridRow {
-                                Fact(title: "Destinataire", value: s.settings.address.isEmpty ? "–" : s.settings.address)
-                                Fact(title: "Port", value: "\(s.settings.port)")
+                                Fact(title: "Destinataire", value: s.settings.address.isEmpty ? "–" : ShownAddress.other(s.settings.address))
+                                Fact(title: "Port", value: ShownAddress.port(s.settings.port))
                                 Fact(title: "Voies", value: "\(s.settings.channels)")
                                 Fact(title: "Format", value: format(s.settings.format))
                             }
@@ -393,7 +393,7 @@ struct SendBlock: View {
     private func detail(_ state: LinkState) -> Text {
         let s = model.controller.sender.settings
         switch state {
-        case .linked: return Text("vers \(s.address) : \(s.port) · \(s.channels) voies · \(format(s.format))")
+        case .linked: return Text("vers \(ShownAddress.other(s.address)) : \(ShownAddress.port(s.port)) · \(s.channels) voies · \(format(s.format))")
         case .failed(let text): return Text(verbatim: text)
         default: return Text("Envoi à l'arrêt. Lancez-le avec \(Image(systemName: "play.fill")) [en bas de la fenêtre](zita://flash/send).")
         }
