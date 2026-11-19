@@ -74,7 +74,7 @@ struct JackCaptureApp: App {
     }
 
     init() {
-        NSWindow.allowsAutomaticWindowTabbing = false
+        CollectionMenus.disableSystemMenuAdditions()
         let model = RecorderModel(defaults: Self.keepsSettings ? .standard : nil)
         _model = State(initialValue: model)
         AppDelegate.model = model
@@ -131,31 +131,12 @@ struct JackCaptureApp: App {
                 Button("Avancé") { model.view = .advanced }.keyboardShortcut("5", modifiers: .command)
                 Button("Affichage") { model.view = .display }.keyboardShortcut("6", modifiers: .command)
             }
-            CommandGroup(replacing: .help) {}
             // The settings of the system convention (command comma) are the page "Affichage".
             CommandGroup(replacing: .appSettings) {
                 Button("Réglages…") { model.view = .display }.keyboardShortcut(",", modifiers: .command)
             }
         }
         .commands {
-            CommandGroup(replacing: .appInfo) {
-                Button("À propos de Jack Capture") {
-                    let credits = String(localized: "Interface non officielle de jack_capture, de Kjetil Matheussen.\nPortage macOS et interface : Éric Bavu.\nLicence GPL, version 2 ou ultérieure.")
-                    let style = NSMutableParagraphStyle()
-                    style.alignment = .center
-                    // The version shown is the one of jack_capture, then "macOS Edition"; the build number is not shown.
-                    let upstream = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
-                    NSApplication.shared.orderFrontStandardAboutPanel(options: [
-                        .applicationVersion: "\(upstream) macOS Edition",
-                        .version: "",
-                        .credits: NSAttributedString(string: credits, attributes: [
-                            .font: NSFont.systemFont(ofSize: NSFont.smallSystemFontSize),
-                            .foregroundColor: NSColor.labelColor,
-                            .paragraphStyle: style,
-                        ]),
-                    ])
-                }
-            }
             CommandMenu("Enregistrement") {
                 Button(model.phase.showsStopSymbol ? "Arrêter" : "Enregistrer") {
                     #if DEBUG
@@ -165,6 +146,23 @@ struct JackCaptureApp: App {
                 }
                     .keyboardShortcut("r", modifiers: .command)
             }
+        }
+        .commands {
+            CollectionMenus(
+                about: AboutInfo(
+                    name: "Jack Capture",
+                    // The version shown is the one of the program, then "macOS Edition"; the build number is not shown.
+                    version: "\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "") macOS Edition",
+                    summary: String(localized: "Interface non officielle de jack_capture, de Kjetil Matheussen."),
+                    lines: [String(localized: "Portage macOS et interface : Éric Bavu."), String(localized: "Licence GPL, version 2 ou ultérieure.")],
+                    copyright: "© 2026 Éric Bavu",
+                    sourceURL: URL(string: "https://github.com/zinc75/jack-apps-collection-macos"),
+                    supportURL: URL(string: "https://buymeacoffee.com/zinc75"),
+                    licenseFile: "jack_capture-COPYING.txt",
+                    licenseURL: URL(string: "https://www.gnu.org/licenses/old-licenses/gpl-2.0.html")),
+                appearance: appearance,
+                documentationTitle: String(localized: "Documentation Jack Capture"),
+                documentationURL: URL(string: "https://github.com/zinc75/jack-apps-collection-macos/tree/main/jack_capture")!)
         }
     }
 }

@@ -2999,28 +2999,28 @@
     },
     "Fermer" : {
       "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Schließen"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Close"
           }
         },
-        "es" : {
+        "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cerrar"
+            "value" : "Schließen"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chiudi"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerrar"
           }
         }
       }
@@ -3301,34 +3301,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Incidenti"
-          }
-        }
-      }
-    },
-    "Interface non officielle de jack_capture, de Kjetil Matheussen.\nPortage macOS et interface : Éric Bavu.\nLicence GPL, version 2 ou ultérieure." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Inoffizielle Oberfläche für jack_capture von Kjetil Matheussen.\nmacOS-Portierung und Oberfläche: Éric Bavu.\nGPL-Lizenz, Version 2 oder neuer."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Unofficial interface for jack_capture, by Kjetil Matheussen.\nmacOS port and interface: Éric Bavu.\nGPL license, version 2 or later."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Interfaz no oficial de jack_capture, de Kjetil Matheussen.\nPortado a macOS e interfaz: Éric Bavu.\nLicencia GPL, versión 2 o posterior."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Interfaccia non ufficiale di jack_capture, di Kjetil Matheussen.\nPorting macOS e interfaccia: Éric Bavu.\nLicenza GPL, versione 2 o successiva."
           }
         }
       }
@@ -6133,34 +6105,6 @@
         }
       }
     },
-    "À propos de Jack Capture" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Über Jack Capture"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "About Jack Capture"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Acerca de Jack Capture"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Informazioni su Jack Capture"
-          }
-        }
-      }
-    },
     "Écrit sur le disque" : {
       "localizations" : {
         "de" : {
@@ -6578,6 +6522,230 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Scuro per impostazione predefinita; Sistema segue l'impostazione di macOS."
+          }
+        }
+      }
+    },
+    "À propos de %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About %@"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Über %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Informazioni su %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acerca de %@"
+          }
+        }
+      }
+    },
+    "Code source" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Source code"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quellcode"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codice sorgente"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Código fuente"
+          }
+        }
+      }
+    },
+    "Licence" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Licence"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lizenz"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Licenza"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Licencia"
+          }
+        }
+      }
+    },
+    "Soutenir ☕" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Support ☕"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unterstützen ☕"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sostieni ☕"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apoyar ☕"
+          }
+        }
+      }
+    },
+    "Portage macOS et interface : Éric Bavu." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS port and interface: Éric Bavu."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS-Portierung und Oberfläche: Éric Bavu."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Porting per macOS e interfaccia: Éric Bavu."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Portado a macOS e interfaz: Éric Bavu."
+          }
+        }
+      }
+    },
+    "Interface non officielle de jack_capture, de Kjetil Matheussen." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unofficial interface for jack_capture, by Kjetil Matheussen."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inoffizielle Oberfläche für jack_capture von Kjetil Matheussen."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Interfaccia non ufficiale di jack_capture, di Kjetil Matheussen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Interfaz no oficial de jack_capture, de Kjetil Matheussen."
+          }
+        }
+      }
+    },
+    "Licence GPL, version 2 ou ultérieure." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GPL licence, version 2 or later."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GPL-Lizenz, Version 2 oder später."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Licenza GPL, versione 2 o successiva."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Licencia GPL, versión 2 o posterior."
+          }
+        }
+      }
+    },
+    "Documentation Jack Capture" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jack Capture Documentation"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dokumentation zu Jack Capture"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Documentazione di Jack Capture"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Documentación de Jack Capture"
           }
         }
       }
