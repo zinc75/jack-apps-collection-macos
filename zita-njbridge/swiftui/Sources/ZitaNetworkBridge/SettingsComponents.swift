@@ -6,6 +6,7 @@
 import AppearanceKit
 import MatrixKit
 import SwiftUI
+import ZitaBridgeKit
 
 /// A row of a settings group: title, an explanation under it, and the control on the right.
 struct OptionRow<Control: View>: View {
@@ -111,5 +112,70 @@ struct NumberField: View {
             }
             .onChange(of: value) { _, new in if Int(text) != new { text = "\(new)" } }
             .onChange(of: focused) { _, now in if !now, !isValid { text = "\(value)" } }
+    }
+}
+
+/// A point of the matrix, lit in the accent of the application. Drawn flat on every system: Liquid Glass tinted with the
+/// accent would read as grey, and the lit point must show the accent.
+struct AccentLED: View {
+    let isOn: Bool
+    let action: () -> Void
+    @Environment(\.appAccentColor) private var accent
+    @Environment(\.colorScheme) private var scheme
+    @State private var isHovered = false
+
+    private var fill: Color { isOn ? accent : (scheme == .dark ? .ledOffFill : Color(white: 0, opacity: 0.07)) }
+    private var outline: Color {
+        if isOn { return accent.opacity(isHovered ? 0.9 : 0.5) }
+        let base = scheme == .dark ? Color.white : Color.black
+        return base.opacity(isHovered ? 0.35 : (scheme == .dark ? 0.06 : 0.14))
+    }
+
+    var body: some View {
+        Button(action: action) {
+            Circle().fill(fill).overlay(Circle().strokeBorder(outline, lineWidth: 1)).frame(width: 16, height: 16)
+                .shadow(color: isOn ? accent.opacity(isHovered ? 0.8 : 0.55) : .clear, radius: isHovered ? 5 : 4)
+                .scaleEffect(isHovered ? 1.2 : 1)
+                .frame(width: 40, height: 30)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in withAnimation(.spring(duration: 0.2, bounce: 0.35)) { isHovered = hovering } }
+        .accessibilityAddTraits(.isToggle)
+        .accessibilityValue(isOn ? Text("activé") : Text("désactivé"))
+    }
+}
+
+/// The number of a channel, in a disc.
+struct ChannelNumber: View {
+    let number: Int
+    var warns = false
+    var body: some View {
+        Text(verbatim: "\(number)")
+            .font(.system(size: 11, weight: .semibold).monospacedDigit())
+            .frame(width: 20, height: 20)
+            .background(warns ? Color.orange.opacity(0.3) : Color.primary.opacity(0.1), in: Circle())
+    }
+}
+
+/// A list of channels typed as the programs read it ("1-8", "9-16", "1,5"): the text is kept apart so that the field can be
+/// emptied, and the list is taken when it is valid.
+struct ChannelListField: View {
+    @Binding var channels: [Int]
+    var width: CGFloat = 120
+    @State private var text = ""
+    @FocusState private var focused: Bool
+
+    private var parsed: [Int]? { ChannelList.parse(text) }
+
+    var body: some View {
+        TextField("Voies", text: $text)
+            .labelsHidden().multilineTextAlignment(.trailing).frame(width: width).autocorrectionDisabled()
+            .focused($focused)
+            .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(parsed != nil || text.isEmpty && focused ? .clear : Color.alert, lineWidth: 1).padding(-1))
+            .onAppear { text = ChannelList.format(channels) }
+            .onChange(of: text) { _, _ in if let list = parsed, list != channels { channels = list } }
+            .onChange(of: channels) { _, new in if ChannelList.parse(text) != new { text = ChannelList.format(new) } }
+            .onChange(of: focused) { _, now in if !now, parsed == nil { text = ChannelList.format(channels) } }
     }
 }

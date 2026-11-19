@@ -23,6 +23,7 @@ let package = Package(
             name: "ZitaNetworkBridge",
             dependencies: [
                 "ZitaBridgeKit",
+                .product(name: "JackBridge", package: "JackBridge"),
                 .product(name: "AppearanceKit", package: "AppearanceKit"),
                 .product(name: "MatrixKit", package: "MatrixKit"),
             ],

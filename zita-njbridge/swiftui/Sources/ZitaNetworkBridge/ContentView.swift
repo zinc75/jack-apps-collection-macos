@@ -18,7 +18,7 @@ struct ContentView: View {
                 switch model.page {
                 case .link: LinkView()
                 case .network: NetworkView()
-                case .lanes: PlaceholderView(title: "Voies")
+                case .lanes: LanesView()
                 case .flow: PlaceholderView(title: "Flux")
                 case .display: PlaceholderView(title: "Affichage")
                 }

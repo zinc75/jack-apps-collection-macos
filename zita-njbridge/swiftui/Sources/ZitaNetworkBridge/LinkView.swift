@@ -286,7 +286,8 @@ struct ReceiveDetails: View {
                     GridRow {
                         Fact(title: "Périodes par seconde", value: periods(localRate, controller.graph.bufferSize, live))
                         Fact(title: "Erreur de la boucle", value: live ? number(r.statistics?.meanError ?? 0) : "–", unit: "échantillons")
-                        Fact(title: "Voies reçues", value: r.sender.map { "\($0.channels)" } ?? "–")
+                        Fact(title: "Voies reçues", value: ChannelList.format(r.runningSettings?.channels ?? r.settings.channels),
+                             unit: r.sender.map { LocalizedStringKey("sur \($0.channels)") })
                         Fact(title: "Rééchantillonnage", value: resampling(sourceRate, localRate))
                     }
                 }
