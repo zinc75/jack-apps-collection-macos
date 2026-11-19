@@ -50,7 +50,16 @@ The Recording page previews the input levels while it waits (this can be turned 
 ## All the options of jack_capture
 
 <div align="center">
-  <img src="screenshots/settings.png" width="760" alt="The settings pages">
+<table>
+<tr>
+<td align="center"><img src="screenshots/file.png" width="380" alt="File"><br><sub>File</sub></td>
+<td align="center"><img src="screenshots/startstop.png" width="380" alt="Start and stop"><br><sub>Start and stop</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="screenshots/advanced.png" width="380" alt="Advanced"><br><sub>Advanced</sub></td>
+<td align="center"><img src="screenshots/display.png" width="380" alt="Display"><br><sub>Display</sub></td>
+</tr>
+</table>
 </div>
 
 File format and bit depth, folder and automatic numbering, scheduled stop, pre-recording (timemachine), time file, split into several files, memory buffer, OSC control and JACK client name. The generated command line can be shown at any time, and settings are kept between launches.
