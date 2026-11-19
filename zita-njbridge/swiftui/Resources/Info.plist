@@ -17,6 +17,7 @@
 	<key>LSMinimumSystemVersion</key><string>15.0</string>
 	<key>LSApplicationCategoryType</key><string>public.app-category.music</string>
 	<key>NSHumanReadableCopyright</key><string>Copyright © Éric Bavu. GPL-3.0.</string>
+	<key>NSLocalNetworkUsageDescription</key><string>Zita Network Bridge envoie et reçoit du son sur votre réseau local.</string>
 	<key>NSHighResolutionCapable</key><true/>
 	<key>NSPrincipalClass</key><string>NSApplication</string>
 </dict>
