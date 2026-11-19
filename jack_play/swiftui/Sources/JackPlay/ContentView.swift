@@ -65,6 +65,11 @@ struct ContentView: View {
             try? await Task.sleep(for: .seconds(5))
             // The number of the window goes to a file, for `screencapture -l` run by the script: only the window is captured.
             if let window = NSApp.windows.first(where: { $0.isVisible }) {
+                // JACKPLAY_WINDOW=<width>x<height> sizes the window (taller than the default, so that no page is cut).
+                if let size = ProcessInfo.processInfo.environment["JACKPLAY_WINDOW"]?.split(separator: "x").compactMap({ Double($0) }), size.count == 2 {
+                    window.setContentSize(NSSize(width: size[0], height: size[1]))
+                    try? await Task.sleep(for: .milliseconds(800))
+                }
                 NSApp.activate()
                 window.makeKeyAndOrderFront(nil)
                 try? await Task.sleep(for: .milliseconds(600))
