@@ -7,8 +7,10 @@ let package = Package(
     name: "ZitaNetworkBridge",
     platforms: [.macOS("15.0")],
     targets: [
-        // Logic without any UI: what the programs say, the command lines, the settings. Unit tested.
-        .target(name: "ZitaBridgeKit"),
+        // Runs a program in a pseudo-terminal (Swift cannot fork).
+        .target(name: "CZitaPty"),
+        // Logic without any UI: what the programs say, the command lines, the settings, running them. Unit tested.
+        .target(name: "ZitaBridgeKit", dependencies: ["CZitaPty"]),
         .testTarget(name: "ZitaBridgeKitTests", dependencies: ["ZitaBridgeKit"]),
     ]
 )
