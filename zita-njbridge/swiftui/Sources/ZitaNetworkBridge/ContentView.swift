@@ -17,7 +17,7 @@ struct ContentView: View {
             Group {
                 switch model.page {
                 case .link: LinkView()
-                case .network: PlaceholderView(title: "Réseau")
+                case .network: NetworkView()
                 case .lanes: PlaceholderView(title: "Voies")
                 case .flow: PlaceholderView(title: "Flux")
                 case .display: PlaceholderView(title: "Affichage")
