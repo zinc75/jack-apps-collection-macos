@@ -51,8 +51,9 @@ final class AdviceAndStoreTests: XCTestCase {
         let store = BridgeSettingsStore(defaults: defaults)
         XCTAssertFalse(store.hasSavedSettings)
         XCTAssertEqual(store.load(), StoredBridgeSettings())
+        XCTAssertFalse(store.load().sendArmed); XCTAssertFalse(store.load().receiveArmed, "nothing is armed the first time")
         var s = StoredBridgeSettings()
-        s.receive.address = "10.10.10.1"; s.receive.bufferMilliseconds = 30; s.send.channels = 8; s.sendArmed = false
+        s.receive.address = "10.10.10.1"; s.receive.bufferMilliseconds = 30; s.send.channels = 8; s.sendArmed = true
         store.save(s)
         XCTAssertTrue(store.hasSavedSettings)
         XCTAssertEqual(BridgeSettingsStore(defaults: defaults).load(), s)

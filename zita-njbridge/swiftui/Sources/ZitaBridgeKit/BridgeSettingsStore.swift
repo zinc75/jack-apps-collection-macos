@@ -6,8 +6,9 @@ import Foundation
 public struct StoredBridgeSettings: Codable, Equatable, Sendable {
     public var send = SendSettings()
     public var receive = ReceiveSettings()
-    public var sendArmed = true
-    public var receiveArmed = true
+    /// Nothing is armed the first time: the window asks what is wanted (receive, send, or both).
+    public var sendArmed = false
+    public var receiveArmed = false
     public init() {}
 }
 

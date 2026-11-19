@@ -77,6 +77,7 @@ final class AppModel {
         if env["ZITABRIDGE_DEMO"] != nil {
             controller.receiver.settings.address = "127.0.0.1"; controller.receiver.settings.port = 19999
             controller.sender.settings.address = "127.0.0.1"; controller.sender.settings.port = 19999
+            controller.receiveArmed = true; controller.sendArmed = true
         }
         if let list = env["ZITABRIDGE_RECV_CHANNELS"].flatMap(ChannelList.parse) { controller.receiver.settings.automaticChannels = false; controller.receiver.settings.channels = list }
         if let address = env["ZITABRIDGE_SENDADDR"] { controller.sender.settings.address = address }

@@ -50,6 +50,7 @@ final class BridgeControllerIntegrationTests: XCTestCase {
         var stored = StoredBridgeSettings()
         stored.send.address = "127.0.0.1"; stored.send.port = port; stored.send.channels = 4
         stored.receive.address = "127.0.0.1"; stored.receive.port = port
+        stored.sendArmed = true; stored.receiveArmed = true
         BridgeSettingsStore(defaults: defaults).save(stored)
 
         let controller = BridgeController(settingsStore: BridgeSettingsStore(defaults: defaults), wiringStore: WiringStore(defaults: defaults),
@@ -102,6 +103,7 @@ final class BridgeControllerIntegrationTests: XCTestCase {
         var stored = StoredBridgeSettings()
         stored.send.address = "127.0.0.1"; stored.send.port = port
         stored.receive.address = "127.0.0.1"; stored.receive.port = port
+        stored.sendArmed = true; stored.receiveArmed = true
         BridgeSettingsStore(defaults: defaults).save(stored)
 
         let controller = BridgeController(settingsStore: BridgeSettingsStore(defaults: defaults), wiringStore: WiringStore(defaults: defaults),
