@@ -197,8 +197,13 @@ struct ControlsBar: View {
 
     var body: some View {
         let player = model.player
-        HStack(spacing: 16) {
-            transportState.frame(maxWidth: .infinity, alignment: .leading)
+        // The buttons are centred on the window, whatever the widths of the texts at the two sides.
+        ZStack {
+            HStack(spacing: 16) {
+                transportState
+                Spacer(minLength: 0)
+                CommandButton()
+            }
             HStack(spacing: 14) {
                 Button { model.playlist.previous() } label: { Image(systemName: "backward.end.fill").font(.system(size: 13)).frame(width: 42, height: 42) }
                     .buttonStyle(PressStyle()).glassCircle().help("Fichier précédent")
@@ -225,9 +230,8 @@ struct ControlsBar: View {
                     .help(player.mode == .followTransport ? "Sans effet avec le transport JACK : passez en mode Indépendant pour répéter." : repeatHelp)
             }
             .disabled(!player.canCommand)
-            CommandButton().frame(maxWidth: .infinity, alignment: .trailing)
         }
-        .padding(.horizontal, 26).frame(height: 84)
+        .padding(.horizontal, 24).frame(height: 98)
         .background(Color.windowFill)
         .overlay(alignment: .top) { Divider() }
     }

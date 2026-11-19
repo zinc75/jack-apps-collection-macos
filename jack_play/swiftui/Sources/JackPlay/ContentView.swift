@@ -8,7 +8,9 @@ import SwiftUI
 struct ContentView: View {
     @Environment(AppModel.self) private var model
 
-    var body: some View {
+    /// The sidebar and the page. The footer is not inside it (it would stop at the sidebar) but below it: it runs under both,
+    /// over the whole width of the window, and the sidebar and the pages end where it begins.
+    private var splitView: some View {
         NavigationSplitView {
             Sidebar().navigationSplitViewColumnWidth(min: 190, ideal: 210, max: 260)
         } detail: {
@@ -24,9 +26,13 @@ struct ContentView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .safeAreaInset(edge: .top, spacing: 0) { FailureBanner() }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                if model.player.file != nil { ControlsBar() }
-            }
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            splitView
+            if model.player.file != nil { ControlsBar() }
         }
         .containerBackground(Color.windowFill, for: .window)
         .task {
