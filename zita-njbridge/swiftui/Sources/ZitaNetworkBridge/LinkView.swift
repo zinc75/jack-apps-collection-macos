@@ -9,60 +9,53 @@ import ZitaBridgeKit
 struct LinkView: View {
     @Environment(AppModel.self) private var model
 
+    @Environment(\.appAccentColor) private var accent
+
     var body: some View {
         let controller = model.controller
-        ScrollView {
-            VStack(alignment: .leading, spacing: 26) {
-                if controller.armedDirections.isEmpty {
-                    Card { Text("Choisissez **Recevoir**, **Envoyer** ou les deux, dans le pied de la fenêtre.").foregroundStyle(.secondary) }
+        if controller.armedDirections.isEmpty {
+            NoDirectionView()
+        } else {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 26) {
+                    if controller.receiveArmed { ReceiveBlock() }
+                    if controller.sendArmed { SendBlock() }
                 }
-                if controller.receiveArmed { ReceiveBlock() }
-                if controller.sendArmed { SendBlock() }
+                .padding(.horizontal, 26).padding(.vertical, 18)
             }
-            .padding(.horizontal, 26).padding(.vertical, 18)
+            .softScrollEdges()
+            // The links of the texts of this page ("zita://flash/receive") make the start button of the direction flash.
+            .tint(accent)
+            .environment(\.openURL, OpenURLAction { url in
+                guard url.scheme == "zita", url.host == "flash", let direction = LinkDirection(rawValue: url.lastPathComponent) else { return .systemAction }
+                model.flash(direction)
+                return .handled
+            })
         }
-        .softScrollEdges()
     }
 }
 
 // MARK: Header of a direction
 
-/// The title, the state in words, and the button of the direction.
+/// The state of a direction in words. Starting and stopping are in the footer, next to the switch of the direction.
 struct DirectionHeader: View {
     let direction: LinkDirection
     let title: LocalizedStringKey
     let state: LinkState
     let detail: Text
     let where_: Text
-    @Environment(AppModel.self) private var model
 
     var body: some View {
-        let controller = model.controller
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .center, spacing: 12) {
                 StateLED(state: state, direction: direction).scaleEffect(1.35).frame(width: 14)
                 VStack(alignment: .leading, spacing: 1) {
-                    Label(direction == .receive ? "Réception" : "Envoi", systemImage: direction.symbol)
-                        .font(.caption).textCase(.uppercase).foregroundStyle(.secondary)
                     Text(title).font(.system(size: 28, weight: .light))
                     detail.font(.callout).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 12)
-                Button(state.isRunning ? "Arrêter" : "Démarrer") {
-                    if state.isRunning { controller.stop(direction) } else { controller.start(direction) }
-                }
-                .disabled(!state.isRunning && model.needsConfiguration)
             }
             where_.font(.callout).foregroundStyle(.secondary)
-            if controller.needsRestart(direction) {
-                HStack(spacing: 10) {
-                    Image(systemName: "arrow.clockwise.circle.fill").foregroundStyle(.orange)
-                    Text("Des réglages ont changé : le programme doit redémarrer pour les appliquer.").font(.callout)
-                    Spacer()
-                    Button("Redémarrer") { controller.restart(direction) }
-                }
-                .padding(10).background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
-            }
         }
     }
 }
@@ -97,7 +90,7 @@ struct ReceiveBlock: View {
         let controller = model.controller
         let r = controller.receiver
         let state = r.state
-        VStack(alignment: .leading, spacing: 14) {
+        DirectionContainer(direction: .receive, detail: "Ce Mac reçoit le son du réseau") {
             DirectionHeader(direction: .receive, title: title(state), state: state, detail: detail(state),
                             where_: Text("Écoute sur **\(r.settings.address.isEmpty ? "—" : r.settings.address) : \(r.settings.port)**"))
             Group {
@@ -121,7 +114,7 @@ struct ReceiveBlock: View {
     private func detail(_ state: LinkState) -> Text {
         let r = model.controller.receiver
         switch state {
-        case .stopped: return Text("Appuyez sur Démarrer pour ouvrir la liaison.")
+        case .stopped: return Text("Réception à l'arrêt. Lancez-la avec \(Image(systemName: "play.fill")) [en bas de la fenêtre](zita://flash/receive).")
         case .waiting:
             if let delay = r.retryDelay { return Text("Nouvel essai dans \(number(delay, digits: 0)) s…") }
             return Text("En attente du premier paquet de l'émetteur…")
@@ -164,10 +157,32 @@ struct MarginCard: View {
                 }
                 MarginGauge(value: live ? r.margin : nil)
                 MarginSparkline(history: r.marginHistory, accent: accent)
-                    .frame(height: 86)
+                BufferSetting()
                 Advice(assessment: assessment, live: live)
             }
         }
+    }
+}
+
+/// The extra buffer, next to the margin it acts on: what it is now (and, when it was just changed, what it will be once the program has
+/// started again), and a way to the setting.
+struct BufferSetting: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        let r = model.controller.receiver
+        let now = r.runningSettings?.bufferMilliseconds ?? r.settings.bufferMilliseconds
+        let next = r.settings.bufferMilliseconds
+        HStack(spacing: 8) {
+            Label("Tampon supplémentaire", systemImage: "clock.arrow.circlepath").foregroundStyle(.secondary)
+            Text("\(now) ms").fontWeight(.semibold).monospacedDigit()
+            if r.runningSettings != nil, next != now {
+                Text("→ \(next) ms après le redémarrage").foregroundStyle(.orange)
+            }
+            Spacer()
+            Button("Régler…") { model.page = .flow }
+        }
+        .font(.callout)
     }
 }
 
@@ -209,28 +224,54 @@ struct MarginGauge: View {
     }
 }
 
-/// The last minute of the margin.
+/// The last minute of the margin, with its scale: gridlines and values in milliseconds, the seconds under it, and the lowest and highest
+/// values of the minute.
 struct MarginSparkline: View {
     let history: [Double]
     let accent: Color
+    private let lo = -8.0, hi = 44.0
 
     var body: some View {
-        Canvas { context, size in
-            let lo = -8.0, hi = 44.0
-            func y(_ v: Double) -> CGFloat { size.height - CGFloat((min(max(v, lo), hi) - lo) / (hi - lo)) * size.height }
-            var zero = Path(); zero.move(to: CGPoint(x: 0, y: y(0))); zero.addLine(to: CGPoint(x: size.width, y: y(0)))
-            context.stroke(zero, with: .color(.secondary.opacity(0.5)), style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
-            guard history.count >= 2 else { return }
-            let n = ReceiverModel.historyLength
-            let dx = size.width / CGFloat(n - 1), offset = n - history.count
-            for i in 1..<history.count {
-                var segment = Path()
-                segment.move(to: CGPoint(x: CGFloat(offset + i - 1) * dx, y: y(history[i - 1])))
-                segment.addLine(to: CGPoint(x: CGFloat(offset + i) * dx, y: y(history[i])))
-                context.stroke(segment, with: .color(history[i] < 0 || history[i - 1] < 0 ? .red : accent), style: StrokeStyle(lineWidth: 1.6, lineJoin: .round))
+        VStack(alignment: .leading, spacing: 6) {
+            Canvas { context, size in
+                let left: CGFloat = 38, bottom: CGFloat = 16
+                let plot = CGRect(x: left, y: 6, width: size.width - left - 6, height: size.height - 6 - bottom)
+                func y(_ v: Double) -> CGFloat { plot.maxY - CGFloat((min(max(v, lo), hi) - lo) / (hi - lo)) * plot.height }
+                func line(_ p: CGPoint, _ q: CGPoint, _ opacity: Double, dash: [CGFloat] = []) {
+                    var path = Path(); path.move(to: p); path.addLine(to: q)
+                    context.stroke(path, with: .color(.secondary.opacity(opacity)), style: StrokeStyle(lineWidth: 0.7, dash: dash))
+                }
+                func label(_ text: String, at point: CGPoint, anchor: UnitPoint) {
+                    context.draw(Text(verbatim: text).font(.system(size: 9.5).monospacedDigit()).foregroundColor(.secondary), at: point, anchor: anchor)
+                }
+                // Horizontal: the margin, every 10 ms; the zero, where the sound is cut, is dashed and stronger.
+                for v in [0.0, 10, 20, 30, 40] {
+                    line(CGPoint(x: plot.minX, y: y(v)), CGPoint(x: plot.maxX, y: y(v)), v == 0 ? 0.6 : 0.2, dash: v == 0 ? [3, 3] : [])
+                    label(v == 40 ? "40 ms" : "\(Int(v))", at: CGPoint(x: plot.minX - 6, y: y(v)), anchor: .trailing)
+                }
+                // Vertical: the seconds, every 15.
+                for (i, name) in ["−60 s", "−45 s", "−30 s", "−15 s"].enumerated() {
+                    let x = plot.minX + plot.width * CGFloat(i) / 4
+                    line(CGPoint(x: x, y: plot.minY), CGPoint(x: x, y: plot.maxY), 0.12)
+                    label(name, at: CGPoint(x: x, y: size.height - 2), anchor: i == 0 ? .bottomLeading : .bottom)
+                }
+                label(String(localized: "maintenant"), at: CGPoint(x: plot.maxX, y: size.height - 2), anchor: .bottomTrailing)
+                guard history.count >= 2 else { return }
+                let n = ReceiverModel.historyLength
+                let dx = plot.width / CGFloat(n - 1), offset = n - history.count
+                for i in 1..<history.count {
+                    var segment = Path()
+                    segment.move(to: CGPoint(x: plot.minX + CGFloat(offset + i - 1) * dx, y: y(history[i - 1])))
+                    segment.addLine(to: CGPoint(x: plot.minX + CGFloat(offset + i) * dx, y: y(history[i])))
+                    context.stroke(segment, with: .color(history[i] < 0 || history[i - 1] < 0 ? .red : accent), style: StrokeStyle(lineWidth: 1.6, lineJoin: .round))
+                }
+            }
+            .frame(height: 140)
+            .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 8))
+            if let low = history.min(), let high = history.max() {
+                Text("Dernière minute : de \(number(low)) à \(number(high)) ms").font(.caption).foregroundStyle(.secondary)
             }
         }
-        .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 8))
         .accessibilityLabel("Marge sur la dernière minute")
     }
 }
@@ -286,7 +327,7 @@ struct ReceiveDetails: View {
                     GridRow {
                         Fact(title: "Périodes par seconde", value: periods(localRate, controller.graph.bufferSize, live))
                         Fact(title: "Erreur de la boucle", value: live ? number(r.statistics?.meanError ?? 0) : "–", unit: "échantillons")
-                        Fact(title: "Voies reçues", value: ChannelList.format(r.runningSettings?.channels ?? r.settings.channels),
+                        Fact(title: "Voies reçues", value: ChannelList.format(r.runningSettings?.effectiveChannels ?? r.settings.effectiveChannels),
                              unit: r.sender.map { LocalizedStringKey("sur \($0.channels)") })
                         Fact(title: "Rééchantillonnage", value: resampling(sourceRate, localRate))
                     }
@@ -315,7 +356,7 @@ struct SendBlock: View {
         let controller = model.controller
         let s = controller.sender
         let state = s.state
-        VStack(alignment: .leading, spacing: 14) {
+        DirectionContainer(direction: .send, detail: "Ce Mac envoie du son vers le réseau") {
             DirectionHeader(direction: .send, title: title(state), state: state, detail: detail(state),
                             where_: Text("Envoi vers **\(s.settings.address.isEmpty ? "—" : s.settings.address) : \(s.settings.port)**"))
             Group {
@@ -354,7 +395,7 @@ struct SendBlock: View {
         switch state {
         case .linked: return Text("vers \(s.address) : \(s.port) · \(s.channels) voies · \(format(s.format))")
         case .failed(let text): return Text(verbatim: text)
-        default: return Text("Appuyez sur Démarrer pour envoyer.")
+        default: return Text("Envoi à l'arrêt. Lancez-le avec \(Image(systemName: "play.fill")) [en bas de la fenêtre](zita://flash/send).")
         }
     }
 

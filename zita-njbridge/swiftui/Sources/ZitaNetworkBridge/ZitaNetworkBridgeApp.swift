@@ -49,9 +49,10 @@ struct ZitaNetworkBridgeApp: App {
                 .environment(model)
                 .environment(appearance)
                 .appAccent(appearance)
-                .frame(minWidth: 940, minHeight: 700)
+                // As JackMate, whose minimum was sized for a small laptop screen: 720 high.
+                .frame(minWidth: 1040, minHeight: 720)
         }
-        .defaultSize(width: 1080, height: 780)
+        .defaultSize(width: 1100, height: 820)
         .windowResizability(.contentMinSize)
         .commands {
             CommandGroup(replacing: .newItem) {}

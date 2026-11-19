@@ -38,8 +38,11 @@ struct OptionRow<Control: View>: View {
 }
 
 struct SettingsGroup<Content: View>: View {
-    let title: LocalizedStringKey
+    let title: LocalizedStringKey?
     var systemImage: String?
+    /// For the groups of one direction: its title (a rule, the picto, the name) stands for a title of the group.
+    var direction: LinkDirection?
+    var detail: LocalizedStringKey?
     @ViewBuilder var content: Content
 
     init(_ title: LocalizedStringKey, systemImage: String? = nil, @ViewBuilder content: () -> Content) {
@@ -48,21 +51,44 @@ struct SettingsGroup<Content: View>: View {
         self.content = content()
     }
 
+    /// The groups of one direction: they begin with the title of the direction.
+    init(direction: LinkDirection, detail: LocalizedStringKey? = nil, @ViewBuilder content: () -> Content) {
+        self.title = nil
+        self.systemImage = nil
+        self.direction = direction
+        self.detail = detail
+        self.content = content()
+    }
+
+    /// A group with no title of its own: the section it is in has one.
+    init(@ViewBuilder content: () -> Content) {
+        self.title = nil
+        self.systemImage = nil
+        self.content = content()
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Group {
-                if let systemImage { Label(title, systemImage: systemImage) } else { Text(title) }
-            }
-            .font(.headline).foregroundStyle(.secondary).padding(.leading, 12)
-            VStack(spacing: 0) {
-                Group(subviews: content) { rows in
-                    ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
-                        if index > 0 { Divider().padding(.leading, 14) }
-                        row
-                    }
+        let rows = VStack(spacing: 0) {
+            Group(subviews: content) { rows in
+                ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
+                    if index > 0 { Divider().padding(.leading, 14) }
+                    row
                 }
             }
-            .blockBackground()
+        }
+        .blockBackground()
+        if let direction {
+            DirectionContainer(direction: direction, detail: detail) { rows }
+        } else {
+            VStack(alignment: .leading, spacing: 6) {
+                if let title {
+                    Group {
+                        if let systemImage { Label(title, systemImage: systemImage) } else { Text(title) }
+                    }
+                    .font(.headline).foregroundStyle(.secondary).padding(.leading, 12)
+                }
+                rows
+            }
         }
     }
 }
@@ -93,7 +119,7 @@ struct NumberField: View {
     let label: LocalizedStringKey
     @Binding var value: Int
     let range: ClosedRange<Int>
-    var width: CGFloat = 90
+    var width: CGFloat = 76
     @State private var text = ""
     @FocusState private var focused: Bool
 
@@ -101,7 +127,7 @@ struct NumberField: View {
 
     var body: some View {
         TextField(label, text: $text)
-            .labelsHidden().multilineTextAlignment(.trailing).frame(width: width)
+            .labelsHidden().textFieldStyle(.roundedBorder).frame(width: width)
             .focused($focused)
             .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(isValid || text.isEmpty && focused ? .clear : Color.alert, lineWidth: 1).padding(-1))
             .onAppear { text = "\(value)" }
@@ -158,24 +184,41 @@ struct ChannelNumber: View {
     }
 }
 
-/// A list of channels typed as the programs read it ("1-8", "9-16", "1,5"): the text is kept apart so that the field can be
-/// emptied, and the list is taken when it is valid.
-struct ChannelListField: View {
-    @Binding var channels: [Int]
-    var width: CGFloat = 120
-    @State private var text = ""
-    @FocusState private var focused: Bool
-
-    private var parsed: [Int]? { ChannelList.parse(text) }
+/// The title of a direction, the same everywhere: the picto in a tile, the name, and what it means. It marks where reception ends and
+/// sending begins.
+struct DirectionTitle: View {
+    let direction: LinkDirection
+    var detail: LocalizedStringKey?
 
     var body: some View {
-        TextField("Voies", text: $text)
-            .labelsHidden().multilineTextAlignment(.trailing).frame(width: width).autocorrectionDisabled()
-            .focused($focused)
-            .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(parsed != nil || text.isEmpty && focused ? .clear : Color.alert, lineWidth: 1).padding(-1))
-            .onAppear { text = ChannelList.format(channels) }
-            .onChange(of: text) { _, _ in if let list = parsed, list != channels { channels = list } }
-            .onChange(of: channels) { _, new in if ChannelList.parse(text) != new { text = ChannelList.format(new) } }
-            .onChange(of: focused) { _, now in if !now, parsed == nil { text = ChannelList.format(channels) } }
+        HStack(spacing: 12) {
+            Image(systemName: direction.symbol)
+                .font(.system(size: 20, weight: .medium))
+                .frame(width: 38, height: 38)
+                .background(Color.primary.opacity(0.09), in: RoundedRectangle(cornerRadius: 10))
+            VStack(alignment: .leading, spacing: 0) {
+                Text(direction == .receive ? "Réception" : "Envoi").font(.title3).fontWeight(.semibold)
+                if let detail { Text(detail).font(.caption).foregroundStyle(.secondary) }
+            }
+            Spacer(minLength: 0)
+        }
+    }
+}
+
+/// A direction of a page: an outlined container (a slightly raised fill and a hairline, as in the configuration of JackMate) that holds its
+/// title and what belongs to it, so that reception and sending are two places and not one long list.
+struct DirectionContainer<Content: View>: View {
+    let direction: LinkDirection
+    var detail: LocalizedStringKey?
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            DirectionTitle(direction: direction, detail: detail)
+            content
+        }
+        .padding(16)
+        .background(RoundedRectangle(cornerRadius: 16).fill(Color.primary.opacity(0.03)))
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.primary.opacity(0.14), lineWidth: 1))
     }
 }

@@ -19,7 +19,7 @@ struct LanesView: View {
                 Text("Les branchements sont mémorisés. Ils sont refaits dès que la liaison démarre.").font(.callout).foregroundStyle(.secondary)
             }
             if controller.armedDirections.isEmpty {
-                Text("Choisissez **Recevoir**, **Envoyer** ou les deux, dans le pied de la fenêtre.").foregroundStyle(.secondary)
+                NoDirectionView(compact: true)
             }
             if controller.receiveArmed { LanesBlock(direction: .receive) }
             if controller.sendArmed { LanesBlock(direction: .send) }
@@ -31,6 +31,7 @@ struct LanesBlock: View {
     let direction: LinkDirection
     @Environment(AppModel.self) private var model
     @State private var collapsed: Set<String> = []
+    @State private var showsChannels = false
 
     private static let nameWidth: CGFloat = 220, cellWidth: CGFloat = 40
 
@@ -39,45 +40,45 @@ struct LanesBlock: View {
         let channels = controller.channels(for: direction)
         let clients = direction == .receive ? controller.graph.destinations : controller.graph.sources
         let wiring = controller.wiring(for: direction)
-        VStack(alignment: .leading, spacing: 10) {
-            Label(direction == .receive ? "Réception : du réseau vers JACK" : "Envoi : de JACK vers le réseau", systemImage: direction.symbol)
-                .font(.headline).foregroundStyle(.secondary).padding(.leading, 12)
+        DirectionContainer(direction: direction, detail: direction == .receive ? "Du réseau vers JACK" : "De JACK vers le réseau") {
             Text(direction == .receive
                  ? "Chaque sortie de zita-n2j est reliée aux ports JACK de votre choix. Les voies que l'émetteur n'envoie pas restent silencieuses."
                  : "Chaque entrée de zita-j2n est reliée aux ports JACK de votre choix.")
-                .font(.callout).foregroundStyle(.secondary).padding(.leading, 12)
+                .font(.callout).foregroundStyle(.secondary)
             HStack(spacing: 10) {
                 if direction == .receive {
-                    // The receiver takes the channels it is told to, whatever they are: "1-8", "9-16", "1,5".
-                    Text("Voies à recevoir").foregroundStyle(.secondary)
-                    ChannelListField(channels: Binding(get: { controller.receiver.settings.channels }, set: { controller.receiver.settings.channels = $0 }))
-                    Text("ex. 1-8, 9-16 ou 1,5 · de 1 à 64").font(.callout).foregroundStyle(.secondary)
+                    let receiver = controller.receiver
+                    // Which channels the receiver takes is set in the advanced settings of the flow; here, what it does now.
+                    Text(receiver.settings.automaticChannels
+                         ? "Voies reçues : toutes celles de l'émetteur (\(receiver.settings.effectiveChannels.count))"
+                         : "Voies reçues : \(ChannelList.format(receiver.settings.effectiveChannels))")
+                        .foregroundStyle(.secondary)
+                    Button("Régler les voies reçues…") { showsChannels = true }
                 } else {
                     Text("Nombre de voies").foregroundStyle(.secondary)
                     Stepper(value: channelCount, in: 1...ChannelList.maximum) { Text(verbatim: "\(channels.count)").monospacedDigit().frame(minWidth: 22, alignment: .trailing) }
                     Text("jusqu'à 64").font(.callout).foregroundStyle(.secondary)
                 }
                 Spacer()
-                Button("Vers les premiers ports") { controller.wireToSoundCard(direction) }
-                Button("Effacer") { controller.clearWiring(direction) }
+                // One control for both ways of starting again, instead of two buttons.
+                Menu("Réinitialiser") {
+                    Button("Effacer tous les branchements") { controller.clearWiring(direction) }
+                    Button(direction == .receive ? "Revenir à la sortie système" : "Revenir à l'entrée système") { controller.wireToSoundCard(direction) }
+                }
+                .fixedSize()
+                .help("Efface les branchements, ou remet chaque voie sur le port du même numéro de la carte son (voie 1 sur le port 1, voie 2 sur le port 2…).")
             }
-            .padding(.horizontal, 12)
             if clients.isEmpty {
-                Text(direction == .receive ? "Aucune entrée audio dans le graphe JACK." : "Aucune sortie audio dans le graphe JACK.").foregroundStyle(.secondary).padding(.leading, 12)
+                Text(direction == .receive ? "Aucune entrée audio dans le graphe JACK." : "Aucune sortie audio dans le graphe JACK.").foregroundStyle(.secondary)
             } else {
                 matrix(clients: clients, channels: channels, wiring: wiring).frame(height: min(400, height(clients))).blockBackground()
             }
-            hint(channels: channels, wiring: wiring).padding(.horizontal, 12)
-            if controller.needsRestart(direction) {
-                HStack(spacing: 10) {
-                    Image(systemName: "arrow.clockwise.circle.fill").foregroundStyle(.orange)
-                    Text(direction == .receive ? "Les voies reçues ne s'appliquent qu'au redémarrage du programme." : "Le nombre de voies ne s'applique qu'au redémarrage du programme.").font(.callout)
-                    Spacer()
-                    Button("Redémarrer") { controller.restart(direction) }
-                }
-                .padding(10).background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
-            }
+            hint(channels: channels, wiring: wiring)
         }
+        .sheet(isPresented: $showsChannels) { ReceivedChannelsSheet() }
+        #if DEBUG
+        .task { if direction == .receive, ProcessInfo.processInfo.environment["ZITABRIDGE_SHEET"] != nil { try? await Task.sleep(for: .seconds(2)); showsChannels = true } }
+        #endif
     }
 
     /// The number of channels of the sender: it sends channels 1 to N.

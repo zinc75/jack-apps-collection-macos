@@ -17,7 +17,7 @@ struct FlowView: View {
                 Text("Le format envoyé, et la réserve de tampon du récepteur.").font(.callout).foregroundStyle(.secondary)
             }
             if controller.armedDirections.isEmpty {
-                Text("Choisissez **Recevoir**, **Envoyer** ou les deux, dans le pied de la fenêtre.").foregroundStyle(.secondary)
+                NoDirectionView(compact: true)
             }
             if controller.receiveArmed { BufferGroup() }
             if controller.sendArmed { SendFormatGroup() }
@@ -41,7 +41,7 @@ struct BufferGroup: View {
         let graph = model.controller.graph
         let period = graph.bufferSize, rate = graph.sampleRate
         let advised = period.map { BufferAdvice.recommendedMilliseconds(period: $0) }
-        SettingsGroup("Tampon du récepteur", systemImage: LinkDirection.receive.symbol) {
+        SettingsGroup(direction: .receive, detail: "Tampon et rééchantillonnage") {
             OptionRow("Tampon supplémentaire", "Ajoute de la latence, absorbe les retards du réseau. Par défaut : 10 ms.") {
                 Slider(value: Binding(get: { Double(receiver.settings.bufferMilliseconds) }, set: { receiver.settings.bufferMilliseconds = Int($0) }),
                        in: 0...120, step: 1)
@@ -101,7 +101,7 @@ struct SendFormatGroup: View {
 
     var body: some View {
         @Bindable var sender = model.controller.sender
-        SettingsGroup("Format envoyé", systemImage: LinkDirection.send.symbol) {
+        SettingsGroup(direction: .send, detail: "Format des échantillons et des paquets") {
             OptionRow("Échantillons", "24 bits est le choix usuel. Flottant 32 bits conserve le format interne de JACK, avec un débit plus grand.") {
                 Picker("Échantillons", selection: $sender.settings.format) {
                     Text("16 bits").tag(SampleFormat.bits16)

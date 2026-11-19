@@ -24,7 +24,12 @@ struct ContentView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .safeAreaInset(edge: .top, spacing: 0) { FailureBanner() }
+            .safeAreaInset(edge: .top, spacing: 0) {
+                VStack(spacing: 0) {
+                    FailureBanner()
+                    RestartBanner()
+                }
+            }
         }
     }
 
@@ -45,6 +50,11 @@ struct ContentView: View {
             if env["ZITABRIDGE_AUTOSTART"] != nil {
                 for _ in 0..<100 where !model.controller.graph.isConnected { try? await Task.sleep(for: .milliseconds(100)) }
                 model.controller.toggleAll()
+            }
+            if env["ZITABRIDGE_TWEAK"] != nil {
+                // Change a setting while it runs, to see the banner.
+                try? await Task.sleep(for: .seconds(4))
+                model.controller.receiver.settings.bufferMilliseconds = 25
             }
             #endif
         }
@@ -124,5 +134,34 @@ struct FailureBanner: View {
             .background(Color.alert.opacity(0.12))
             .overlay(alignment: .bottom) { Rectangle().fill(Color.alert.opacity(0.35)).frame(height: 0.5) }
         }
+    }
+}
+
+/// Settings were changed while a direction runs: the program has to start again to take them. Said on every page, with the button.
+struct RestartBanner: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        let c = model.controller
+        let pending = c.armedDirections.filter { c.isRunning($0) && c.needsRestart($0) }
+        if !pending.isEmpty {
+            HStack(spacing: 10) {
+                Image(systemName: "arrow.clockwise.circle.fill").foregroundStyle(.orange)
+                message(pending)
+                Spacer(minLength: 12)
+                Button("Appliquer") { pending.forEach(c.restart) }
+                    .buttonStyle(.borderedProminent).tint(.orange)
+            }
+            .padding(.horizontal, 16).padding(.vertical, 8)
+            .background(Color.orange.opacity(0.14))
+            .overlay(alignment: .bottom) { Rectangle().fill(Color.orange.opacity(0.4)).frame(height: 0.5) }
+        }
+    }
+
+    private func message(_ pending: [LinkDirection]) -> Text {
+        if pending.count == 2 { return Text("Des réglages ont changé : la réception et l'envoi doivent redémarrer pour les appliquer. Le son est coupé un instant.") }
+        return pending[0] == .receive
+            ? Text("Des réglages ont changé : la réception doit redémarrer pour les appliquer. Le son est coupé un instant.")
+            : Text("Des réglages ont changé : l'envoi doit redémarrer pour les appliquer. Le son est coupé un instant.")
     }
 }

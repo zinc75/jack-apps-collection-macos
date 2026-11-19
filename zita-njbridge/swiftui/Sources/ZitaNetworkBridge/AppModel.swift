@@ -16,6 +16,15 @@ enum Page: String, CaseIterable, Identifiable {
 final class AppModel {
     let controller: BridgeController
     var page = Page.link
+    /// The direction whose start button is to be shown (it flashes), and a count that tells each time to flash again.
+    var flashedDirection: LinkDirection?
+    var flashCount = 0
+
+    /// Makes the start button of a direction flash, to show where it is: what a link in a text of the page asks for.
+    func flash(_ direction: LinkDirection) {
+        flashedDirection = direction
+        flashCount += 1
+    }
 
     /// - Parameter defaults: where the settings are kept; nil for a throw-away store (the debug aids use it: they must not touch
     ///   what the person has set up).
@@ -42,8 +51,8 @@ final class AppModel {
     var needsConfiguration: Bool {
         controller.armedDirections.contains { direction in
             switch direction {
-            case .receive: !controller.receiver.settings.issues.isEmpty
-            case .send: !controller.sender.settings.issues.isEmpty
+            case .receive: !controller.receiver.settings.issues.isEmpty || controller.receiver.addressNotFound
+            case .send: !controller.sender.settings.issues.isEmpty || controller.sender.addressNotFound
             }
         }
     }
@@ -69,7 +78,8 @@ final class AppModel {
             controller.receiver.settings.address = "127.0.0.1"; controller.receiver.settings.port = 19999
             controller.sender.settings.address = "127.0.0.1"; controller.sender.settings.port = 19999
         }
-        if let list = env["ZITABRIDGE_RECV_CHANNELS"].flatMap(ChannelList.parse) { controller.receiver.settings.channels = list }
+        if let list = env["ZITABRIDGE_RECV_CHANNELS"].flatMap(ChannelList.parse) { controller.receiver.settings.automaticChannels = false; controller.receiver.settings.channels = list }
+        if let address = env["ZITABRIDGE_SENDADDR"] { controller.sender.settings.address = address }
         if let arm = env["ZITABRIDGE_ARM"] {
             controller.receiveArmed = arm.contains("r"); controller.sendArmed = arm.contains("s")
         }
