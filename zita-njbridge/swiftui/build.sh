@@ -99,7 +99,25 @@ else
   rm -rf "$APP/Contents/Helpers"
   echo "      the programs are not built: run ../build_universal.sh first (libs/zita-resampler before it)"
 fi
-echo "      licence texts: not written yet"
+echo "      licence texts"
+# The GPL of zita-njbridge and the licence of the statically linked library come from ../build_universal.sh (build/licenses).
+LIC="$APP/Contents/Resources/Licenses"
+if [ -d "$here/../build/licenses" ]; then
+  mkdir -p "$LIC"
+  cp "$here/../build/licenses/zita-njbridge-COPYING.txt" "$here/../build/licenses/THIRD-PARTY-LICENSES.txt" "$LIC/"
+  cat > "$LIC/SOURCE.txt" <<'TXT'
+Zita Network Bridge, macOS Edition
+
+This program is free software, under the GNU General Public License, version 3 or (at your option) any later version.
+The licence is in zita-njbridge-COPYING.txt.
+
+Source code of this edition (build scripts, SwiftUI application and libraries): https://github.com/zinc75/jack-apps-collection-macos
+zita-njbridge as published by Fons Adriaensen: https://kokkinizita.linuxaudio.org/linuxaudio/
+The library linked statically into zita-n2j is listed in THIRD-PARTY-LICENSES.txt.
+TXT
+else
+  echo "      no ../build/licenses: run ../build_universal.sh first"
+fi
 
 echo "[5/5] Ad hoc signature"
 if [ -d "$APP/Contents/Helpers" ]; then
