@@ -7,8 +7,9 @@ import JackCaptureKit
 struct ContentView: View {
     @Environment(RecorderModel.self) private var model
 
-    var body: some View {
-        @Bindable var model = model
+    /// The sidebar and the page. The footer is not inside it (it would stop at the sidebar) but below it: it runs under both,
+    /// over the whole width of the window, and the sidebar and the pages end where it begins.
+    private var splitView: some View {
         NavigationSplitView {
             Sidebar()
                 .navigationSplitViewColumnWidth(min: 190, ideal: 210, max: 260)
@@ -20,11 +21,6 @@ struct ContentView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                // The idle page of the recording has its own red button and its own summary: the footer only holds the
-                // command button there, at the same place as on every page.
-                FooterBar(commandOnly: model.view == .recording && model.phase == .configuration)
-            }
             // A failure stays on screen, at the top of the page (under the toolbar, beside the sidebar), until it is
             // closed or the next recording starts.
             .safeAreaInset(edge: .top, spacing: 0) {
@@ -32,6 +28,16 @@ struct ContentView: View {
                     ErrorBanner(message: message) { model.errorMessage = nil }
                 }
             }
+        }
+    }
+
+    var body: some View {
+        @Bindable var model = model
+        VStack(spacing: 0) {
+            splitView
+            // The idle page of the recording has its own red button and its own summary: the footer only holds the
+            // command button there, at the same place as on every page.
+            FooterBar(commandOnly: model.view == .recording && model.phase == .configuration)
         }
         // Plain window background: only the blocks are Liquid Glass. The toolbar keeps its own scroll-edge fade.
         .containerBackground(Color.windowFill, for: .window)

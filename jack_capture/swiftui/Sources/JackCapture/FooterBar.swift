@@ -58,7 +58,7 @@ struct FooterBar: View {
         .task { if ProcessInfo.processInfo.environment["JACKCAPTURE_SHEET"] != nil { showsCommand = true } }
         #endif
         .padding(.horizontal, 24)
-        .frame(height: 88)
+        .frame(height: 98)
         // A blurred material of its own: the form scrolls behind it without showing through the texts.
         .background(Color.windowFill)
         .overlay(alignment: .top) { Divider() }
