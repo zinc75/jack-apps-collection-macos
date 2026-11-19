@@ -114,6 +114,26 @@ struct ContentView: View {
             fflush(stdout)
         }
         .task { if let state = ProcessInfo.processInfo.environment["JACKCAPTURE_STATE"] { await model.preview(state) } }
+        .task {
+            // Development aid: JACKCAPTURE_SNAPSHOT=<file.png> writes the number of the window to <file.png>.id after
+            // JACKCAPTURE_SNAPSHOT_DELAY seconds (7 by default), then quits 5 s later, for `screencapture -l` run by a script.
+            // JACKCAPTURE_WINDOW=<width>x<height> sizes the window first.
+            let env = ProcessInfo.processInfo.environment
+            guard let path = env["JACKCAPTURE_SNAPSHOT"] else { return }
+            try? await Task.sleep(for: .seconds(env["JACKCAPTURE_SNAPSHOT_DELAY"].flatMap(Double.init) ?? 7))
+            if let window = NSApp.windows.first(where: { $0.isVisible }) {
+                if let size = env["JACKCAPTURE_WINDOW"]?.split(separator: "x").compactMap({ Double($0) }), size.count == 2 {
+                    window.setContentSize(NSSize(width: size[0], height: size[1]))
+                    try? await Task.sleep(for: .milliseconds(800))
+                }
+                NSApp.activate()
+                window.makeKeyAndOrderFront(nil)
+                try? await Task.sleep(for: .milliseconds(600))
+                try? String(window.windowNumber).write(toFile: path + ".id", atomically: true, encoding: .utf8)
+            }
+            try? await Task.sleep(for: .seconds(5))
+            NSApp.terminate(nil)
+        }
         #endif
         .navigationTitle("Jack Capture")
         .navigationSubtitle("Jack Apps Collection for macOS")
