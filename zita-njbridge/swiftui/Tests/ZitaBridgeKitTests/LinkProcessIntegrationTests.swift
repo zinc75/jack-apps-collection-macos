@@ -107,6 +107,42 @@ final class LinkProcessIntegrationTests: XCTestCase {
         await wait(rbox, "the receiver ended") { $0.contains { if case .exited = $0 { return true }; return false } }
     }
 
+    // MARK: The models on the real programs
+
+    func testTheModelsLinkUpAndAskForARestartWhenSettingsChange() async throws {
+        let n2j = try program(.receiver), j2n = try program(.sender)
+        let serverName = "zbtest\(UUID().uuidString.prefix(6))"
+        let server = try startServer(name: serverName)
+        defer { server.terminate(); server.waitUntilExit() }
+        let (s, r) = settings(port: randomPort())
+        let receiver = ReceiverModel(settings: r, executable: n2j, jackServer: serverName)
+        let sender = SenderModel(settings: s, executable: j2n, jackServer: serverName)
+
+        receiver.start()
+        XCTAssertEqual(receiver.state, .waiting)
+        sender.start()
+        XCTAssertEqual(sender.state, .linked)
+        let end = Date().addingTimeInterval(10)
+        while receiver.state != .linked || receiver.marginHistory.count < 3, Date() < end { try await Task.sleep(nanoseconds: 50_000_000) }
+        XCTAssertEqual(receiver.state, .linked)
+        XCTAssertEqual(receiver.sender?.channels, 2); XCTAssertEqual(receiver.sender?.rate, 48000)
+        XCTAssertEqual(receiver.filterDelay, 32)
+        XCTAssertGreaterThan(try XCTUnwrap(receiver.margin), 0.5)
+        XCTAssertEqual(receiver.interruptions, 0)
+        XCTAssertFalse(receiver.needsRestart)
+        XCTAssertFalse(receiver.canStart, "it already runs")
+
+        receiver.settings.bufferMilliseconds = 30
+        XCTAssertTrue(receiver.needsRestart, "the program runs with the old buffer")
+
+        receiver.stop(); sender.stop()
+        let stopEnd = Date().addingTimeInterval(8)
+        while receiver.state != .stopped || sender.state != .stopped, Date() < stopEnd { try await Task.sleep(nanoseconds: 50_000_000) }
+        XCTAssertEqual(receiver.state, .stopped); XCTAssertEqual(sender.state, .stopped)
+        XCTAssertFalse(receiver.needsRestart, "nothing runs any more")
+        XCTAssertNil(receiver.margin)
+    }
+
     // MARK: When it cannot run
 
     func testWithoutAJackServerTheProgramSaysWhy() async throws {
