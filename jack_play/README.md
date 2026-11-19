@@ -52,7 +52,16 @@ Each file is played by a program of its own, a JACK client named after its place
 ## All the options of jack_play
 
 <div align="center">
-  <img src="screenshots/settings.png" width="760" alt="The settings pages">
+<table>
+<tr>
+<td align="center"><img src="screenshots/outputs.png" width="380" alt="Outputs"><br><sub>Outputs</sub></td>
+<td align="center"><img src="screenshots/loop.png" width="380" alt="Loop and transport"><br><sub>Loop and transport</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="screenshots/advanced.png" width="380" alt="Advanced"><br><sub>Advanced</sub></td>
+<td align="center"><img src="screenshots/display.png" width="380" alt="Display"><br><sub>Display</sub></td>
+</tr>
+</table>
 </div>
 
 Repeat (none, the file or the list), resampling quality, playback buffer, JACK client name, the way to play (on its own or with the JACK transport), and where the levels are shown. The generated command line can be shown at any time. The program is also usable alone, and keeps all its options:
