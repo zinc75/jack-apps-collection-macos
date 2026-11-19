@@ -53,11 +53,13 @@ cp Resources/Info.plist "$APP/Contents/Info.plist"
 printf 'APPL????' > "$APP/Contents/PkgInfo"
 
 echo "[3/5] Localisations (Localizable.xcstrings to .lproj)"
-if [ -f Resources/Localizable.xcstrings ]; then
-python3 -I - Resources/Localizable.xcstrings "$APP/Contents/Resources" <<'PY'
+for table in Localizable InfoPlist; do
+if [ -f Resources/$table.xcstrings ]; then
+python3 -I - Resources/$table.xcstrings "$APP/Contents/Resources" $table <<'PY'
 import json, pathlib, sys
 catalog = json.loads(pathlib.Path(sys.argv[1]).read_text())
 out = pathlib.Path(sys.argv[2])
+table = sys.argv[3]
 strings = catalog.get("strings", {})
 langs = {catalog.get("sourceLanguage", "fr")}
 for entry in strings.values():
@@ -69,12 +71,11 @@ for lang in sorted(langs):
         value = entry.get("localizations", {}).get(lang, {}).get("stringUnit", {}).get("value", key)  # the key is the French text
         lines.append(f'"{esc(key)}" = "{esc(value)}";')
     d = out / f"{lang}.lproj"; d.mkdir(parents=True, exist_ok=True)
-    (d / "Localizable.strings").write_text("\n".join(lines) + "\n", encoding="utf-8")
-    print(f"      {lang}: {len(lines)} strings")
+    (d / f"{table}.strings").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f"      {table} {lang}: {len(lines)} strings")
 PY
-else
-  echo "      no Localizable.xcstrings yet: the texts are the French ones"
 fi
+done
 
 echo "[4/5] Icon and helpers"
 if [ -d Resources/Assets.xcassets ]; then

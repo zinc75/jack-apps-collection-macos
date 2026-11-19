@@ -1,0 +1,40 @@
+{
+  "sourceLanguage": "fr",
+  "version": "1.0",
+  "strings": {
+    "NSLocalNetworkUsageDescription": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zita Network Bridge envoie et reçoit du son sur votre réseau local."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zita Network Bridge sends and receives sound on your local network."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zita Network Bridge sendet und empfängt Ton in Ihrem lokalen Netzwerk."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zita Network Bridge invia e riceve audio sulla vostra rete locale."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zita Network Bridge envía y recibe sonido en su red local."
+          }
+        }
+      }
+    }
+  }
+}
