@@ -1,6 +1,6 @@
 [submodule "klick/klick-tempo"]
 	path = klick/klick-tempo
-	url = git@github.com:zinc75/klick-tempo.git
+	url = https://github.com/zinc75/klick-tempo.git
 [submodule "jack_capture/upstream"]
 	path = jack_capture/upstream
 	url = https://github.com/kmatheussen/jack_capture.git
