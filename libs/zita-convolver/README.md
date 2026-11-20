@@ -27,6 +27,7 @@ Dependencies: FFTW (`fftw3f`), pthreads.
 - The sources compile on macOS, as a universal static library (arm64 and x86_64): `build_universal.sh`, after the library of FFTW (`fftw3f`) is built in the same output folder. `zita-convolver.h` already contains an `__APPLE__` emulation of `sem_t` (mutex + condition variable), and the "vector mode" uses GCC vector extensions, which clang accepts on arm64. The `Makefile` builds a Linux `.so` and is not used here.
 - One patch (`patches/0001-thread-init-hook.patch`) adds `Convproc::set_thread_init (fn, arg)`: an optional function, called at the start of each computation thread, in that thread. Without it nothing changes. On macOS the `SCHED_FIFO` attributes that `start_process ()` gives to these threads leave them in the time sharing band, because the policy is taken from the JACK thread, which is not in `SCHED_FIFO` there. `jconvolver` uses the hook to ask JACK for the time constraint that it gives to its own threads. With 24 or 48 busy processes on the Mac, `jconvolver` ran 64 convolutions of 4 seconds without a late cycle, where it stopped with "CPU overload" without the hook.
 
+- A second patch (`patches/0002-128-channels.patch`) raises the limit of the convolver from 64 to 128 inputs and outputs (`MAXINP` and `MAXOUT`). They are constants of the class, so the size of `Convproc` changes: it is meant for a library linked statically, as here. A dense decoder of 100 inputs and 64 outputs (6400 filters of 512 samples) runs at about half of one core, with no late cycle at a JACK period of 256 frames.
 
 ## Layout
 

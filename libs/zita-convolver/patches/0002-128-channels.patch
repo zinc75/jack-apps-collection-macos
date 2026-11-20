@@ -1,0 +1,13 @@
+--- a/source/zita-convolver.h
++++ b/source/zita-convolver.h
+@@ -359,8 +359,8 @@
+ 
+     enum
+     {
+-	MAXINP   = 64,
+-	MAXOUT   = 64,
++	MAXINP   = 128,
++	MAXOUT   = 128,
+ 	MAXLEV   = 8,
+ 	MINPART  = 64,
+ 	MAXPART  = 8192,
