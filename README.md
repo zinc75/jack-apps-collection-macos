@@ -25,6 +25,8 @@ Tools are built for Apple Silicon and Intel, and get a SwiftUI application where
 | <a href="jack_play/"><img src="jack_play/screenshots/icon.png" width="96" alt="Jack Play icon"></a> | [Jack Play](jack_play/) | Plays sound files and playlists in JACK, with no gap between files, and connects each channel where you choose. An interface for `jack_play`, the `rju-play` player by Rohan Drape ([upstream](https://github.com/rd--/rju)). | ✓ | ✓ | [Download 0.19](https://github.com/zinc75/jack-apps-collection-macos/releases/download/jack_play-v0.19-macOS-3/JackPlay-0.19-macOS-3.pkg) |
 | <a href="zita-njbridge/"><img src="zita-njbridge/screenshots/icon.png" width="96" alt="Zita Network Bridge icon"></a> | [Zita Network Bridge](zita-njbridge/) | Carries multichannel audio between two Macs over a network, with adaptive resampling. An interface for `zita-njbridge` (`zita-j2n` and `zita-n2j`) by Fons Adriaensen ([upstream](https://kokkinizita.linuxaudio.org/linuxaudio/)). | ✓ | ✓ | [Download 0.4.8](https://github.com/zinc75/jack-apps-collection-macos/releases/download/zita-njbridge-v0.4.8-macOS/ZitaNetworkBridge-0.4.8-macOS.pkg) |
 
+### Screenshots
+
 <div align="center">
   <a href="jack_capture/"><img src="jack_capture/screenshots/recording.png" width="640" alt="Jack Capture recording"></a>
   <br><em>Jack Capture</em>
@@ -47,7 +49,7 @@ Tools are built for Apple Silicon and Intel, and get a SwiftUI application where
 ---
 
 <div align="center">
-  <a href="zita-njbridge/"><img src="zita-njbridge/screenshots/link.png" width="460" alt="Zita Network Bridge, a link that sends and receives"></a>
+  <a href="zita-njbridge/"><img src="zita-njbridge/screenshots/link-wide.png" width="640" alt="Zita Network Bridge, a link that sends and receives"></a>
   <br><em>Zita Network Bridge</em>
 </div>
 
