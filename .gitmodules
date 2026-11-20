@@ -7,3 +7,6 @@
 [submodule "jack_play/upstream"]
 	path = jack_play/upstream
 	url = https://github.com/rd--/rju.git
+[submodule "libs/libogg/upstream"]
+	path = libs/libogg/upstream
+	url = https://github.com/xiph/ogg.git
