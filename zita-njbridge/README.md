@@ -114,9 +114,11 @@ Zita Network Bridge is free and open source. If it saves you time, you can buy m
 | Author | Fons Adriaensen |
 | Source | https://kokkinizita.linuxaudio.org/linuxaudio/downloads/zita-njbridge-0.4.8.tar.bz2 |
 | Version | version 0.4.8 (archive downloaded 2026-10-31); no git history upstream. |
-| Archive | `zita-njbridge-0.4.8.tar.bz2` (not kept; download it again and compare the checksum) |
+| Archive | `zita-njbridge-0.4.8.tar.bz2`, attached to the release `0.4.8` of the repository named below |
 | SHA-256 | `101176a0bd407cab7bffd326e8d6886c1b65b212bc33f2efb97b03f926c47907` |
-| Copy here | `upstream/` = the archive extracted with `tar -xf … --strip-components=1`, **unmodified** |
+| Copy here | `upstream/` = a Git submodule of [zinc75/zita-njbridge-releases](https://github.com/zinc75/zita-njbridge-releases), at tag `0.4.8` (commit `378152fceaf57001b562a873aabe704b8b74ea62`): the files of the archive above, **unmodified** (clone with `--recurse-submodules`) |
+
+That repository holds release snapshots, one commit per release; it is not a mirror, because Fons Adriaensen publishes release archives only and has no Git repository.
 
 ## Licence
 
@@ -134,7 +136,7 @@ macOS has no `mlockall`, so both programs print "memory lock failed" at start. I
 
 ## Layout
 
-- `upstream/`: the original sources, never edited.
+- `upstream/`: the original sources, never edited (a Git submodule).
 - `patches/`: changes to the upstream sources, as unified diffs.
 - `build_universal.sh`: builds the two universal programs and writes their licence texts (needs `libs/zita-resampler` built first).
 - `swiftui/`: the application, with its tests and build script.

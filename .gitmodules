@@ -55,3 +55,6 @@
 [submodule "jconvolver/upstream"]
 	path = jconvolver/upstream
 	url = https://github.com/zinc75/jconvolver-releases.git
+[submodule "zita-njbridge/upstream"]
+	path = zita-njbridge/upstream
+	url = https://github.com/zinc75/zita-njbridge-releases.git
