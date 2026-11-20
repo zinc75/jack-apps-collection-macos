@@ -606,7 +606,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Detenga la reproducción, o abra este archivo, para cambiar sus conexiones."
+            "value" : "Detén la reproducción, o abre este archivo, para cambiar sus conexiones."
           }
         },
         "it" : {
@@ -1502,7 +1502,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Doble clic para reproducir desde un archivo. Arrastre las filas para cambiar el orden."
+            "value" : "Doble clic para reproducir desde un archivo. Arrastra las filas para cambiar el orden."
           }
         },
         "it" : {
