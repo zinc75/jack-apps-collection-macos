@@ -19,3 +19,9 @@
 [submodule "libs/libsndfile/upstream"]
 	path = libs/libsndfile/upstream
 	url = https://github.com/libsndfile/libsndfile.git
+[submodule "libs/flac/upstream"]
+	path = libs/flac/upstream
+	url = https://github.com/xiph/flac.git
+[submodule "libs/liblo/upstream"]
+	path = libs/liblo/upstream
+	url = https://github.com/radarsat1/liblo.git
