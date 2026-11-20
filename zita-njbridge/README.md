@@ -21,7 +21,7 @@ Zita Network Bridge is an unofficial interface. It is part of Jack Apps Collecti
 
 ## Install
 
-Download `ZitaNetworkBridge-0.4.8-macOS-2.pkg` from the [Releases](https://github.com/zinc75/jack-apps-collection-macos/releases) page and open it. It installs the application in `/Applications/Jack Apps Collection/`, and `zita-j2n` and `zita-n2j` in `/usr/local/bin`, with their manual pages.
+Download `ZitaNetworkBridge-0.4.8-macOS-3.pkg` from the [Releases](https://github.com/zinc75/jack-apps-collection-macos/releases) page and open it. It installs the application in `/Applications/Jack Apps Collection/`, and `zita-j2n` and `zita-n2j` in `/usr/local/bin`, with their manual pages.
 
 It needs macOS 15 or later, and [JACK](https://jackaudio.org/downloads/) installed. To build from source instead, see [`swiftui/README.md`](swiftui/README.md).
 
@@ -95,7 +95,7 @@ Zita Network Bridge is free and open source. If it saves you time, you can buy m
 
 ## Changes compared with upstream
 
-**CLI.** The programs are built from upstream's sources, as universal binaries, with one small patch (`patches/`). On macOS, the network threads that upstream starts with `SCHED_FIFO` stay in the time sharing band, and on a loaded Mac the buffer of the receiver ran dry. The patch asks JACK to give these threads the time constraint that it gives to its own. With 24 busy processes on the Mac, the smallest margin of the buffer was -3901 frames without it and 194 frames with it, as on an idle Mac (JACK period of 256 at 48 kHz).
+**CLI.** The programs are built from upstream's sources, as universal binaries, with two small patches (`patches/`). On macOS, the network threads that upstream starts with `SCHED_FIFO` stay in the time sharing band, and on a loaded Mac the buffer of the receiver ran dry. The patch asks JACK to give these threads the time constraint that it gives to its own. With 24 busy processes on the Mac, the smallest margin of the buffer was -3901 frames without it and 194 frames with it, as on an idle Mac (JACK period of 256 at 48 kHz). The second patch leaves out the call to `mlockall`, which does not exist on macOS and made both programs print "memory lock failed" at start; in a run of 100 seconds the programs did not wait for a page of memory once.
 
 **GUI.** The application adds what the programs do not show:
 
@@ -132,7 +132,7 @@ The programs build as universal binaries (arm64 and x86_64), with the patch desc
 
 Tested between two Macs over direct gigabit Ethernet. With a JACK period of 256 the defaults are enough; with 1024, use `zita-n2j --buff 30` or more. Resampling between 48 kHz and 44.1 kHz keeps pitch and level exact. Other periods were not tested.
 
-macOS has no `mlockall`, so both programs print "memory lock failed" at start. It is harmless.
+macOS has no `mlockall`: the call is left out, so the programs do not print "memory lock failed" any more.
 
 ## Layout
 

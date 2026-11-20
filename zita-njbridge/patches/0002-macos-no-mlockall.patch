@@ -1,0 +1,30 @@
+--- a/source/zita-j2n.cc
++++ b/source/zita-j2n.cc
+@@ -247,10 +247,12 @@
+     }
+     A.set_port (port_arg);
+ 
++#ifndef __APPLE__ // macOS has no mlockall (), it always fails
+     if (mlockall (MCL_CURRENT | MCL_FUTURE))
+     {
+         fprintf (stderr, "Warning: memory lock failed.\n");
+     }
++#endif
+ 
+     jacktx = new Jacktx (name_arg, serv_arg, chan_arg);
+     nettx  = new Nettx;
+--- a/source/zita-n2j.cc
++++ b/source/zita-n2j.cc
+@@ -309,10 +309,12 @@
+     }
+     Arx.set_port (port_arg);
+ 
++#ifndef __APPLE__ // macOS has no mlockall (), it always fails
+     if (mlockall (MCL_CURRENT | MCL_FUTURE))
+     {
+         fprintf (stderr, "Warning: memory lock failed.\n");
+     }
++#endif
+ 
+     packet = new Netdata (1500);
+     jackrx = new Jackrx (name_arg, serv_arg, nchan, chlist);
