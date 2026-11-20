@@ -73,7 +73,7 @@ zita-n2j 192.168.1.20 9999
 zita-j2n 192.168.1.20 9999
 ```
 
-`zita-n2j --info` prints the state of the link, and `man zita-njbridge` has the rest. The settings of the application are kept between launches. The interface is in French, English, German, Italian and Spanish. The German, Italian and Spanish translations have not been reviewed by native speakers.
+`zita-n2j --info` prints the state of the link, and `man zita-njbridge` has the rest. The settings of the application are kept between launches. The interface is in French, English, German, Italian and Spanish. The German, Italian and Spanish translations were written without a native speaker: corrections and new languages are welcome, see [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 
 ## Uninstall
 

@@ -88,7 +88,7 @@ Square, sine, noise and click sounds, with a pitch and a volume for the accent a
 
 Klick without JACK is also published as [Klick Tempo](https://github.com/zinc75/klick-tempo).
 
-The interface is in French, English, German, Italian and Spanish. The German, Italian and Spanish translations have not been reviewed by native speakers.
+The interface is in French, English, German, Italian and Spanish. The German, Italian and Spanish translations were written without a native speaker: corrections and new languages are welcome, see [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 
 ## Uninstall
 

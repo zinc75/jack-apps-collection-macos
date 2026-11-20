@@ -70,7 +70,7 @@ Repeat (none, the file or the list), resampling quality, playback buffer, JACK c
 jack_play [options] sound-file...
 ```
 
-The settings of the application are kept between launches. The interface is in French, English, German, Italian and Spanish. The German, Italian and Spanish translations have not been reviewed by native speakers. It needs macOS 15 or later.
+The settings of the application are kept between launches. The interface is in French, English, German, Italian and Spanish. The German, Italian and Spanish translations were written without a native speaker: corrections and new languages are welcome, see [`CONTRIBUTING.md`](../CONTRIBUTING.md). It needs macOS 15 or later.
 
 ## Uninstall
 

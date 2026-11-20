@@ -80,6 +80,10 @@ Some folders are Git submodules, each fixed at a given commit of its own reposit
 
 Clone with `git clone --recurse-submodules`, or run `git submodule update --init --recursive` in a clone made without it.
 
+## Contributing
+
+Bug reports, fixes, corrections of translations and new languages are welcome: see [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
 ## Support
 
 Jack Apps Collection is free and open source. If it saves you time, you can buy me a coffee: it helps pay the Apple Developer account ($99 a year) that keeps the installers signed and notarized.
