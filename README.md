@@ -69,6 +69,7 @@ Some folders are Git submodules, each fixed at a given commit of its own reposit
 | `libs/libsndfile/upstream` | `libsndfile` by Erik de Castro Lopo and contributors, from its [official repository](https://github.com/libsndfile/libsndfile), at the tag of the release used, unmodified |
 | `libs/flac/upstream` | `flac` by Xiph.Org, from its [official repository](https://github.com/xiph/flac), at the tag of the release used, unmodified |
 | `libs/liblo/upstream` | `liblo` by Stephen Sinclair and contributors, from its [official repository](https://github.com/radarsat1/liblo), at the tag of the release used, unmodified |
+| `libs/mpg123/upstream` | [zinc75/mpg123-releases](https://github.com/zinc75/mpg123-releases), the files of the `mpg123` release archive (signed by its author), one commit per release |
 
 Clone with `git clone --recurse-submodules`, or run `git submodule update --init --recursive` in a clone made without it.
 
