@@ -28,3 +28,6 @@
 [submodule "libs/mpg123/upstream"]
 	path = libs/mpg123/upstream
 	url = https://github.com/zinc75/mpg123-releases.git
+[submodule "libs/lame/upstream"]
+	path = libs/lame/upstream
+	url = https://github.com/zinc75/lame-releases.git
