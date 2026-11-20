@@ -46,3 +46,6 @@
 [submodule "libs/clthreads/upstream"]
 	path = libs/clthreads/upstream
 	url = https://github.com/zinc75/clthreads-releases.git
+[submodule "libs/zita-convolver/upstream"]
+	path = libs/zita-convolver/upstream
+	url = https://github.com/zinc75/zita-convolver-releases.git
