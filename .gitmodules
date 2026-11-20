@@ -13,3 +13,9 @@
 [submodule "libs/libvorbis/upstream"]
 	path = libs/libvorbis/upstream
 	url = https://github.com/xiph/vorbis.git
+[submodule "libs/libsamplerate/upstream"]
+	path = libs/libsamplerate/upstream
+	url = https://github.com/libsndfile/libsamplerate.git
+[submodule "libs/libsndfile/upstream"]
+	path = libs/libsndfile/upstream
+	url = https://github.com/libsndfile/libsndfile.git
