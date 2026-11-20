@@ -10,3 +10,6 @@
 [submodule "libs/libogg/upstream"]
 	path = libs/libogg/upstream
 	url = https://github.com/xiph/ogg.git
+[submodule "libs/libvorbis/upstream"]
+	path = libs/libvorbis/upstream
+	url = https://github.com/xiph/vorbis.git

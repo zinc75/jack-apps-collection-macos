@@ -64,6 +64,7 @@ Some folders are Git submodules, each fixed at a given commit of its own reposit
 | `klick/klick-tempo` | [klick-tempo](https://github.com/zinc75/klick-tempo), the core of Klick and the same application without JACK, in its own repository |
 | `klick/klick-tempo/klick/upstream` | `klick` by Dominic Sacré, from its [official repository](https://github.com/dsacre/klick), unmodified, inside klick-tempo |
 | `libs/libogg/upstream` | `libogg` by Xiph.Org, from its [official repository](https://github.com/xiph/ogg), at the tag of the release used, unmodified |
+| `libs/libvorbis/upstream` | `libvorbis` by Xiph.Org, from its [official repository](https://github.com/xiph/vorbis), at the tag of the release used, unmodified |
 
 Clone with `git clone --recurse-submodules`, or run `git submodule update --init --recursive` in a clone made without it.
 
