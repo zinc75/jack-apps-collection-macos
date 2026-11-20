@@ -59,6 +59,8 @@ ub_autotools() {  # $1 = arch, then configure arguments
   dir=$UB_WORK/$arch
   rm -rf "$dir"; cp -R "$UB_SRC" "$dir"
   ub_patch "$dir"
+  # A library may need a file that its release archive carries and its git checkout does not (UB_COPY_HOOK: a command run in the copy).
+  [ -z "${UB_COPY_HOOK:-}" ] || ( cd "$dir" && $UB_COPY_HOOK )
   # A release archive carries the generated files (aclocal.m4, configure, Makefile.in): after the copy their dates are in any order,
   # and make would try to regenerate them with the exact automake of the maintainers. Put them in the order it expects.
   if [ -x "$dir/configure" ]; then
