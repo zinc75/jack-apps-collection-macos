@@ -293,7 +293,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "24 Bit ist die übliche Wahl. 32-Bit-Gleitkomma behält das interne Format von JACK bei, mit höherer Datenrate."
+            "value": "24 Bit ist die übliche Wahl. 32-Bit-Float behält das interne Format von JACK bei, mit höherer Datenrate."
           }
         },
         "it": {
@@ -663,7 +663,7 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Interrompi"
+            "value": "Ferma"
           }
         },
         "es": {
@@ -741,13 +741,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Angehalten"
+            "value": "Gestoppt"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fermato"
+            "value": "Fermo"
           }
         },
         "es": {
@@ -1279,13 +1279,13 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ogni ingresso di zita-j2n è collegato alle porte JACK a vostra scelta."
+            "value": "Ogni ingresso di zita-j2n è collegato alle porte JACK a tua scelta."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cada entrada de zita-j2n se conecta a los puertos JACK que usted elija."
+            "value": "Cada entrada de zita-j2n se conecta a los puertos JACK que elijas."
           }
         }
       }
@@ -1307,13 +1307,13 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ogni uscita di zita-n2j è collegata alle porte JACK a vostra scelta. I canali che il trasmettitore non invia restano silenziosi."
+            "value": "Ogni uscita di zita-n2j è collegata alle porte JACK a tua scelta. I canali che il trasmettitore non invia restano silenziosi."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cada salida de zita-n2j se conecta a los puertos JACK que usted elija. Los canales que el emisor no envía permanecen en silencio."
+            "value": "Cada salida de zita-n2j se conecta a los puertos JACK que elijas. Los canales que el emisor no envía permanecen en silencio."
           }
         }
       }
@@ -1419,13 +1419,13 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Scegliete Ricevere, Inviare o entrambi."
+            "value": "Scegli Ricevere, Inviare o entrambi."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Elija Recibir, Enviar o ambos."
+            "value": "Elige Recibir, Enviar o ambos."
           }
         }
       }
@@ -1811,13 +1811,13 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Le impostazioni di invio sono cambiate: riavviate questo senso per applicarle."
+            "value": "Le impostazioni di invio sono cambiate: riavvia questo senso per applicarle."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Se han cambiado ajustes de envío: reinicie este sentido para aplicarlos."
+            "value": "Se han cambiado ajustes de envío: reinicia este sentido para aplicarlos."
           }
         }
       }
@@ -1839,13 +1839,13 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Le impostazioni di ricezione sono cambiate: riavviate questo senso per applicarle."
+            "value": "Le impostazioni di ricezione sono cambiate: riavvia questo senso per applicarle."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Se han cambiado ajustes de recepción: reinicie este sentido para aplicarlos."
+            "value": "Se han cambiado ajustes de recepción: reinicia este sentido para aplicarlos."
           }
         }
       }
@@ -2119,13 +2119,13 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Avviate JACK per conoscere il periodo e ottenere un suggerimento."
+            "value": "Avvia JACK per conoscere il periodo e ottenere un suggerimento."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Inicie JACK para conocer el periodo y obtener una sugerencia."
+            "value": "Inicia JACK para conocer el periodo y obtener una sugerencia."
           }
         }
       }
@@ -2399,7 +2399,7 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "L'invio è fermo. Avviatelo con %@ [in basso nella finestra](zita://flash/send)."
+            "value": "L'invio è fermo. Avvialo con %@ [in basso nella finestra](zita://flash/send)."
           }
         },
         "es": {
@@ -2589,7 +2589,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gleitkomma"
+            "value": "Float"
           }
         },
         "it": {
@@ -4023,13 +4023,13 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Per impostazione predefinita il ricevitore prende tutti i canali del trasmettitore. Per dividere un grande flusso tra più ricevitori, scegliete solo i canali di questo: gli altri non vengono creati in JACK."
+            "value": "Per impostazione predefinita il ricevitore prende tutti i canali del trasmettitore. Per dividere un grande flusso tra più ricevitori, scegli solo i canali di questo: gli altri non vengono creati in JACK."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "De forma predeterminada, el receptor toma todos los canales del emisor. Para repartir un flujo grande entre varios receptores, elija solo los canales de este: los demás no se crean en JACK."
+            "value": "De forma predeterminada, el receptor toma todos los canales del emisor. Para repartir un flujo grande entre varios receptores, elige solo los canales de este: los demás no se crean en JACK."
           }
         }
       }
@@ -4331,13 +4331,13 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Che cosa volete fare?"
+            "value": "Che cosa vuoi fare?"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "¿Qué desea hacer?"
+            "value": "¿Qué quieres hacer?"
           }
         }
       }
@@ -4695,7 +4695,7 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "La ricezione è ferma. Avviatela con %@ [in basso nella finestra](zita://flash/receive)."
+            "value": "La ricezione è ferma. Avviala con %@ [in basso nella finestra](zita://flash/receive)."
           }
         },
         "es": {
@@ -4975,13 +4975,13 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Inserite l'indirizzo del collegamento prima di avviarlo."
+            "value": "Inserisci l'indirizzo del collegamento prima di avviarlo."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Introduzca la dirección del enlace antes de iniciarlo."
+            "value": "Introduce la dirección del enlace antes de iniciarlo."
           }
         }
       }
@@ -5479,13 +5479,13 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Un cavo diretto tra due Mac non ha un server di indirizzi: date a ogni Mac un indirizzo dello stesso intervallo (per esempio 10.10.10.1 e 10.10.10.2)."
+            "value": "Un cavo diretto tra due Mac non ha un server di indirizzi: dai a ogni Mac un indirizzo dello stesso intervallo (per esempio 10.10.10.1 e 10.10.10.2)."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Un cable directo entre dos Mac no tiene servidor de direcciones: dé a cada Mac una dirección del mismo rango (por ejemplo 10.10.10.1 y 10.10.10.2)."
+            "value": "Un cable directo entre dos Mac no tiene servidor de direcciones: da a cada Mac una dirección del mismo rango (por ejemplo 10.10.10.1 y 10.10.10.2)."
           }
         }
       }
@@ -6285,7 +6285,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "32-Bit-Gleitkomma"
+            "value": "32-Bit-Float"
           }
         },
         "it": {
