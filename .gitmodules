@@ -31,3 +31,6 @@
 [submodule "libs/lame/upstream"]
 	path = libs/lame/upstream
 	url = https://github.com/zinc75/lame-releases.git
+[submodule "libs/zita-resampler/upstream"]
+	path = libs/zita-resampler/upstream
+	url = https://github.com/zinc75/zita-resampler-releases.git
