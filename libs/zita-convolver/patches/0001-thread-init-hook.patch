@@ -1,0 +1,75 @@
+--- a/source/zita-convolver.cc
++++ b/source/zita-convolver.cc
+@@ -69,7 +69,9 @@
+     _minpart (0),
+     _maxpart (0),
+     _nlevels (0),
+-    _latecnt (0)
++    _latecnt (0),
++    _thread_init (0),
++    _thread_arg (0)
+ {
+     memset (_inpbuff, 0, MAXINP * sizeof (float *));
+     memset (_outbuff, 0, MAXOUT * sizeof (float *));
+@@ -298,6 +300,8 @@
+ 
+     for (k = (_minpart == _quantum) ? 1 : 0; k < _nlevels; k++)
+     {
++        _convlev [k]->_thread_init = _thread_init;
++        _convlev [k]->_thread_arg = _thread_arg;
+         _convlev [k]->start (abspri, policy);
+     }
+     _state = ST_PROC;
+@@ -416,6 +420,8 @@
+     _parsize (0),
+     _options (0),
+     _pthr (0),
++    _thread_init (0),
++    _thread_arg (0),
+     _inp_list (0),
+     _out_list (0),
+     _plan_r2c (0),
+@@ -690,6 +696,7 @@
+ void Convlevel::main (void)
+ {
+     _stat = ST_PROC;
++    if (_thread_init) _thread_init (_thread_arg, _parsize);
+     while (true)
+     {
+ 	_trig.wait ();
+--- a/source/zita-convolver.h
++++ b/source/zita-convolver.h
+@@ -312,6 +312,8 @@
+     int                 _bits;           // bit identifiying this level
+     int                 _wait;           // number of unfinished cycles
+     pthread_t           _pthr;           // posix thread executing this level
++    void              (*_thread_init) (void *, uint32_t); // called at the start of the thread
++    void               *_thread_arg;     // argument for the above
+     ZCsema              _trig;           // sema used to trigger a cycle
+     ZCsema              _done;           // sema used to wait for a cycle
+     Inpnode            *_inp_list;       // linked list of active inputs
+@@ -429,6 +431,13 @@
+ 
+     int  reset (void);
+ 
++    // Optional. If set, fn (arg, partition size) is called at the start of each computation thread,
++    // in that thread, before it processes anything. It can be used to give the thread the kind of
++    // real-time scheduling that the system needs when the policy of start_process() is not enough.
++    // Must be set before start_process().
++    typedef void (*thread_init_t) (void *arg, uint32_t parsize);
++    void set_thread_init (thread_init_t fn, void *arg) { _thread_init = fn; _thread_arg = arg; }
++
+     int  start_process (int abspri, int policy);
+ 
+     int  process (bool sync = false);
+@@ -459,7 +468,9 @@
+     uint32_t    _inpsize;                 // size of input buffers
+     uint32_t    _latecnt;                 // count of cycles ending too late
+     Convlevel  *_convlev [MAXLEV];        // array of processors 
+-    void       *_dummy [64];
++    thread_init_t  _thread_init;          // see set_thread_init()
++    void       *_thread_arg;
++    void       *_dummy [62];
+ 
+     static float  _mac_cost;
+     static float  _fft_cost;
