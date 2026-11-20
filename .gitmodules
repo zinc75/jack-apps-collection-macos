@@ -52,3 +52,6 @@
 [submodule "libs/fftw/upstream"]
 	path = libs/fftw/upstream
 	url = https://github.com/zinc75/fftw-releases.git
+[submodule "jconvolver/upstream"]
+	path = jconvolver/upstream
+	url = https://github.com/zinc75/jconvolver-releases.git
