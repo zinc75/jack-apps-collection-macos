@@ -40,3 +40,6 @@
 [submodule "libs/rubberband/upstream"]
 	path = libs/rubberband/upstream
 	url = https://github.com/breakfastquay/rubberband.git
+[submodule "libs/boost/upstream"]
+	path = libs/boost/upstream
+	url = https://github.com/zinc75/boost-subset.git
