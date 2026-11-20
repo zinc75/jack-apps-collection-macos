@@ -326,7 +326,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "32 bits flotante"
+            "value" : "32 bits en coma flotante"
           }
         },
         "it" : {
@@ -808,7 +808,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Interrompi"
+            "value" : "Ferma"
           }
         }
       }
@@ -2706,7 +2706,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Escuchando: pulse el botón rojo para empezar. El archivo comenzará con los últimos segundos ya transcurridos."
+            "value" : "Escuchando: pulsa el botón rojo para empezar. El archivo comenzará con los últimos segundos ya transcurridos."
           }
         },
         "it" : {
@@ -3350,7 +3350,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "JACK no está en marcha. Inicie el servidor JACK y vuelva a intentarlo."
+            "value" : "JACK no está en marcha. Inicia el servidor JACK y vuelve a intentarlo."
           }
         },
         "it" : {
