@@ -70,13 +70,13 @@ Some folders are Git submodules, each fixed at a given commit of its own reposit
 | `libs/libsamplerate/upstream` | `libsamplerate` by Erik de Castro Lopo and contributors, from its [official repository](https://github.com/libsndfile/libsamplerate), at the tag of the release used, unmodified |
 | `libs/libsndfile/upstream` | `libsndfile` by Erik de Castro Lopo and contributors, from its [official repository](https://github.com/libsndfile/libsndfile), at the tag of the release used, unmodified |
 | `libs/flac/upstream` | `flac` by Xiph.Org, from its [official repository](https://github.com/xiph/flac), at the tag of the release used, unmodified |
-| `libs/boost/upstream` | [zinc75/boost-subset](https://github.com/zinc75/boost-subset), the 492 headers of Boost that klick needs, from the release archive, one commit per release |
+| `libs/boost/upstream` | Boost, by the Boost community: [zinc75/boost-subset](https://github.com/zinc75/boost-subset), the 492 headers that klick needs, from the release archive, one commit per release |
 | `libs/liblo/upstream` | `liblo` by Stephen Sinclair and contributors, from its [official repository](https://github.com/radarsat1/liblo), at the tag of the release used, unmodified |
 | `libs/opus/upstream` | `opus` by Xiph.Org and contributors, from its [official repository](https://github.com/xiph/opus), at the tag of the release used, unmodified |
 | `libs/rubberband/upstream` | `rubberband` by Breakfast Quay, from its [official repository](https://github.com/breakfastquay/rubberband), at the tag of the release used, unmodified |
-| `libs/mpg123/upstream` | [zinc75/mpg123-releases](https://github.com/zinc75/mpg123-releases), the files of the `mpg123` release archive (signed by its author), one commit per release |
-| `libs/lame/upstream` | [zinc75/lame-releases](https://github.com/zinc75/lame-releases), the files of the `LAME` release archive, one commit per release |
-| `libs/zita-resampler/upstream` | [zinc75/zita-resampler-releases](https://github.com/zinc75/zita-resampler-releases), the files of the `zita-resampler` release archive, one commit per release |
+| `libs/mpg123/upstream` | `mpg123` by Michael Hipp and others, maintained by Thomas Orgis since 2006: [zinc75/mpg123-releases](https://github.com/zinc75/mpg123-releases), the files of its release archive (signed by its maintainer), one commit per release |
+| `libs/lame/upstream` | `LAME` by The LAME Project and its contributors: [zinc75/lame-releases](https://github.com/zinc75/lame-releases), the files of its release archive, one commit per release |
+| `libs/zita-resampler/upstream` | `zita-resampler` by Fons Adriaensen (the NEON code is by Nicolas Belin): [zinc75/zita-resampler-releases](https://github.com/zinc75/zita-resampler-releases), the files of its release archive, one commit per release |
 
 Clone with `git clone --recurse-submodules`, or run `git submodule update --init --recursive` in a clone made without it.
 
