@@ -79,6 +79,7 @@ Some folders are Git submodules, each fixed at a given commit of its own reposit
 | `libs/zita-resampler/upstream` | `zita-resampler` by Fons Adriaensen (the NEON code is by Nicolas Belin): [zinc75/zita-resampler-releases](https://github.com/zinc75/zita-resampler-releases), the files of its release archive, one commit per release |
 | `libs/clthreads/upstream` | `clthreads` by Fons Adriaensen: [zinc75/clthreads-releases](https://github.com/zinc75/clthreads-releases), the files of its release archive, one commit per release |
 | `libs/zita-convolver/upstream` | `zita-convolver` by Fons Adriaensen: [zinc75/zita-convolver-releases](https://github.com/zinc75/zita-convolver-releases), the files of its release archive, one commit per release |
+| `libs/fftw/upstream` | `FFTW` by Matteo Frigo and Steven G. Johnson: [zinc75/fftw-releases](https://github.com/zinc75/fftw-releases), the files of its release archive, one commit per release |
 
 Clone with `git clone --recurse-submodules`, or run `git submodule update --init --recursive` in a clone made without it.
 

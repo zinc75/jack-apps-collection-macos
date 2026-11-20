@@ -49,3 +49,6 @@
 [submodule "libs/zita-convolver/upstream"]
 	path = libs/zita-convolver/upstream
 	url = https://github.com/zinc75/zita-convolver-releases.git
+[submodule "libs/fftw/upstream"]
+	path = libs/fftw/upstream
+	url = https://github.com/zinc75/fftw-releases.git
