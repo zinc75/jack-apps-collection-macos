@@ -37,3 +37,6 @@
 [submodule "libs/opus/upstream"]
 	path = libs/opus/upstream
 	url = https://github.com/xiph/opus.git
+[submodule "libs/rubberband/upstream"]
+	path = libs/rubberband/upstream
+	url = https://github.com/breakfastquay/rubberband.git
