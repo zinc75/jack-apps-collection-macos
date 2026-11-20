@@ -66,6 +66,8 @@ Some folders are Git submodules, each fixed at a given commit of its own reposit
 | `jack_play/upstream` | `rju` (`rju-play`) by Rohan Drape, from its [repository](https://github.com/rd--/rju), unmodified, with its own `r-common` submodule |
 | `klick/klick-tempo` | [klick-tempo](https://github.com/zinc75/klick-tempo), the core of Klick and the same application without JACK, in its own repository |
 | `klick/klick-tempo/klick/upstream` | `klick` by Dominic Sacré, from its [official repository](https://github.com/dsacre/klick), unmodified, inside klick-tempo |
+| `zita-njbridge/upstream` | `zita-njbridge` by Fons Adriaensen: [zinc75/zita-njbridge-releases](https://github.com/zinc75/zita-njbridge-releases), the files of its release archive, one commit per release |
+| `jconvolver/upstream` | `jconvolver` by Fons Adriaensen: [zinc75/jconvolver-releases](https://github.com/zinc75/jconvolver-releases), the files of its release archive, one commit per release |
 | `libs/libogg/upstream` | `libogg` by Xiph.Org, from its [official repository](https://github.com/xiph/ogg), at the tag of the release used, unmodified |
 | `libs/libvorbis/upstream` | `libvorbis` by Xiph.Org, from its [official repository](https://github.com/xiph/vorbis), at the tag of the release used, unmodified |
 | `libs/libsamplerate/upstream` | `libsamplerate` by Erik de Castro Lopo and contributors, from its [official repository](https://github.com/libsndfile/libsamplerate), at the tag of the release used, unmodified |
