@@ -43,3 +43,6 @@
 [submodule "libs/boost/upstream"]
 	path = libs/boost/upstream
 	url = https://github.com/zinc75/boost-subset.git
+[submodule "libs/clthreads/upstream"]
+	path = libs/clthreads/upstream
+	url = https://github.com/zinc75/clthreads-releases.git
