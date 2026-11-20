@@ -1,0 +1,49 @@
+--- a/source/netrx.cc
++++ b/source/netrx.cc
+@@ -26,6 +26,9 @@
+ #include "zsockets.h"
+ #include "timers.h"
+ #include "netrx.h"
++#ifdef __APPLE__
++#include <jack/thread.h>
++#endif
+ 
+ 
+ Netrx::Netrx (void) :
+@@ -72,6 +75,11 @@
+ 
+ void Netrx::thr_main (void)
+ {
++#ifdef __APPLE__
++    // SCHED_FIFO, as set by thr_start (), leaves a thread in the time sharing band on macOS, where a loaded
++    // machine makes it late. Ask JACK for the time constraint that it gives to its own threads.
++    jack_acquire_real_time_scheduling (pthread_self (), 0);
++#endif
+     int     rv, pt, fl, fc, dc;
+     double  tr, err;
+ 
+--- a/source/nettx.cc
++++ b/source/nettx.cc
+@@ -20,6 +20,10 @@
+ 
+ #include <stdio.h>
+ #include "nettx.h"
++#ifdef __APPLE__
++#include <jack/jack.h>
++#include <jack/thread.h>
++#endif
+ #include "zsockets.h"
+ 
+ 
+@@ -56,6 +60,11 @@
+ 
+ void Nettx::thr_main (void)
+ {
++#ifdef __APPLE__
++    // SCHED_FIFO, as set by thr_start (), leaves a thread in the time sharing band on macOS, where a loaded
++    // machine makes it late. Ask JACK for the time constraint that it gives to its own threads.
++    jack_acquire_real_time_scheduling (pthread_self (), 0);
++#endif
+     Netdata  *D;
+     Timedata *M;
+     
