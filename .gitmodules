@@ -34,3 +34,6 @@
 [submodule "libs/zita-resampler/upstream"]
 	path = libs/zita-resampler/upstream
 	url = https://github.com/zinc75/zita-resampler-releases.git
+[submodule "libs/opus/upstream"]
+	path = libs/opus/upstream
+	url = https://github.com/xiph/opus.git
