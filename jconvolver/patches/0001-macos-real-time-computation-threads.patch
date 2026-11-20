@@ -1,0 +1,62 @@
+--- a/source/jclient.cc
++++ b/source/jclient.cc
+@@ -23,6 +23,9 @@
+ #include <stdio.h>
+ #include <string.h>
+ #include "jclient.h"
++#ifdef __APPLE__
++#include <jack/thread.h>
++#endif
+ 
+ 
+ Jclient::Jclient (const char *jname, const char *jserv, Convproc *convproc) :
+@@ -162,6 +165,22 @@
+ }
+ 
+ 
++#ifdef __APPLE__
++// On macOS the SCHED_FIFO attributes that Convproc gives to its computation threads are accepted but leave
++// them in the time sharing band, and under load they run late. JACK gives its own threads a time constraint
++// derived from its period; ask it to do the same for these.
++void Jclient::thread_init (void *arg, uint32_t)
++{
++    Jclient *C = (Jclient *) arg;
++
++    if (jack_client_real_time_priority (C->_jack_client) >= 0)
++    {
++        jack_acquire_real_time_scheduling (pthread_self (), C->_abspri);
++    }
++}
++#endif
++
++
+ int Jclient::jack_static_process (jack_nframes_t nframes, void *arg)
+ {
+     Jclient *C = (Jclient *) arg;
+--- a/source/jclient.h
++++ b/source/jclient.h
+@@ -50,7 +50,13 @@
+     int add_output_port (const char *name, const char *conn = 0);
+     void denorm_protect (bool v) { _addnoise = v; }
+ 
+-    void start (void) { _convproc->start_process (_abspri, _policy); }
++    void start (void)
++    {
++#ifdef __APPLE__
++        _convproc->set_thread_init (thread_init, this);
++#endif
++        _convproc->start_process (_abspri, _policy);
++    }
+     void stop (void)  { _convproc->stop_process (); }
+ 
+ private:
+@@ -76,6 +82,9 @@
+     bool            _addnoise;
+     Prbsgen         _prbsgen;
+ 
++#ifdef __APPLE__
++    static void thread_init (void *arg, uint32_t parsize);
++#endif
+     static void jack_static_shutdown (void *arg);
+     static void jack_static_freewheel (int state, void *arg);
+     static int  jack_static_buffsize (jack_nframes_t nframes, void *arg);

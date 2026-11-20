@@ -1,0 +1,16 @@
+--- a/source/jconvolver.cc
++++ b/source/jconvolver.cc
+@@ -138,11 +138,13 @@
+ 	return 1;
+     }
+ 
++#ifndef __APPLE__ // macOS has no mlockall (), it always fails
+     if (mlockall (MCL_CURRENT | MCL_FUTURE))
+     {
+         fprintf (stderr, "Warning: ");
+         perror ("mlockall:");
+     }
++#endif
+ 
+     memset (jackname, 0, NAMELEN);
+     memset (jackserv, 0, NAMELEN);

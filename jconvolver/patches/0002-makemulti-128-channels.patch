@@ -1,0 +1,11 @@
+--- a/source/makemulti.cc
++++ b/source/makemulti.cc
+@@ -29,7 +29,7 @@
+ 
+ enum { HELP, CAF, WAV, AMB, AIFF, FLAC, BIT16, BIT24, FLOAT, REC, TRI, LIPS, GAIN, FROM, UPTO };
+ 
+-enum { BLOCK = 4096, MAXINP = 64 };
++enum { BLOCK = 4096, MAXINP = 128 };
+ 
+ 
+ static struct option options [] = 
