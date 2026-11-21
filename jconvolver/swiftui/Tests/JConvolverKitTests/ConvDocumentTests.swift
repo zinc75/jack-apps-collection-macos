@@ -149,7 +149,7 @@ final class ConvDocumentTests: XCTestCase {
         let text = d.makeConfig(automatic: automatic).text
         XCTAssertTrue(text.contains("/input/name 2 Mic\n"))
         XCTAssertFalse(text.contains("/input/name 1"))
-        XCTAssertTrue(text.contains("/output/name 1 out_1 system:playback_1\n"))
+        XCTAssertTrue(text.contains("/output/name 1 out-1 system:playback_1\n"))
     }
 
     // MARK: Editing
@@ -204,7 +204,10 @@ final class ConvDocumentTests: XCTestCase {
         d.add(ConvImpulse(source: .file(path: "a.wav", channel: 1), delay: 0, offset: 100, length: 0), at: pair(1, 3))
         d.add(ConvImpulse(source: .dirac, delay: 5), at: pair(0, 1))
         XCTAssertEqual(d.pairDensity, 3.0 / 8.0, accuracy: 1e-12)
-        let h = d.automaticHeader(period: 128) { $0 == "a.wav" ? 1000 : nil }
+        let h = d.automaticHeader(period: 128) { impulse in
+            if case .file(let path, _) = impulse.source, path == "a.wav" { return 1000 }
+            return nil
+        }
         XCTAssertEqual(h.partition, 128)
         XCTAssertEqual(h.maxLength, 1010)      // the first file: delay 10 + 1000 frames
         XCTAssertEqual(h.density, 0.38)

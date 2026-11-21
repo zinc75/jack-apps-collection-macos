@@ -255,15 +255,16 @@ public struct ConvDocument: Equatable, Sendable {
     }
 
     /// The length, in samples, of the longest convolution: what the maximum length of `/convolver/new` has to cover.
-    /// - Parameter lengthOfFile: the number of frames of a sound file; nil when it cannot be read.
-    public func longestImpulse(lengthOfFile: (String) -> Int?) -> Int {
+    /// - Parameter lengthOfFile: the number of frames of the sound file of an impulse response (its folder is the one of the
+    ///   impulse response); nil when it cannot be read.
+    public func longestImpulse(lengthOfFile: (ConvImpulse) -> Int?) -> Int {
         func end(_ impulse: ConvImpulse, _ pair: ConvPair, depth: Int = 0) -> Int {
             switch impulse.source {
             case .dirac: return impulse.delay + 1
             case .hilbert(let length): return impulse.delay + length / 2
-            case .file(let path, _):
+            case .file:
                 if impulse.length > 0 { return impulse.delay + impulse.length }
-                guard let frames = lengthOfFile(path) else { return impulse.delay }
+                guard let frames = lengthOfFile(impulse) else { return impulse.delay }
                 return impulse.delay + max(0, frames - impulse.offset)
             case .copy(let source):
                 guard depth < 8 else { return 0 }
@@ -275,7 +276,7 @@ public struct ConvDocument: Equatable, Sendable {
 
     /// The numbers of `/convolver/new` the application works out when the person did not set them: a partition of the
     /// period of JACK (no latency is added), the length of the longest convolution, and the density of the matrix.
-    public func automaticHeader(period: Int, lengthOfFile: (String) -> Int?) -> ConvHeader {
+    public func automaticHeader(period: Int, lengthOfFile: (ConvImpulse) -> Int?) -> ConvHeader {
         ConvHeader(partition: period, maxLength: max(longestImpulse(lengthOfFile: lengthOfFile), 1), density: (pairDensity * 100).rounded() / 100)
     }
 
@@ -295,10 +296,10 @@ public struct ConvDocument: Equatable, Sendable {
                                             maxLength: content.maxLength ?? automatic.maxLength,
                                             density: content.density ?? automatic.density)))
         for (i, port) in content.inputs.enumerated() where port.isCustom {
-            lines.append(ConfLine(.inputName(number: i + 1, name: port.name ?? "in_\(i + 1)", connection: port.connection)))
+            lines.append(ConfLine(.inputName(number: i + 1, name: port.name ?? "in-\(i + 1)", connection: port.connection)))
         }
         for (o, port) in content.outputs.enumerated() where port.isCustom {
-            lines.append(ConfLine(.outputName(number: o + 1, name: port.name ?? "out_\(o + 1)", connection: port.connection)))
+            lines.append(ConfLine(.outputName(number: o + 1, name: port.name ?? "out-\(o + 1)", connection: port.connection)))
         }
 
         // Files are grouped by folder so that a `/cd` is written once for each, the pulses and filters come first, and a
