@@ -70,7 +70,7 @@ struct SelectionPanel: View {
             Text("Retard").frame(width: 70, alignment: .trailing)
             Text("Début").frame(width: 70, alignment: .trailing)
             Text("Longueur").frame(width: 70, alignment: .trailing)
-            Color.clear.frame(width: 22, height: 1)
+            Color.clear.frame(width: 52, height: 1)
         }
         .font(.caption).foregroundStyle(.secondary)
     }
@@ -114,6 +114,9 @@ struct ImpulseRowFields: View {
             ValueField(text: "\(impulse.delay)", enabled: !isCopy) { commit(delay: $0) }
             ValueField(text: "\(impulse.offset)", enabled: isFile) { commit(offset: $0) }
             ValueField(text: "\(impulse.length)", enabled: isFile) { commit(length: $0) }
+            Button { model.detail = DetailTarget(pair: pair, index: index) } label: { Image(systemName: "waveform.path.ecg") }
+                .buttonStyle(.plain).foregroundStyle(.secondary).frame(width: 22).opacity(isFile ? 1 : 0.25).disabled(!isFile)
+                .help("Détail de la RI : forme d'onde et analyse")
             Button { model.edit(String(localized: "RI retirée")) { $0.remove(at: index, of: pair) } } label: { Image(systemName: "xmark.circle.fill") }
                 .buttonStyle(.plain).foregroundStyle(.secondary).frame(width: 22).help("Vider cette RI")
         }

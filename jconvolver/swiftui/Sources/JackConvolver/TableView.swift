@@ -60,7 +60,7 @@ struct ImpulseTable: View {
             Text("Retard").frame(width: 70, alignment: .trailing)
             Text("Début").frame(width: 70, alignment: .trailing)
             Text("Longueur").frame(width: 70, alignment: .trailing)
-            Color.clear.frame(width: 22, height: 1)
+            Color.clear.frame(width: 52, height: 1)
         }
         .font(.caption).foregroundStyle(.secondary)
         .padding(.horizontal, 12).padding(.vertical, 6)
@@ -118,7 +118,7 @@ struct BulkRow: View {
             BulkInput(field: .delay)
             BulkInput(field: .offset)
             BulkInput(field: .length)
-            Color.clear.frame(width: 22, height: 1)
+            Color.clear.frame(width: 52, height: 1)
         }
         .padding(.horizontal, 12).padding(.vertical, 8)
     }

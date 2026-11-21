@@ -50,6 +50,13 @@ struct MatrixCanvas: View {
         Button("Couper") { model.cutSelection() }.disabled(!model.canCopy)
         Button("Coller") { model.paste() }.disabled(model.clipboard.isEmpty)
         Button("Vider", role: .destructive) { model.clearSelection() }.disabled(!model.canCopy)
+        Button("Détail de la RI…") {
+            if let p = model.hoverPair, let d = model.document,
+               let i = d.impulses(at: p).firstIndex(where: { if case .file = $0.source { true } else { false } }) {
+                model.detail = DetailTarget(pair: p, index: i)
+            }
+        }
+        .disabled(!hasImpulse)
         Divider()
         Menu("Placer ici ce qui est choisi dans la liste") {
             Button("En ligne") { model.placePicked(mode: .row) }

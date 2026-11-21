@@ -64,6 +64,8 @@ final class AppModel {
     var showsProblems = false
     var showsNewConfiguration = false
     var showsPortNames = false
+    /// The impulse response whose detail window is open.
+    var detail: DetailTarget?
 
     let controller = EngineController()
     let jack = JackStatus()

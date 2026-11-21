@@ -45,6 +45,11 @@ struct ContentView: View {
             if let page = env["JACKCONVOLVER_PAGE"].flatMap(Page.init(rawValue:)) { model.page = page }
             if env["JACKCONVOLVER_VIEW"] == "table" { model.viewMode = .table }
             if env["JACKCONVOLVER_SHEET"] == "names" { try? await Task.sleep(for: .milliseconds(800)); model.showsPortNames = true }
+            if env["JACKCONVOLVER_SHEET"] == "detail", let d = model.document,
+               let first = d.content.impulses.keys.sorted().first(where: { pair in d.impulses(at: pair).contains { if case .file = $0.source { true } else { false } } }),
+               let i = d.impulses(at: first).firstIndex(where: { if case .file = $0.source { true } else { false } }) {
+                try? await Task.sleep(for: .milliseconds(800)); model.detail = DetailTarget(pair: first, index: i)
+            }
             if env["JACKCONVOLVER_AUTORUN"] != nil {
                 try? await Task.sleep(for: .seconds(2))
                 model.toggleRun()
@@ -77,6 +82,7 @@ struct ContentView: View {
         .sheet(isPresented: $model.showsNewConfiguration) { NewConfigurationSheet() }
         .sheet(isPresented: $model.showsCommand) { CommandSheet() }
         .sheet(isPresented: $model.showsPortNames) { PortNamesSheet() }
+        .sheet(item: $model.detail) { ImpulseDetailSheet(target: $0) }
         .sheet(isPresented: $model.showsProblems) { ProblemsSheet() }
         .alert(model.message ?? "", isPresented: Binding(get: { model.message != nil }, set: { if !$0 { model.message = nil } })) {
             Button("OK") { model.message = nil }
