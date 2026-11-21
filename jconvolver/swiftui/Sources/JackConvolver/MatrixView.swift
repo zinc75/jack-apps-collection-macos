@@ -56,6 +56,9 @@ struct MatrixToolbar: View {
             .pickerStyle(.segmented).labelsHidden().fixedSize().accentTint()
             Text(verbatim: summary).foregroundStyle(.secondary).padding(.leading, 6)
             Spacer()
+            if model.mode == .realTime {
+                Button { model.showsPortNames = true } label: { Label("Noms des ports JACK…", systemImage: "pencil") }
+            }
             Button { model.clearAll() } label: { Label("Tout vider", systemImage: "trash") }
                 .disabled((model.document?.placedPairs ?? 0) == 0)
             Button { model.undo() } label: { Image(systemName: "arrow.uturn.backward") }

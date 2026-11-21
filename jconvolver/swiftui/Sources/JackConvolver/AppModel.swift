@@ -63,6 +63,7 @@ final class AppModel {
     var showsCommand = false
     var showsProblems = false
     var showsNewConfiguration = false
+    var showsPortNames = false
 
     let controller = EngineController()
     let jack = JackStatus()
