@@ -70,6 +70,18 @@ struct JackConvolverApp: App {
                 Button("Enregistrer sous…") { model.save(asNew: true) }.keyboardShortcut("s", modifiers: [.command, .shift]).disabled(!model.isOpen)
             }
             CommandGroup(replacing: .importExport) {}
+            CommandGroup(replacing: .undoRedo) {
+                Button(model.history.undoLabel.map { String(localized: "Annuler \($0)") } ?? String(localized: "Annuler")) { model.undo() }
+                    .keyboardShortcut("z", modifiers: .command).disabled(!model.canUndo)
+                Button(model.history.redoLabel.map { String(localized: "Rétablir \($0)") } ?? String(localized: "Rétablir")) { model.redo() }
+                    .keyboardShortcut("z", modifiers: [.command, .shift]).disabled(!model.canRedo)
+            }
+            CommandGroup(replacing: .textEditing) {
+                Button("Tout sélectionner") {
+                    if let d = model.document { model.selection.selectAll(inputs: d.inputCount, outputs: d.outputCount) }
+                }
+                .keyboardShortcut("a", modifiers: .command).disabled(!model.isOpen)
+            }
             CommandGroup(replacing: .printItem) {}
             CommandGroup(replacing: .textFormatting) {}
             CommandGroup(replacing: .toolbar) {

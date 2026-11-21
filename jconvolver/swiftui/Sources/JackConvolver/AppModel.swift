@@ -31,6 +31,19 @@ final class AppModel {
     var outputFile: URL?
 
     private(set) var document: ConvDocument?
+    /// What is selected in the matrix, how big its cells are drawn, and what the pointer is over.
+    var selection = MatrixSelection()
+    var cellSize: CGFloat = 26
+    var hoverPair: ConvPair?
+    /// Where what is being dragged would land, while it is dragged over the matrix.
+    var dropPlan: PlacementPlan?
+    var draggedItems: [Placeable] = []
+    private(set) var history = DocumentHistory()
+    /// The list of sound files beside the matrix: what is chosen in it, what is open, what is searched for.
+    private(set) var binFiles: [BinFile] = []
+    var picked: Set<Placeable> = []
+    var binExpanded: Set<String> = []
+    var binFilter = ""
     private(set) var fileURL: URL?
     private(set) var problems: [ConvProblem] = []
     private(set) var recents: [URL] = []
@@ -67,6 +80,8 @@ final class AppModel {
 
     func markLogSeen() { logSeen = (controller.log.entries.last?.id ?? -1) + 1 }
 
+    func setBinFiles(_ files: [BinFile]) { binFiles = files }
+
     // MARK: The configuration
 
     var isOpen: Bool { document != nil }
@@ -94,6 +109,7 @@ final class AppModel {
         document = imported.document
         fileURL = url
         remember(url)
+        resetEditing()
         refreshProblems()
         page = .matrix
         if config.convolver == nil {
@@ -104,16 +120,51 @@ final class AppModel {
     func newConfiguration(inputs: Int, outputs: Int) {
         document = ConvDocument(inputs: inputs, outputs: outputs)
         fileURL = nil
+        resetEditing()
         refreshProblems()
         page = .matrix
     }
 
-    /// Changes the matrix. Everything that depends on it is worked out again.
-    func edit(_ change: (inout ConvDocument) -> Void) {
+    /// Changes the matrix, and keeps the change in the history. Everything that depends on it is worked out again.
+    func edit(_ label: String, _ change: (inout ConvDocument) -> Void) {
         guard var d = document else { return }
+        let before = d
         change(&d)
+        guard d != before else { return }
+        history.record(label, before: before)
         document = d
+        documentChanged()
+    }
+
+    private func documentChanged() {
+        if let document { selection.clamp(inputs: document.inputCount, outputs: document.outputCount) }
         refreshProblems()
+    }
+
+    private func resetEditing() {
+        history.clear()
+        selection = MatrixSelection()
+        hoverPair = nil
+        dropPlan = nil
+        picked = []
+        binExpanded = []
+        binFilter = ""
+        loadBin()
+    }
+
+    var canUndo: Bool { history.canUndo }
+    var canRedo: Bool { history.canRedo }
+
+    func undo() {
+        guard let document, let step = history.undo(current: document) else { return }
+        self.document = step.document
+        documentChanged()
+    }
+
+    func redo() {
+        guard let document, let step = history.redo(current: document) else { return }
+        self.document = step.document
+        documentChanged()
     }
 
     /// The text of the configuration file as it would be written now.

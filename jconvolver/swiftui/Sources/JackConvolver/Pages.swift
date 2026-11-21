@@ -44,33 +44,7 @@ struct HomeView: View {
     }
 }
 
-// MARK: Matrix and ports (the pages that come next)
-
-struct MatrixView: View {
-    @Environment(AppModel.self) private var model
-
-    var body: some View {
-        SettingsPage {
-            Text("Configuration des RI").font(.title2).fontWeight(.semibold)
-            if let document = model.document {
-                SettingsGroup("Matrice") {
-                    OptionRow("Entrées") { Text(verbatim: "\(document.inputCount)").monospacedDigit() }
-                    OptionRow("Sorties") { Text(verbatim: "\(document.outputCount)").monospacedDigit() }
-                    OptionRow("Paires avec une RI") { Text(verbatim: "\(document.placedPairs)").monospacedDigit() }
-                    OptionRow("Partition, longueur max., densité", "Calculées à partir des RI placées tant que vous ne les fixez pas.") {
-                        let h = model.automaticHeader
-                        Text(verbatim: "\(document.partition ?? h.partition) · \(document.maxLength ?? h.maxLength) · \((document.density ?? h.density ?? 0).formatted())")
-                            .monospacedDigit().foregroundStyle(.secondary)
-                    }
-                }
-                GroupNote(text: "La matrice, le tableau et l'analyse arrivent dans les prochaines versions de cette interface.")
-                if !model.problems.isEmpty { ProblemList() }
-            } else {
-                Text("Aucune configuration ouverte.").foregroundStyle(.secondary)
-            }
-        }
-    }
-}
+// MARK: Ports (the page that comes next)
 
 struct PortsView: View {
     var body: some View {
