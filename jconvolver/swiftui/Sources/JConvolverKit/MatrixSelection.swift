@@ -101,6 +101,15 @@ public struct MatrixSelection: Equatable, Sendable {
         anchor = pair
     }
 
+    /// A list of pairs picked by hand (the rows of the table between two clicks): the selection is these pairs, and the last is the anchor.
+    public mutating func pick(_ list: [ConvPair]) {
+        guard let last = list.last else { return }
+        let set = Set(list)
+        if set.count == 1 { select(last); return }
+        shape = .picked(set)
+        anchor = last
+    }
+
     /// The whole row of an input.
     public mutating func selectInput(_ input: Int, outputs: Int) {
         shape = .block(Block(from: ConvPair(input: input, output: 0), to: ConvPair(input: input, output: max(0, outputs - 1))))

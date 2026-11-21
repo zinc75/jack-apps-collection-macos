@@ -43,6 +43,7 @@ struct ContentView: View {
             let env = ProcessInfo.processInfo.environment
             if let path = env["JACKCONVOLVER_OPEN"] { model.open(URL(fileURLWithPath: path)) }
             if let page = env["JACKCONVOLVER_PAGE"].flatMap(Page.init(rawValue:)) { model.page = page }
+            if env["JACKCONVOLVER_VIEW"] == "table" { model.viewMode = .table }
             if env["JACKCONVOLVER_AUTORUN"] != nil {
                 try? await Task.sleep(for: .seconds(2))
                 model.toggleRun()

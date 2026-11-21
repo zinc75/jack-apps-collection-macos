@@ -189,4 +189,70 @@ final class MatrixEditingTests: XCTestCase {
         let problems = ConvValidator.problems(in: d, context: ConvValidationContext(mode: .realTime(jackRate: 48000), configDirectory: "/", fileInfo: { _ in nil }))
         XCTAssertFalse(problems.contains { if case .hilbertDelayTooSmall = $0.kind { return true } else { return false } })
     }
+
+    // MARK: Table: a list of pairs, and a field set for many
+
+    func testPickingAListOfPairs() {
+        var s = MatrixSelection()
+        s.pick([p(0, 0), p(2, 1), p(3, 3)])
+        XCTAssertEqual(s.pairs, [p(0, 0), p(2, 1), p(3, 3)])
+        XCTAssertEqual(s.anchor, p(3, 3))
+        s.pick([p(1, 1)])
+        XCTAssertTrue(s.isSingle)
+        s.pick([])
+        XCTAssertEqual(s.pairs, [p(1, 1)])
+    }
+
+    private func two() -> ConvDocument {
+        var d = ConvDocument(inputs: 2, outputs: 2)
+        d.add(ConvImpulse(source: .file(path: "a.wav", channel: 1), gain: 0.5, delay: 10, offset: 5, length: 100), at: p(0, 0))
+        d.add(ConvImpulse(source: .file(path: "a.wav", channel: 2), gain: 0.25, delay: 0, offset: 0, length: 0), at: p(1, 1))
+        d.add(ConvImpulse(source: .dirac, gain: 1, delay: 3), at: p(0, 1))
+        d.add(ConvImpulse(source: .copy(of: p(0, 0))), at: p(1, 0))
+        return d
+    }
+
+    func testReplacingAFieldForManyPairs() {
+        var d = two()
+        let n = d.bulkSet(.gain, .replace, value: -6, on: [p(0, 0), p(1, 1), p(0, 1), p(1, 0)])
+        XCTAssertEqual(n, 3)   // the copy has nothing of its own
+        XCTAssertEqual(d.impulses(at: p(0, 0)).first?.gainDB ?? 0, -6, accuracy: 1e-4)
+        XCTAssertEqual(d.impulses(at: p(1, 1)).first?.gainDB ?? 0, -6, accuracy: 1e-4)
+    }
+
+    func testShiftingKeepsTheDifferencesBetweenImpulseResponses() {
+        var d = two()
+        let before = (d.impulses(at: p(0, 0)).first!.gainDB, d.impulses(at: p(1, 1)).first!.gainDB)
+        d.bulkSet(.gain, .shift, value: -3, on: [p(0, 0), p(1, 1)])
+        XCTAssertEqual(d.impulses(at: p(0, 0)).first!.gainDB, before.0 - 3, accuracy: 1e-4)
+        XCTAssertEqual(d.impulses(at: p(1, 1)).first!.gainDB, before.1 - 3, accuracy: 1e-4)
+        d.bulkSet(.delay, .shift, value: 5, on: [p(0, 0), p(1, 1), p(0, 1)])
+        XCTAssertEqual(d.impulses(at: p(0, 0)).first?.delay, 15)
+        XCTAssertEqual(d.impulses(at: p(1, 1)).first?.delay, 5)
+        XCTAssertEqual(d.impulses(at: p(0, 1)).first?.delay, 8)
+    }
+
+    func testDelayStartAndLengthNeverGoUnderZero() {
+        var d = two()
+        d.bulkSet(.delay, .shift, value: -100, on: [p(0, 0)])
+        d.bulkSet(.offset, .shift, value: -100, on: [p(0, 0)])
+        d.bulkSet(.length, .shift, value: -1000, on: [p(0, 0)])
+        let i = d.impulses(at: p(0, 0)).first
+        XCTAssertEqual(i?.delay, 0)
+        XCTAssertEqual(i?.offset, 0)
+        XCTAssertEqual(i?.length, 0)
+    }
+
+    func testStartAndLengthBelongToFilesOnly() {
+        var d = two()
+        XCTAssertEqual(d.bulkSet(.offset, .replace, value: 50, on: [p(0, 1)]), 0)   // a pulse
+        XCTAssertEqual(d.bulkSet(.length, .replace, value: 50, on: [p(0, 1), p(0, 0)]), 1)
+        XCTAssertEqual(d.impulses(at: p(0, 1)).first?.length, 0)
+    }
+
+    func testNothingChangedIsNotCounted() {
+        var d = two()
+        XCTAssertEqual(d.bulkSet(.delay, .replace, value: 10, on: [p(0, 0)]), 0)
+        XCTAssertEqual(d.bulkSet(.gain, .shift, value: 0, on: [p(0, 0)]), 0)
+    }
 }

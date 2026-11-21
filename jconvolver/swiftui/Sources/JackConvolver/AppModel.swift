@@ -17,6 +17,11 @@ enum RunMode: String {
     case realTime, file
 }
 
+/// The impulse responses as a matrix, or as a table.
+enum ViewMode: String {
+    case matrix, table
+}
+
 /// What the window needs: the configuration that is open, the engine, the state of JACK, and the page that is shown.
 @MainActor
 @Observable
@@ -39,6 +44,10 @@ final class AppModel {
     var dropPlan: PlacementPlan?
     var draggedItems: [Placeable] = []
     private(set) var history = DocumentHistory()
+    /// The matrix or the table, and what the row above the table does: to all the impulse responses or the selected ones, replacing or shifting.
+    var viewMode = ViewMode.matrix
+    var bulkOnSelection = false
+    var bulkShifts = false
     /// The list of sound files beside the matrix: what is chosen in it, what is open, what is searched for.
     private(set) var binFiles: [BinFile] = []
     var picked: Set<Placeable> = []

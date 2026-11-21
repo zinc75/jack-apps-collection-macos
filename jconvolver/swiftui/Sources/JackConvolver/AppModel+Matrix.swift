@@ -136,6 +136,21 @@ extension AppModel {
         apply(plan(items, from: ConvPair(input: b.firstInput, output: b.firstOutput), mode: mode))
     }
 
+    /// Sets a field for all the impulse responses or for those of the selection (what the row above the table does).
+    func bulkSet(_ field: BulkField, value: Double) {
+        guard let document else { return }
+        let pairs = bulkOnSelection ? selection.pairs : Array(document.content.impulses.keys)
+        let label: String = switch field {
+        case .gain: String(localized: "gain de plusieurs RI")
+        case .delay: String(localized: "retard de plusieurs RI")
+        case .offset: String(localized: "début de plusieurs RI")
+        case .length: String(localized: "longueur de plusieurs RI")
+        }
+        var changed = 0
+        edit(label) { changed = $0.bulkSet(field, bulkShifts ? .shift : .replace, value: value, on: pairs) }
+        if changed == 0 { message = String(localized: "Aucune RI concernée.") }
+    }
+
     // MARK: Emptying
 
     func clearSelection() {

@@ -23,15 +23,19 @@ struct MatrixView: View {
                         .font(.callout).foregroundStyle(.secondary)
                 }
                 MatrixToolbar()
-                HStack(alignment: .top, spacing: 14) {
-                    FileBin().frame(width: 270)
-                    VStack(alignment: .leading, spacing: 6) {
-                        MatrixCanvas()
-                        MatrixFooter()
+                if model.viewMode == .table {
+                    ImpulseTable().frame(minHeight: 300)
+                } else {
+                    HStack(alignment: .top, spacing: 14) {
+                        FileBin().frame(width: 270)
+                        VStack(alignment: .leading, spacing: 6) {
+                            MatrixCanvas()
+                            MatrixFooter()
+                        }
                     }
+                    .frame(minHeight: 260)
+                    SelectionPanel().frame(height: 190)
                 }
-                .frame(minHeight: 260)
-                SelectionPanel().frame(height: 190)
             }
             .padding(24)
         }
@@ -43,8 +47,14 @@ struct MatrixToolbar: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
+        @Bindable var model = model
         HStack(spacing: 8) {
-            Text(verbatim: summary).foregroundStyle(.secondary)
+            Picker("Vue", selection: $model.viewMode) {
+                Label("Matrice", systemImage: "square.grid.3x3").tag(ViewMode.matrix)
+                Label("Tableau", systemImage: "tablecells").tag(ViewMode.table)
+            }
+            .pickerStyle(.segmented).labelsHidden().fixedSize().accentTint()
+            Text(verbatim: summary).foregroundStyle(.secondary).padding(.leading, 6)
             Spacer()
             Button { model.clearAll() } label: { Label("Tout vider", systemImage: "trash") }
                 .disabled((model.document?.placedPairs ?? 0) == 0)

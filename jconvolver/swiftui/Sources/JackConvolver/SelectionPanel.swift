@@ -78,10 +78,20 @@ struct SelectionPanel: View {
 
 /// One impulse response of the selection, in a row.
 struct ImpulseRow: View {
+    let pair: ConvPair
+    let index: Int
+    let impulse: ConvImpulse
+    var body: some View { ImpulseRowFields(pair: pair, index: index, impulse: impulse, showsPair: false) }
+}
+
+/// The fields of an impulse response: where it is, what it is, its gain, delay, start and length, and the button that removes it.
+/// The table shows the input and the output apart; the panel under the matrix shows them together.
+struct ImpulseRowFields: View {
     @Environment(AppModel.self) private var model
     let pair: ConvPair
     let index: Int
     let impulse: ConvImpulse
+    var showsPair = false
 
     private var isFile: Bool { if case .file = impulse.source { return true } else { return false } }
     private var isCopy: Bool { if case .copy = impulse.source { return true } else { return false } }
@@ -89,7 +99,12 @@ struct ImpulseRow: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Text("\(model.inputLabel(pair.input)) → \(model.outputLabel(pair.output))").lineLimit(1).frame(width: 150, alignment: .leading)
+            if showsPair {
+                Text(model.inputLabel(pair.input)).lineLimit(1).frame(width: 120, alignment: .leading)
+                Text(model.outputLabel(pair.output)).lineLimit(1).frame(width: 120, alignment: .leading)
+            } else {
+                Text("\(model.inputLabel(pair.input)) → \(model.outputLabel(pair.output))").lineLimit(1).frame(width: 150, alignment: .leading)
+            }
             HStack(spacing: 4) {
                 Text(model.label(of: impulse)).foregroundStyle(bad ? Color.red : Color.primary).lineLimit(1).truncationMode(.middle)
                 if bad { Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.red).font(.caption) }

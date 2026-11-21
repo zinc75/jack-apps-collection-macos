@@ -81,3 +81,48 @@ extension ConvDocument {
         return (plan.items.count, replaced)
     }
 }
+
+/// What a field of the table can be set for many impulse responses at once.
+public enum BulkField: Sendable {
+    case gain, delay, offset, length
+}
+
+/// Whether the value replaces the one of each impulse response, or is added to it (so that the differences between them stay).
+public enum BulkMode: Sendable {
+    case replace, shift
+}
+
+extension ConvDocument {
+    /// Sets a field of the impulse responses of some pairs. The gain is in dB; delay, start and length are in samples and do not go
+    /// under 0. Start and length belong to the files only. A copy has nothing of its own to set.
+    /// - Returns: how many impulse responses changed.
+    @discardableResult
+    public mutating func bulkSet(_ field: BulkField, _ mode: BulkMode, value: Double, on pairs: [ConvPair]) -> Int {
+        var changed = 0
+        for pair in pairs {
+            guard var list = content.impulses[pair] else { continue }
+            for k in list.indices {
+                var impulse = list[k]
+                let isFile: Bool = { if case .file = impulse.source { return true } else { return false } }()
+                let isCopy: Bool = { if case .copy = impulse.source { return true } else { return false } }()
+                if isCopy { continue }
+                switch field {
+                case .gain:
+                    impulse.gainDB = mode == .replace ? value : impulse.gainDB + value
+                case .delay:
+                    impulse.delay = max(0, Int((mode == .replace ? value : Double(impulse.delay) + value).rounded()))
+                case .offset:
+                    guard isFile else { continue }
+                    impulse.offset = max(0, Int((mode == .replace ? value : Double(impulse.offset) + value).rounded()))
+                case .length:
+                    guard isFile else { continue }
+                    impulse.length = max(0, Int((mode == .replace ? value : Double(impulse.length) + value).rounded()))
+                }
+                if field == .gain { impulse.gain = (impulse.gain * 1e6).rounded() / 1e6 }
+                if impulse != list[k] { list[k] = impulse; changed += 1 }
+            }
+            content.impulses[pair] = list
+        }
+        return changed
+    }
+}
