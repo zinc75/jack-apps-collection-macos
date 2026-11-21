@@ -54,6 +54,12 @@ Tools are built for Apple Silicon and Intel, and get a SwiftUI application where
   <br><em>Zita Network Bridge</em>
 </div>
 
+## Version numbers
+
+The version number of a package, and of the application inside it, is the version number of the upstream program it is built from. Jack Capture 0.9.73 is `jack_capture` 0.9.73, and Zita Network Bridge 0.4.8 is `zita-njbridge` 0.4.8. The number tells which upstream version the application drives, not how mature the interface is.
+
+When the macOS edition is published again for the same upstream version, a revision number is added to the name of the package, as in `JackCapture-0.9.73-macOS-2.pkg`. The About window of each application reads "0.9.73 macOS Edition". Where upstream has no release for a given state, the README of the tool says which commit the version stands for.
+
 ## About this repository
 
 Each tool keeps its original sources untouched in `upstream/`, with the changes needed for macOS as patches in `patches/`. Fixes that are not specific to this repository are sent to the original authors.
