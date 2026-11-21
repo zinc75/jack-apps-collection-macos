@@ -22,6 +22,11 @@ struct ImpulseDetailSheet: View {
     let target: DetailTarget
     @State private var curve: CurveData?
     @State private var failed = false
+    #if DEBUG
+    @State private var showsSpectrum = ProcessInfo.processInfo.environment["JACKCONVOLVER_DETAIL"] == "spectrum"
+    #else
+    @State private var showsSpectrum = false
+    #endif
     @State private var analysis: ImpulseAnalysis?
     @State private var info: SoundFileInfo?
 
@@ -66,8 +71,19 @@ struct ImpulseDetailSheet: View {
             if let curve {
                 let total = curve.count
                 let end = impulse.length > 0 ? min(impulse.offset + impulse.length, total) : total
-                ImpulseCurveView(data: curve, used: min(impulse.offset, total)..<max(end, min(impulse.offset, total)),
-                                 attack: analysis?.attackFrame, tail: analysis?.tailFrame)
+                let range = min(impulse.offset, total)..<max(end, min(impulse.offset, total))
+                VStack(alignment: .leading, spacing: 8) {
+                    Picker("Vue", selection: $showsSpectrum) {
+                        Text("Temps").tag(false)
+                        Text("Fréquence").tag(true)
+                    }
+                    .pickerStyle(.segmented).labelsHidden().fixedSize().accentTint()
+                    if showsSpectrum {
+                        ImpulseSpectrumView(data: curve, used: range)
+                    } else {
+                        ImpulseCurveView(data: curve, used: range, attack: analysis?.attackFrame, tail: analysis?.tailFrame)
+                    }
+                }
             } else if failed {
                 Text("Ce fichier ne peut pas être lu.").foregroundStyle(.red).frame(maxWidth: .infinity, minHeight: 190)
             } else {
