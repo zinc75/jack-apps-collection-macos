@@ -84,8 +84,8 @@ public final class EngineController {
         process?.stop()
     }
 
-    /// JACK reported an audio cut.
-    public func recordXrun(microseconds: Int) {
+    /// JACK reported an audio cut, with how late the cycle was when that is known.
+    public func recordXrun(microseconds: Int? = nil) {
         guard isRunning else { return }
         xruns += 1
         log.append(note: .xrun(microseconds: microseconds), source: .jack, severity: .warning)

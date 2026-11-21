@@ -199,6 +199,10 @@ public struct ConvDocument: Equatable, Sendable {
 
     public var isModified: Bool { origin?.content != content }
 
+    /// The document has been written as this configuration: it is not modified any more, and comes out as this text while it
+    /// is not changed again.
+    public mutating func markSaved(as config: ConvConfig) { origin = Origin(config: config, content: content) }
+
     public var inputCount: Int { content.inputs.count }
     public var outputCount: Int { content.outputs.count }
 

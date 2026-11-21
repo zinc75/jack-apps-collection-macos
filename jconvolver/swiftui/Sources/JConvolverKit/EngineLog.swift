@@ -31,7 +31,7 @@ public struct EngineLogEntry: Identifiable, Equatable, Sendable {
         /// The program ended, with its exit code.
         case ended(program: String, status: Int32)
         /// An audio cut that JACK reported, with how late the cycle was.
-        case xrun(microseconds: Int)
+        case xrun(microseconds: Int?)
         /// A sound file was written.
         case fileWritten(name: String)
 
@@ -42,7 +42,7 @@ public struct EngineLogEntry: Identifiable, Equatable, Sendable {
             case .cannotLaunch(let reason): return "Cannot start the program: \(reason)"
             case .stopRequested: return "Stop requested (SIGINT)"
             case .ended(let program, let status): return "\(program) ended (code \(status))"
-            case .xrun(let us): return "xrun: \(us) µs late"
+            case .xrun(let us): return us.map { "xrun: \($0) µs late" } ?? "xrun"
             case .fileWritten(let name): return "File written: \(name)"
             }
         }

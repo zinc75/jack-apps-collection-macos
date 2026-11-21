@@ -14,8 +14,15 @@ let package = Package(
     name: "JConvolver",
     platforms: [.macOS("15.0")],
     dependencies: [
+        // libjack loaded at run time, shared with the other tools of the repository.
+        .package(path: "../../shared/JackBridge"),
         // Sound files read with libsndfile, MIT, shared with the other tools.
         .package(path: "../../shared/SoundFileKit"),
+        // The waveform of a file, level meters, the look (dark, system, light) and the accent, and the glass and badges of the
+        // matrix, MIT, shared with the other tools.
+        .package(path: "../../shared/WaveformKit"),
+        .package(path: "../../shared/AppearanceKit"),
+        .package(path: "../../shared/MatrixKit"),
     ],
     targets: [
         // Runs a program in a pseudo-terminal (Swift cannot fork).
@@ -24,8 +31,21 @@ let package = Package(
         // measuring their load, reading the sound files. Unit tested.
         .target(
             name: "JConvolverKit",
-            dependencies: ["CJConvolverPty", .product(name: "SoundFileKit", package: "SoundFileKit")],
+            dependencies: ["CJConvolverPty", .product(name: "SoundFileKit", package: "SoundFileKit"), .product(name: "JackBridge", package: "JackBridge")],
             swiftSettings: [.unsafeFlags(headers)]
+        ),
+        // The SwiftUI application. As in JackMate, UI code is main-actor isolated by default.
+        .executableTarget(
+            name: "JackConvolver",
+            dependencies: [
+                "JConvolverKit",
+                .product(name: "SoundFileKit", package: "SoundFileKit"),
+                .product(name: "JackBridge", package: "JackBridge"),
+                .product(name: "WaveformKit", package: "WaveformKit"),
+                .product(name: "AppearanceKit", package: "AppearanceKit"),
+                .product(name: "MatrixKit", package: "MatrixKit"),
+            ],
+            swiftSettings: [.unsafeFlags(["-Xfrontend", "-default-isolation", "-Xfrontend", "MainActor"] + headers)]
         ),
         .testTarget(name: "JConvolverKitTests", dependencies: ["JConvolverKit", .product(name: "SoundFileKit", package: "SoundFileKit")], swiftSettings: [.unsafeFlags(headers)]),
     ]
