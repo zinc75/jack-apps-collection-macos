@@ -33,10 +33,45 @@ struct MatrixCanvas: View {
                     .focusable()
                     .focusEffectDisabled()
                     .onDeleteCommand { model.clearSelection() }
+                    .contextMenu { contextMenu }
+                    .onAppear { RightClickSelector.install(model) }
                     .frame(minWidth: geometry.size.width, minHeight: geometry.size.height, alignment: .topLeading)
             }
         }
         .blockBackground()
+    }
+
+    // MARK: The menu of a right-click
+
+    @ViewBuilder
+    private var contextMenu: some View {
+        let hasImpulse = model.hoverPair.map { !(model.document?.impulses(at: $0).isEmpty ?? true) } ?? false
+        Button("Copier") { model.copySelection() }.disabled(!model.canCopy)
+        Button("Couper") { model.cutSelection() }.disabled(!model.canCopy)
+        Button("Coller") { model.paste() }.disabled(model.clipboard.isEmpty)
+        Button("Vider", role: .destructive) { model.clearSelection() }.disabled(!model.canCopy)
+        Divider()
+        Menu("Placer ici ce qui est choisi dans la liste") {
+            Button("En ligne") { model.placePicked(mode: .row) }
+            Button("En colonne") { model.placePicked(mode: .column) }
+            Button("En diagonale") { model.placePicked(mode: .diagonal) }
+        }
+        .disabled(model.picked.isEmpty)
+        Divider()
+        Button("Sélectionner toute la ligne") {
+            if let p = model.hoverPair ?? Optional(ConvPair(input: model.selection.bounds.firstInput, output: 0)), let d = model.document {
+                model.selection.selectInput(p.input, outputs: d.outputCount)
+            }
+        }
+        Button("Sélectionner toute la colonne") {
+            if let p = model.hoverPair ?? Optional(ConvPair(input: 0, output: model.selection.bounds.firstOutput)), let d = model.document {
+                model.selection.selectOutput(p.output, inputs: d.inputCount)
+            }
+        }
+        Button("Sélectionner tout ce qui utilise ce fichier") {
+            if let p = model.hoverPair ?? Optional(ConvPair(input: model.selection.bounds.firstInput, output: model.selection.bounds.firstOutput)) { model.selectPairsUsingFile(of: p) }
+        }
+        .disabled(!hasImpulse)
     }
 
     // MARK: Where things are

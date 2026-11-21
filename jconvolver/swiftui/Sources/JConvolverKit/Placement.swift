@@ -126,3 +126,47 @@ extension ConvDocument {
         return changed
     }
 }
+
+/// What is copied from the matrix: the impulse responses of some pairs, each with its place counted from the first of them.
+public struct ClipboardItem: Equatable, Sendable {
+    public var inputOffset: Int
+    public var outputOffset: Int
+    public var impulses: [ConvImpulse]
+}
+
+extension ConvDocument {
+    /// The impulse responses of the pairs, with their places counted from the top left of the block that holds the pairs.
+    public func copyOut(_ pairs: [ConvPair]) -> [ClipboardItem] {
+        let filled = pairs.filter { !impulses(at: $0).isEmpty }
+        guard let i0 = filled.map(\.input).min(), let o0 = filled.map(\.output).min() else { return [] }
+        return filled.sorted().map { ClipboardItem(inputOffset: $0.input - i0, outputOffset: $0.output - o0, impulses: impulses(at: $0)) }
+    }
+
+    /// Puts what was copied with its top left on a pair. What goes beyond the matrix is left out; what was on a pair is replaced.
+    /// A copy of another pair (`/impulse/copy`) keeps pointing at the same pair.
+    /// - Returns: how many pairs were filled.
+    @discardableResult
+    public mutating func paste(_ items: [ClipboardItem], at start: ConvPair) -> Int {
+        var count = 0
+        for item in items {
+            let pair = ConvPair(input: start.input + item.inputOffset, output: start.output + item.outputOffset)
+            guard pair.input >= 0, pair.input < inputCount, pair.output >= 0, pair.output < outputCount else { continue }
+            clear(pair)
+            for impulse in item.impulses { add(impulse, at: pair) }
+            count += 1
+        }
+        return count
+    }
+
+    /// The pairs that use the same sound file as an impulse response (for "select everything that uses this file").
+    public func pairs(usingFileOf impulse: ConvImpulse, configDirectory: String) -> [ConvPair] {
+        guard case .file(let file, _) = impulse.source else { return [] }
+        let target = ConvConfig.path(of: file, directory: impulse.directory, configDirectory: configDirectory)
+        return content.impulses.compactMap { pair, list in
+            list.contains { other in
+                guard case .file(let f, _) = other.source else { return false }
+                return ConvConfig.path(of: f, directory: other.directory, configDirectory: configDirectory) == target
+            } ? pair : nil
+        }.sorted()
+    }
+}

@@ -255,4 +255,38 @@ final class MatrixEditingTests: XCTestCase {
         XCTAssertEqual(d.bulkSet(.delay, .replace, value: 10, on: [p(0, 0)]), 0)
         XCTAssertEqual(d.bulkSet(.gain, .shift, value: 0, on: [p(0, 0)]), 0)
     }
+
+    // MARK: Copy and paste
+
+    func testCopyKeepsThePlacesRelativeToTheTopLeft() {
+        var d = ConvDocument(inputs: 4, outputs: 4)
+        d.add(ConvImpulse(source: .dirac, gain: 0.5), at: p(1, 1))
+        d.add(ConvImpulse(source: .dirac, gain: 0.25), at: p(2, 3))
+        let items = d.copyOut([p(2, 3), p(1, 1), p(0, 0)])   // (0, 0) is empty: not counted
+        XCTAssertEqual(items.map { [$0.inputOffset, $0.outputOffset] }, [[0, 0], [1, 2]])
+    }
+
+    func testPasteReplacesAndLeavesOutWhatGoesBeyond() {
+        var d = ConvDocument(inputs: 3, outputs: 3)
+        d.add(ConvImpulse(source: .dirac, gain: 0.5), at: p(0, 0))
+        d.add(ConvImpulse(source: .dirac, gain: 0.25), at: p(1, 2))
+        let items = d.copyOut([p(0, 0), p(1, 2)])
+        d.add(ConvImpulse(source: .dirac, delay: 9), at: p(1, 0))
+        let n = d.paste(items, at: p(1, 0))   // the second one lands on (2, 2); the first replaces (1, 0)
+        XCTAssertEqual(n, 2)
+        XCTAssertEqual(d.impulses(at: p(1, 0)).count, 1)
+        XCTAssertEqual(d.impulses(at: p(1, 0)).first?.delay, 0)
+        XCTAssertEqual(d.impulses(at: p(2, 2)).first?.gain, 0.25)
+        XCTAssertEqual(d.paste(items, at: p(2, 2)), 1)   // only the first fits
+    }
+
+    func testPairsThatUseTheSameFile() {
+        var d = ConvDocument(inputs: 2, outputs: 2)
+        d.add(ConvImpulse(source: .file(path: "a.wav", channel: 1)), at: p(0, 0))
+        d.add(ConvImpulse(source: .file(path: "a.wav", channel: 2)), at: p(1, 1))
+        d.add(ConvImpulse(source: .file(path: "b.wav", channel: 1)), at: p(0, 1))
+        let found = d.pairs(usingFileOf: d.impulses(at: p(0, 0))[0], configDirectory: "/x")
+        XCTAssertEqual(found, [p(0, 0), p(1, 1)])
+        XCTAssertEqual(d.pairs(usingFileOf: ConvImpulse(source: .dirac), configDirectory: "/x"), [])
+    }
 }

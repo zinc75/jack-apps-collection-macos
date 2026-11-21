@@ -151,6 +151,37 @@ extension AppModel {
         if changed == 0 { message = String(localized: "Aucune RI concernée.") }
     }
 
+    // MARK: Copy and paste
+
+    var canCopy: Bool { !(document?.copyOut(selection.pairs).isEmpty ?? true) }
+
+    func copySelection() {
+        guard let document else { return }
+        setClipboard(document.copyOut(selection.pairs))
+    }
+
+    /// Puts what was copied with its top left on the first selected pair.
+    func paste() {
+        guard !clipboard.isEmpty, document != nil else { return }
+        let b = selection.bounds, start = ConvPair(input: b.firstInput, output: b.firstOutput)
+        let items = clipboard
+        var count = 0
+        edit(String(localized: "collage")) { count = $0.paste(items, at: start) }
+        if count < items.count { message = String(localized: "\(items.count - count) RI n'ont pas trouvé de case : la matrice s'arrête.") }
+    }
+
+    func cutSelection() {
+        copySelection()
+        clearSelection()
+    }
+
+    /// Chooses everything that uses the same sound file as the impulse response on a pair.
+    func selectPairsUsingFile(of pair: ConvPair) {
+        guard let document, let first = document.impulses(at: pair).first else { return }
+        let pairs = document.pairs(usingFileOf: first, configDirectory: configDirectory)
+        if !pairs.isEmpty { selection.pick(pairs) }
+    }
+
     // MARK: Emptying
 
     func clearSelection() {

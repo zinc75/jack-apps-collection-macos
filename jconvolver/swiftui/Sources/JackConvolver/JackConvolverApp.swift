@@ -3,6 +3,13 @@
 import AppearanceKit
 import SwiftUI
 
+/// The edit commands act on the text of a field while one is being edited, and on the matrix otherwise: they take the place of the
+/// standard items of the menu, which a text field would otherwise use.
+@MainActor
+func editCommand(_ selector: Selector, _ onMatrix: () -> Void) {
+    if NSApp.keyWindow?.firstResponder is NSTextView { NSApp.sendAction(selector, to: nil, from: nil) } else { onMatrix() }
+}
+
 final class AppDelegate: NSObject, NSApplicationDelegate {
     static var model: AppModel?
     static var appearance: AppearanceSettings?
@@ -76,11 +83,18 @@ struct JackConvolverApp: App {
                 Button(model.history.redoLabel.map { String(localized: "Rétablir \($0)") } ?? String(localized: "Rétablir")) { model.redo() }
                     .keyboardShortcut("z", modifiers: [.command, .shift]).disabled(!model.canRedo)
             }
+            CommandGroup(replacing: .pasteboard) {
+                Button("Couper") { editCommand(#selector(NSText.cut(_:))) { model.cutSelection() } }.keyboardShortcut("x", modifiers: .command)
+                Button("Copier") { editCommand(#selector(NSText.copy(_:))) { model.copySelection() } }.keyboardShortcut("c", modifiers: .command)
+                Button("Coller") { editCommand(#selector(NSText.paste(_:))) { model.paste() } }.keyboardShortcut("v", modifiers: .command)
+            }
             CommandGroup(replacing: .textEditing) {
                 Button("Tout sélectionner") {
-                    if let d = model.document { model.selection.selectAll(inputs: d.inputCount, outputs: d.outputCount) }
+                    editCommand(#selector(NSText.selectAll(_:))) {
+                        if let d = model.document { model.selection.selectAll(inputs: d.inputCount, outputs: d.outputCount) }
+                    }
                 }
-                .keyboardShortcut("a", modifiers: .command).disabled(!model.isOpen)
+                .keyboardShortcut("a", modifiers: .command)
             }
             CommandGroup(replacing: .printItem) {}
             CommandGroup(replacing: .textFormatting) {}

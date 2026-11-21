@@ -46,6 +46,8 @@ final class AppModel {
     private(set) var history = DocumentHistory()
     /// The matrix or the table, and what the row above the table does: to all the impulse responses or the selected ones, replacing or shifting.
     var viewMode = ViewMode.matrix
+    /// What was copied from the matrix.
+    private(set) var clipboard: [ClipboardItem] = []
     var bulkOnSelection = false
     var bulkShifts = false
     /// The list of sound files beside the matrix: what is chosen in it, what is open, what is searched for.
@@ -90,6 +92,7 @@ final class AppModel {
     func markLogSeen() { logSeen = (controller.log.entries.last?.id ?? -1) + 1 }
 
     func setBinFiles(_ files: [BinFile]) { binFiles = files }
+    func setClipboard(_ items: [ClipboardItem]) { clipboard = items }
 
     // MARK: The configuration
 
