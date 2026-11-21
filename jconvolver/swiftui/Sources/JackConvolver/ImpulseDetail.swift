@@ -5,7 +5,6 @@ import JConvolverKit
 import MatrixKit
 import SoundFileKit
 import SwiftUI
-import WaveformKit
 
 /// Which impulse response the detail window shows: the one at this place of this pair.
 struct DetailTarget: Identifiable, Equatable {
@@ -21,7 +20,8 @@ struct ImpulseDetailSheet: View {
     @Environment(\.appAccentColor) private var accent
     @Environment(\.dismiss) private var dismiss
     let target: DetailTarget
-    @State private var waveform = WaveformModel()
+    @State private var curve: CurveData?
+    @State private var failed = false
     @State private var analysis: ImpulseAnalysis?
     @State private var info: SoundFileInfo?
 
@@ -59,42 +59,21 @@ struct ImpulseDetailSheet: View {
         }
     }
 
-    // MARK: The waveform
+    // MARK: The curve
 
     private func waveformView(_ impulse: ConvImpulse, _ resolved: (path: String, channel: Int)) -> some View {
-        let total = Double(info?.frames ?? 0)
-        let start = total > 0 ? min(Double(impulse.offset) / total, 1) : 0
-        let end = total > 0 ? (impulse.length > 0 ? min(Double(impulse.offset + impulse.length) / total, 1) : 1) : 1
-        return Group {
-            if waveform.state == .failed || (info == nil && waveform.state != .loading && waveform.state != .idle) {
-                Text("Ce fichier ne peut pas être lu.").foregroundStyle(.red).frame(maxWidth: .infinity, minHeight: 140)
+        Group {
+            if let curve {
+                let total = curve.count
+                let end = impulse.length > 0 ? min(impulse.offset + impulse.length, total) : total
+                ImpulseCurveView(data: curve, used: min(impulse.offset, total)..<max(end, min(impulse.offset, total)),
+                                 attack: analysis?.attackFrame, tail: analysis?.tailFrame)
+            } else if failed {
+                Text("Ce fichier ne peut pas être lu.").foregroundStyle(.red).frame(maxWidth: .infinity, minHeight: 190)
             } else {
-                GeometryReader { geometry in
-                    ZStack(alignment: .leading) {
-                        WaveformView(peaks: waveform.peaks, channels: info?.channels ?? 1, position: 0, laneHeight: 150,
-                                     playedColor: accent, unplayedColor: accent.opacity(0.85),
-                                     channelRange: (resolved.channel - 1)..<resolved.channel)
-                        // What the engine does not read is dimmed.
-                        Rectangle().fill(Color.black.opacity(0.45)).frame(width: geometry.size.width * start).allowsHitTesting(false)
-                        Rectangle().fill(Color.black.opacity(0.45)).frame(width: geometry.size.width * (1 - end))
-                            .offset(x: geometry.size.width * end).allowsHitTesting(false)
-                        if let analysis, total > 0 {
-                            marker(at: Double(analysis.attackFrame) / total, in: geometry.size.width, color: .green)
-                            marker(at: Double(analysis.tailFrame) / total, in: geometry.size.width, color: .orange)
-                        }
-                    }
-                }
-                .frame(height: 150)
-                .blockBackground()
-                .overlay(alignment: .topTrailing) {
-                    if waveform.state == .loading { ProgressView().controlSize(.small).padding(8) }
-                }
+                ProgressView().frame(maxWidth: .infinity, minHeight: 190)
             }
         }
-    }
-
-    private func marker(at fraction: Double, in width: CGFloat, color: Color) -> some View {
-        Rectangle().fill(color).frame(width: 1.5).offset(x: width * min(max(fraction, 0), 1)).allowsHitTesting(false)
     }
 
     // MARK: The figures
@@ -135,7 +114,9 @@ struct ImpulseDetailSheet: View {
         guard let resolved else { return }
         let path = resolved.path, channel = resolved.channel, catalog = model.catalog
         info = catalog.info(at: path)
-        waveform.load { try SoundFile(url: URL(fileURLWithPath: path)) }
+        let loaded = await Task.detached(priority: .userInitiated) { try? CurveData.load(url: URL(fileURLWithPath: path), channel: channel) }.value
+        curve = loaded
+        failed = loaded == nil
         let all = await Task.detached(priority: .utility) { catalog.analysis(at: path) }.value
         analysis = all.flatMap { $0.indices.contains(channel - 1) ? $0[channel - 1] : nil }
     }
