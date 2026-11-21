@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: MIT
 
 import CSndfile
 import Foundation
@@ -20,6 +20,21 @@ public struct SoundFileInfo: Equatable, Sendable {
     public let bitsPerSample: Int?
     /// True for the formats that lose information (Vorbis, Opus, MP3).
     public let isLossy: Bool
+    /// The format code of libsndfile (container and encoding together), to write a file in the same format.
+    public let sfFormat: Int32
+
+    public init(channels: Int, sampleRate: Double, frames: Int64, container: String, fileExtension: String, encoding: String,
+                bitsPerSample: Int?, isLossy: Bool, sfFormat: Int32 = 0) {
+        self.channels = channels
+        self.sampleRate = sampleRate
+        self.frames = frames
+        self.container = container
+        self.fileExtension = fileExtension
+        self.encoding = encoding
+        self.bitsPerSample = bitsPerSample
+        self.isLossy = isLossy
+        self.sfFormat = sfFormat
+    }
 
     public var duration: TimeInterval { sampleRate > 0 ? Double(frames) / sampleRate : 0 }
 }
@@ -93,7 +108,7 @@ public final class SoundFile: SampleSource, @unchecked Sendable {
                      Int32(SF_FORMAT_MPEG_LAYER_II), Int32(SF_FORMAT_MPEG_LAYER_III)].contains(sub)
         return SoundFileInfo(channels: Int(raw.channels), sampleRate: Double(raw.samplerate), frames: Int64(raw.frames),
                              container: container.name, fileExtension: container.ext, encoding: encoding.name,
-                             bitsPerSample: bits, isLossy: lossy)
+                             bitsPerSample: bits, isLossy: lossy, sfFormat: raw.format)
     }
 
     /// The name and the extension libsndfile gives to a major format or to a subtype.

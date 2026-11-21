@@ -35,10 +35,10 @@ If `../build/jack_play` is missing, the application is still built, without the 
 
 - `Sources/JackPlayKit`: logic without any UI (the program and its messages, the file, the connections, the levels, the playlist, the state of the player), unit tested.
 - `Sources/JackPlay`: the SwiftUI application.
-- `Sources/CSndfile`: libsndfile for the Swift code.
 - `Tests`: unit and integration tests of `JackPlayKit`.
 - `Resources`: `Info.plist` and `Localizable.xcstrings` (French, English, German, Italian, Spanish).
 - `../../shared/WaveformKit` (MIT): the peaks and the drawing of the waveform.
+- `../../shared/SoundFileKit` (MIT): the sound files, read with libsndfile (linked statically with its codecs).
 - `../../shared/MatrixKit` (MIT): glass, badges and points of the outputs matrix, shared with the other tools.
 - `../../shared/MeterKit` (MIT): level meters and scales.
 - `../../shared/AppearanceKit` (MIT): dark, system or light look, and the accent.

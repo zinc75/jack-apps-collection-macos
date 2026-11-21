@@ -4,11 +4,11 @@
 import Foundation
 import PackageDescription
 
-// libsndfile and the codecs it needs (FLAC, Ogg Vorbis, Opus, MP3), linked statically from the libraries of the
-// repository, as universal libraries (arm64 and x86_64). Build them first, with libs/<name>/build_universal.sh.
+// libsndfile and the codecs it needs are linked statically by SoundFileKit, from the libraries of the repository, as
+// universal libraries (arm64 and x86_64). Build them first, with libs/<name>/build_universal.sh. The targets that use it
+// need the headers of that folder.
 let libs = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../../libs/build/universal").standardized.path
 let headers = ["-Xcc", "-I\(libs)/include"]
-let sndfileLink = ["-L\(libs)/lib", "-lsndfile", "-lmp3lame", "-lFLAC", "-lvorbisenc", "-lvorbis", "-logg", "-lopus", "-lmpg123", "-lm"]
 
 let package = Package(
     name: "JackPlay",
@@ -18,6 +18,8 @@ let package = Package(
         .package(path: "../../shared/JackBridge"),
         // The waveform of the file, MIT, shared with the other tools.
         .package(path: "../../shared/WaveformKit"),
+        // Sound files read with libsndfile, MIT, shared with the other tools.
+        .package(path: "../../shared/SoundFileKit"),
         // Level meters (model, ballistics, bars), MIT, shared with the other tools; the scale stays in the tool.
         .package(path: "../../shared/MeterKit"),
         // The look (dark, system, light) and the accent, and the badges and glass of the matrix, MIT, shared with the other tools.
@@ -25,18 +27,11 @@ let package = Package(
         .package(path: "../../shared/MatrixKit"),
     ],
     targets: [
-        // libsndfile, for the Swift code. The header comes from the libraries of the repository.
-        .target(
-            name: "CSndfile",
-            publicHeadersPath: "include",
-            cSettings: [.unsafeFlags(["-I\(libs)/include"])],
-            linkerSettings: [.unsafeFlags(sndfileLink)]
-        ),
         // Logic without any UI: files, player process, connections, state. Unit tested.
         .target(
             name: "JackPlayKit",
             dependencies: [
-                "CSndfile",
+                .product(name: "SoundFileKit", package: "SoundFileKit"),
                 .product(name: "JackBridge", package: "JackBridge"),
                 .product(name: "MeterKit", package: "MeterKit"),
                 .product(name: "WaveformKit", package: "WaveformKit"),
@@ -48,6 +43,7 @@ let package = Package(
             name: "JackPlay",
             dependencies: [
                 "JackPlayKit",
+                .product(name: "SoundFileKit", package: "SoundFileKit"),
                 .product(name: "AppearanceKit", package: "AppearanceKit"),
                 .product(name: "MatrixKit", package: "MatrixKit"),
                 .product(name: "MeterKit", package: "MeterKit"),
@@ -57,7 +53,7 @@ let package = Package(
         ),
         .testTarget(
             name: "JackPlayKitTests",
-            dependencies: ["JackPlayKit", "CSndfile", .product(name: "JackBridge", package: "JackBridge"), .product(name: "MeterKit", package: "MeterKit"), .product(name: "WaveformKit", package: "WaveformKit")],
+            dependencies: ["JackPlayKit", .product(name: "SoundFileKit", package: "SoundFileKit"), .product(name: "CSndfile", package: "SoundFileKit"), .product(name: "JackBridge", package: "JackBridge"), .product(name: "MeterKit", package: "MeterKit"), .product(name: "WaveformKit", package: "WaveformKit")],
             swiftSettings: [.unsafeFlags(headers)]
         ),
     ]

@@ -3,6 +3,7 @@
 import Foundation
 import JackBridge
 import MeterKit
+import SoundFileKit
 import Observation
 import WaveformKit
 

@@ -4,6 +4,7 @@ import AppearanceKit
 import JackPlayKit
 import MatrixKit
 import MeterKit
+import SoundFileKit
 import SwiftUI
 import WaveformKit
 

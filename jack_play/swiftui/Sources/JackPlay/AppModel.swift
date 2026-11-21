@@ -3,6 +3,7 @@
 import AppKit
 import Foundation
 import JackPlayKit
+import SoundFileKit
 import Observation
 import UniformTypeIdentifiers
 
