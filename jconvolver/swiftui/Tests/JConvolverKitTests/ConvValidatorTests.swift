@@ -1,19 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+import SoundFileKit
 import XCTest
 @testable import JConvolverKit
 
 final class ConvValidatorTests: XCTestCase {
     private func pair(_ i: Int, _ o: Int) -> ConvPair { ConvPair(input: i, output: o) }
 
-    private func info(channels: Int = 1, rate: Double = 48000, frames: Int64 = 48000) -> AudioFileInfo {
-        AudioFileInfo(channels: channels, sampleRate: rate, frames: frames, container: "WAV", fileExtension: "wav",
+    private func info(channels: Int = 1, rate: Double = 48000, frames: Int64 = 48000) -> SoundFileInfo {
+        SoundFileInfo(channels: channels, sampleRate: rate, frames: frames, container: "WAV", fileExtension: "wav",
                       encoding: "32 bit float", bitsPerSample: 32, isLossy: false, sfFormat: 0x10006)
     }
 
     /// A context where `room.wav` is a stereo file of one second at 48 kHz and nothing else exists.
     private func context(mode: ConvValidationContext.Mode = .realTime(jackRate: 48000), compensation: Int = 0,
-                         files: [String: AudioFileInfo]? = nil) -> ConvValidationContext {
+                         files: [String: SoundFileInfo]? = nil) -> ConvValidationContext {
         let known = files ?? ["/ir/room.wav": info(channels: 2)]
         return ConvValidationContext(mode: mode, configDirectory: "/ir", latencyCompensation: compensation, fileInfo: { known[$0] })
     }

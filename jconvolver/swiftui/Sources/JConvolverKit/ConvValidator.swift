@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import Foundation
+import SoundFileKit
 
 /// Something the program would refuse, or do differently from what the matrix says: what the interface lists as "to settle".
 /// The problems carry what is needed to write them in the language of the person; they have no words of their own.
@@ -70,7 +71,7 @@ public struct ConvValidationContext: Sendable {
         /// jconvolver, with the rate of the JACK server when it is running.
         case realTime(jackRate: Int?)
         /// fconvolver, with the file it reads (nil while it is not chosen).
-        case file(input: AudioFileInfo?)
+        case file(input: SoundFileInfo?)
     }
 
     public var mode: Mode
@@ -81,10 +82,10 @@ public struct ConvValidationContext: Sendable {
     /// The number of inputs and of outputs the programs of this edition accept.
     public var maximumPorts: Int
     /// What is known of a sound file, by its path; nil when it is not there. Usually `AudioFileCatalog.info(at:)`.
-    public var fileInfo: @Sendable (String) -> AudioFileInfo?
+    public var fileInfo: @Sendable (String) -> SoundFileInfo?
 
     public init(mode: Mode, configDirectory: String, latencyCompensation: Int = 0, maximumPorts: Int = 128,
-                fileInfo: @escaping @Sendable (String) -> AudioFileInfo?) {
+                fileInfo: @escaping @Sendable (String) -> SoundFileInfo?) {
         self.mode = mode
         self.configDirectory = configDirectory
         self.latencyCompensation = latencyCompensation
