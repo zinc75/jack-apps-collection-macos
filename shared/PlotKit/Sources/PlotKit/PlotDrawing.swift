@@ -16,6 +16,10 @@ struct PlotPalette {
     var spike: Color { isDark ? Color.white.opacity(0.42) : Color.black.opacity(0.42) }
     var tooltip: Color { isDark ? Color(white: 0.12, opacity: 0.94) : Color(white: 1, opacity: 0.95) }
     var tooltipText: Color { isDark ? .white : .black }
+    /// The box of a zoom has a colour of its own too: neither the signal's nor the measure's.
+    var box: Color { isDark ? Color(red: 0.32, green: 0.72, blue: 1.0) : Color(red: 0.0, green: 0.46, blue: 0.86) }
+    /// The measure has a colour of its own, to tell it from the signal.
+    var measure: Color { isDark ? Color(red: 1.0, green: 0.66, blue: 0.22) : Color(red: 0.86, green: 0.42, blue: 0.0) }
 }
 
 /// The buffers of the columns, kept from one image to the next so that drawing allocates nothing.
@@ -23,10 +27,16 @@ final class EnvelopeCache {
     var envelope = Envelope()
 }
 
-/// A mark of the measure mode: two points of the view.
+/// A box drawn with the mouse: two points of the view.
 struct PlotMeasure: Equatable {
     var a: CGPoint
     var b: CGPoint
+}
+
+/// A measure between two points of the data (a sample and a level), so that it follows the signal when the view moves.
+struct PlotSegment: Equatable {
+    var x0: Double, y0: Double
+    var x1: Double, y1: Double
 }
 
 /// What is drawn: the axes and their grid, the signal (as the envelope of its columns, or as stems when the samples are far
@@ -40,7 +50,7 @@ struct PlotDrawing {
     var scale: CGFloat
     var hover: CGPoint?
     var box: PlotMeasure?
-    var measure: PlotMeasure?
+    var measure: PlotSegment?
     var labels: PlotLabels
 
     /// Pixels between two samples, from which the samples are drawn one by one.
@@ -302,17 +312,25 @@ struct PlotDrawing {
 
     private func drawBox(_ ctx: inout GraphicsContext, _ box: PlotMeasure) {
         let r = CGRect(x: min(box.a.x, box.b.x), y: min(box.a.y, box.b.y), width: abs(box.a.x - box.b.x), height: abs(box.a.y - box.b.y))
-        ctx.fill(Path(r), with: .color(palette.accent.opacity(0.14)))
-        ctx.stroke(Path(r), with: .color(palette.accent), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+        ctx.fill(Path(r), with: .color(palette.box.opacity(0.16)))
+        ctx.stroke(Path(r), with: .color(palette.box), style: StrokeStyle(lineWidth: 1.2, dash: [5, 3]))
     }
 
-    private func drawMeasure(_ ctx: inout GraphicsContext, _ m: PlotMeasure, _ t: PlotTransform) {
-        var line = Path(); line.move(to: m.a); line.addLine(to: m.b)
-        ctx.stroke(line, with: .color(palette.accent), style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
-        for p in [m.a, m.b] {
-            ctx.fill(Path(ellipseIn: CGRect(x: p.x - 4, y: p.y - 4, width: 8, height: 8)), with: .color(palette.accent))
+    private func drawMeasure(_ ctx: inout GraphicsContext, _ m: PlotSegment, _ t: PlotTransform) {
+        let a = t.point(x: m.x0, y: m.y0), b = t.point(x: m.x1, y: m.y1), corner = t.point(x: m.x1, y: m.y0)
+        let colour = palette.measure
+        // The two parts of the difference, dotted, then the segment itself.
+        var parts = Path()
+        parts.move(to: a); parts.addLine(to: corner); parts.addLine(to: b)
+        ctx.stroke(parts, with: .color(colour.opacity(0.6)), style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
+        var line = Path(); line.move(to: a); line.addLine(to: b)
+        ctx.stroke(line, with: .color(colour), style: StrokeStyle(lineWidth: 1.6, lineCap: .round))
+        for p in [a, b] {
+            let dot = Path(ellipseIn: CGRect(x: p.x - 4.5, y: p.y - 4.5, width: 9, height: 9))
+            ctx.fill(dot, with: .color(colour))
+            ctx.stroke(dot, with: .color(palette.isDark ? .black.opacity(0.5) : .white), lineWidth: 1.2)
         }
-        let dx = t.xValue(m.b.x) - t.xValue(m.a.x), dy = t.yValue(m.b.y) - t.yValue(m.a.y)
+        let dx = m.x1 - m.x0, dy = m.y1 - m.y0
         var lines: [String] = []
         if let sr = sampleRate, sr > 0 {
             lines.append("Δt = " + TickLabels.engineering(dx / sr, unit: "s") + "  (\(Int(dx.rounded())) n)")
@@ -321,7 +339,7 @@ struct PlotDrawing {
             lines.append("Δn = \(Int(dx.rounded()))")
         }
         lines.append("Δ = " + (amplitude.isDecibels ? TickLabels.number(dy, decimals: 1) + " dB" : TickLabels.number(dy, decimals: 4)))
-        drawTooltip(&ctx, lines, near: CGPoint(x: (m.a.x + m.b.x) / 2, y: (m.a.y + m.b.y) / 2), in: t.rect)
+        drawTooltip(&ctx, lines, near: CGPoint(x: (a.x + b.x) / 2 + 14, y: (a.y + b.y) / 2 - 10), in: t.rect, border: colour)
     }
 
     private func drawCrosshair(_ ctx: inout GraphicsContext, _ cross: Crosshair, _ t: PlotTransform, _ plot: CGRect) {
@@ -362,7 +380,7 @@ struct PlotDrawing {
         ctx.draw(resolved, at: CGPoint(x: box.midX, y: box.midY), anchor: .center)
     }
 
-    private func drawTooltip(_ ctx: inout GraphicsContext, _ lines: [String], near p: CGPoint, in area: CGRect) {
+    private func drawTooltip(_ ctx: inout GraphicsContext, _ lines: [String], near p: CGPoint, in area: CGRect, border: Color? = nil) {
         let resolved = lines.map { ctx.resolve(Text(verbatim: $0).font(font(11)).foregroundColor(palette.tooltipText)) }
         let sizes = resolved.map { $0.measure(in: CGSize(width: 400, height: 30)) }
         let width = (sizes.map(\.width).max() ?? 0) + 20, lineHeight = (sizes.first?.height ?? 14) + 2
@@ -373,7 +391,7 @@ struct PlotDrawing {
         origin.x = max(area.minX + 4, origin.x); origin.y = max(area.minY + 4, origin.y)
         let box = CGRect(x: origin.x, y: origin.y, width: width, height: height)
         ctx.fill(Path(roundedRect: box, cornerRadius: 7), with: .color(palette.tooltip))
-        ctx.stroke(Path(roundedRect: box, cornerRadius: 7), with: .color(palette.accent.opacity(0.7)), lineWidth: 1)
+        ctx.stroke(Path(roundedRect: box, cornerRadius: 7), with: .color((border ?? palette.accent).opacity(0.75)), lineWidth: 1)
         for (i, r) in resolved.enumerated() {
             ctx.draw(r, at: CGPoint(x: box.minX + 10, y: box.minY + 7 + lineHeight * CGFloat(i)), anchor: .topLeading)
         }
