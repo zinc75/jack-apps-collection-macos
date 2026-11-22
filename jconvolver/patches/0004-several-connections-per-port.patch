@@ -1,0 +1,178 @@
+--- a/README.CONFIG
++++ b/README.CONFIG
+@@ -50,14 +50,20 @@
+     length convolutions.
+ 
+ 
+-/input/name <input number> <port name> {<source port>}
+-/output/name <output number> <port name> {<destination port>}
++/input/name <input number> <port name> {<source port>}...
++/output/name <output number> <port name> {<destination port>}...
+ 
+     These can be used to provide more informative ports names,
+     and to optionally connect the inputs or outputs. Input and
+-    output numbers start at 1.
++    output numbers start at 1. Any number of ports to connect
++    to can follow the port name on the same line, e.g.
+ 
++        /input/name 1 in system:capture_1 "Some App:out 1"
+ 
++    Older versions connect only the first of them and ignore
++    the rest of the line.
++
++
+ /cd <path>
+ 
+     Change the directory where impulse response files are searched for to 'path'.
+--- a/source/jclient.cc
++++ b/source/jclient.cc
+@@ -252,5 +252,23 @@
+ 	jack_connect (_jack_client, s, conn);
+     }
+     return _nout++;
++}
++
++
++void Jclient::connect_input (const char *name, const char *conn)
++{
++    char s [512];
++
++    snprintf (s, sizeof (s), "%s:%s", _jname, name);
++    jack_connect (_jack_client, conn, s);
++}
++
++
++void Jclient::connect_output (const char *name, const char *conn)
++{
++    char s [512];
++
++    snprintf (s, sizeof (s), "%s:%s", _jname, name);
++    jack_connect (_jack_client, s, conn);
+ }
+ 
+--- a/source/jclient.h
++++ b/source/jclient.h
+@@ -48,6 +48,8 @@
+     int delete_ports (void);
+     int add_input_port  (const char *name, const char *conn = 0);
+     int add_output_port (const char *name, const char *conn = 0);
++    void connect_input  (const char *name, const char *conn);
++    void connect_output (const char *name, const char *conn);
+     void denorm_protect (bool v) { _addnoise = v; }
+ 
+     void start (void) { _convproc->start_process (_abspri, _policy); }
+--- a/source/jconfig.cc
++++ b/source/jconfig.cc
+@@ -22,6 +22,8 @@
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <string.h>
++#include <string>
++#include <vector>
+ #include "jclient.h"
+ #include "config.h"
+ 
+@@ -32,8 +34,8 @@
+ 
+ static char *inp_name [Convproc::MAXINP];
+ static char *out_name [Convproc::MAXOUT];
+-static char *inp_conn [Convproc::MAXINP];
+-static char *out_conn [Convproc::MAXOUT];
++static std::vector<std::string> inp_conn [Convproc::MAXINP];
++static std::vector<std::string> out_conn [Convproc::MAXOUT];
+ 
+ 
+ int convnew (const char *line, int lnum)
+@@ -49,9 +51,9 @@
+     fragm = jclient->fragm ();
+ 
+     memset (inp_name, 0, Convproc::MAXINP * sizeof (char *));
+-    memset (inp_conn, 0, Convproc::MAXINP * sizeof (char *));
++    for (r = 0; r < (int) Convproc::MAXINP; r++) inp_conn [r].clear ();
+     memset (out_name, 0, Convproc::MAXOUT * sizeof (char *));
+-    memset (out_conn, 0, Convproc::MAXOUT * sizeof (char *));
++    for (r = 0; r < (int) Convproc::MAXOUT; r++) out_conn [r].clear ();
+ 
+     r = sscanf (line, "%u %u %u %u %f", &ninp, &nout, &part, &size, &dens);
+     if (r < 4) return ERR_PARAM;
+@@ -116,8 +118,14 @@
+     if (n) inp_name [i] = strdup (s);
+     else return ERR_PARAM;
+     line += n;
+-    n = sstring (line, s, 256);
+-    inp_conn [i] = *s ? strdup (s) : 0;
++    inp_conn [i].clear ();
++    while ((n = sstring (line, s, 256)))
++    {
++        // Any number of ports to connect to. Text from a '#' is not taken as a port name.
++        if (*s == '#') break;
++        if (*s) inp_conn [i].push_back (s);
++        line += n;
++    }
+     return 0;
+ }
+ 
+@@ -134,44 +142,48 @@
+     if (n) out_name [i] = strdup (s);
+     else return ERR_PARAM;
+     line += n;
+-    n = sstring (line, s, 256);
+-    out_conn [i] = *s ? strdup (s) : 0;
++    out_conn [i].clear ();
++    while ((n = sstring (line, s, 256)))
++    {
++        if (*s == '#') break;
++        if (*s) out_conn [i].push_back (s);
++        line += n;
++    }
+     return 0;
+ }
+ 
+ 
+ void makeports (void)
+ {
+-    unsigned int  i;
++    unsigned int  i, k;
+     char          s [16];
++    const char    *name;
+ 
+     for (i = 0; i < ninp; i++)
+     {
+-	if (inp_name [i])
+-	{
+-            jclient->add_input_port (inp_name [i], inp_conn [i]);
+-	}
++	if (inp_name [i]) name = inp_name [i];
+ 	else
+ 	{
+             sprintf (s, "in-%d", i + 1);
+-            jclient->add_input_port (s);
++	    name = s;
+ 	}
++        jclient->add_input_port (name);
++	for (k = 0; k < inp_conn [i].size (); k++) jclient->connect_input (name, inp_conn [i][k].c_str ());
+ 	free (inp_name [i]);
+-	free (inp_conn [i]);
++	inp_conn [i].clear ();
+     }
+     for (i = 0; i < nout; i++)
+     {
+-	if (out_name [i])
+-	{
+-            jclient->add_output_port (out_name [i], out_conn [i]);
+-	}
++	if (out_name [i]) name = out_name [i];
+ 	else
+ 	{
+             sprintf (s, "out-%d", i + 1);
+-            jclient->add_output_port (s);
++	    name = s;
+ 	}
++        jclient->add_output_port (name);
++	for (k = 0; k < out_conn [i].size (); k++) jclient->connect_output (name, out_conn [i][k].c_str ());
+ 	free (out_name [i]);
+-	free (out_conn [i]);
++	out_conn [i].clear ();
+     }
+ }
+ 
