@@ -44,6 +44,7 @@ struct ContentView: View {
             if let path = env["JACKCONVOLVER_OPEN"] { model.open(URL(fileURLWithPath: path)) }
             if let page = env["JACKCONVOLVER_PAGE"].flatMap(Page.init(rawValue:)) { model.page = page }
             if env["JACKCONVOLVER_VIEW"] == "table" { model.viewMode = .table }
+            if env["JACKCONVOLVER_SHEET"] == "gestures" { try? await Task.sleep(for: .milliseconds(800)); model.showsGestures = true }
             if env["JACKCONVOLVER_SHEET"] == "names" { try? await Task.sleep(for: .milliseconds(800)); model.showsPortNames = true }
             if env["JACKCONVOLVER_SHEET"] == "detail", let d = model.document,
                let first = d.content.impulses.keys.sorted().first(where: { pair in d.impulses(at: pair).contains { if case .file = $0.source { true } else { false } } }),
@@ -52,12 +53,22 @@ struct ContentView: View {
             }
             // JACKCONVOLVER_FAKEDRAG=over|drop: drags the first file of the list over the cell of the third input and third output
             // (what the pointer does), and for "drop" lets go of it.
-            if let fake = env["JACKCONVOLVER_FAKEDRAG"], let file = model.binFiles.first {
+            if let fake = env["JACKCONVOLVER_FAKEDRAG"], !fake.isEmpty, let file = model.binFiles.first {
                 try? await Task.sleep(for: .seconds(2))
                 model.beginItemDrag((1...max(1, file.info.channels)).map { .channel(path: file.path, channel: $0) })
                 let f = model.matrixContentFrame, cs = model.cellSize
                 model.dragPointer = CGPoint(x: f.minX + 76 + 2.5 * cs, y: f.minY + 64 + 2.5 * cs)
                 if fake == "drop" { try? await Task.sleep(for: .seconds(1)); model.endItemDrag() }
+            }
+            // JACKCONVOLVER_FAKEHOVER=<input>,<output>: the pointer is above that cell (numbers from 1).
+            if let spec = env["JACKCONVOLVER_FAKEHOVER"] {
+                try? await Task.sleep(for: .seconds(2))
+                let n = spec.split(separator: ",").compactMap { Int($0) }
+                if n.count == 2 {
+                    let cs = model.cellSize
+                    model.hoverPair = ConvPair(input: n[0] - 1, output: n[1] - 1)
+                    model.hoverPoint = CGPoint(x: 76 + (CGFloat(n[1]) - 0.5) * cs, y: 64 + (CGFloat(n[0]) - 0.5) * cs)
+                }
             }
             if env["JACKCONVOLVER_AUTORUN"] != nil {
                 try? await Task.sleep(for: .seconds(2))
@@ -92,6 +103,7 @@ struct ContentView: View {
         .sheet(isPresented: $model.showsCommand) { CommandSheet() }
         .sheet(isPresented: $model.showsPortNames) { PortNamesSheet() }
         .sheet(isPresented: $model.showsResize) { ResizeSheet() }
+        .sheet(isPresented: $model.showsGestures) { GesturesSheet() }
         .sheet(item: $model.detail) { ImpulseDetailSheet(target: $0) }
         .sheet(isPresented: $model.showsProblems) { ProblemsSheet() }
         .alert(model.message ?? "", isPresented: Binding(get: { model.message != nil }, set: { if !$0 { model.message = nil } })) {

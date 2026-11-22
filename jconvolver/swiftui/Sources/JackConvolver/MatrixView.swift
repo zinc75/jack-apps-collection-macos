@@ -86,6 +86,8 @@ struct MatrixToolbar: View {
                 actions(labels: true)
                 actions(labels: false)
             }
+            Button { model.showsGestures = true } label: { Image(systemName: "questionmark.circle") }
+                .help("Les gestes de la matrice").keyboardShortcut("?", modifiers: .command)
             Button { model.undo() } label: { Image(systemName: "arrow.uturn.backward") }
                 .disabled(!model.canUndo).help("Annuler").keyboardShortcut("z", modifiers: .command)
             Button { model.redo() } label: { Image(systemName: "arrow.uturn.forward") }
@@ -119,28 +121,16 @@ struct MatrixToolbar: View {
     }
 }
 
-/// Under the matrix: what is under the pointer, and the size of the cells.
+/// Under the matrix: the size of the cells.
 struct MatrixFooter: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
         @Bindable var model = model
         HStack(spacing: 12) {
-            Text(verbatim: hovered).font(.caption).foregroundStyle(.secondary).lineLimit(1)
             Spacer()
             Text("Zoom").font(.caption).foregroundStyle(.secondary)
             Slider(value: $model.cellSize, in: 10...44).frame(width: 140).controlSize(.small).accentTint()
         }
-    }
-
-    private var hovered: String {
-        guard let pair = model.hoverPair, let document = model.document else {
-            return String(localized: "Clic : case · glisser : plage · ⇧ étend · ⌘ ajoute · ⌫ vide")
-        }
-        let impulses = document.impulses(at: pair)
-        let place = "\(model.inputLabel(pair.input)) → \(model.outputLabel(pair.output))"
-        guard let first = impulses.first else { return place + " · " + String(localized: "vide") }
-        let gain = first.gainDB.isFinite ? first.gainDB.formatted(.number.precision(.fractionLength(1))) + " dB" : "−∞ dB"
-        return place + " · " + model.label(of: first) + " · " + gain + (impulses.count > 1 ? " (+\(impulses.count - 1))" : "")
     }
 }

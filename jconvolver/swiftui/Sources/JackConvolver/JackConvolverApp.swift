@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import AppearanceKit
+import JConvolverKit
 import SwiftUI
 
 /// The edit commands act on the text of a field while one is being edited, and on the matrix otherwise: they take the place of the
@@ -112,6 +113,23 @@ struct JackConvolverApp: App {
             }
         }
         .commands {
+            CommandMenu("Sélection") {
+                Button("Toute la ligne") {
+                    if let d = model.document { model.selection.selectInput(model.selection.bounds.firstInput, outputs: d.outputCount) }
+                }.disabled(!model.isOpen)
+                Button("Toute la colonne") {
+                    if let d = model.document { model.selection.selectOutput(model.selection.bounds.firstOutput, inputs: d.inputCount) }
+                }.disabled(!model.isOpen)
+                Button("Tout ce qui utilise ce fichier") {
+                    model.selectPairsUsingFile(of: ConvPair(input: model.selection.bounds.firstInput, output: model.selection.bounds.firstOutput))
+                }.disabled(!model.isOpen)
+                Divider()
+                Button("Retirer les RI de la sélection") { model.clearSelection() }.disabled(!model.canCopy)
+            }
+            CommandGroup(after: .help) {
+                Divider()
+                Button("Gestes de la matrice") { model.page = .matrix; model.showsGestures = true }.disabled(!model.isOpen)
+            }
             CommandMenu("Moteur") {
                 Button(model.controller.isRunning ? "Arrêter" : "Lancer") { model.toggleRun() }
                     .keyboardShortcut("r", modifiers: .command)

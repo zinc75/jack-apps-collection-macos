@@ -27,7 +27,13 @@ struct MatrixCanvas: View {
                     .contentShape(Rectangle())
                     .gesture(selectGesture(n: n, m: m, cs: cs))
                     .onContinuousHover { phase in
-                        if case .active(let point) = phase { model.hoverPair = pair(at: point, n: n, m: m, cs: cs) } else { model.hoverPair = nil }
+                        if case .active(let point) = phase {
+                            model.hoverPair = pair(at: point, n: n, m: m, cs: cs)
+                            model.hoverPoint = point
+                        } else {
+                            model.hoverPair = nil
+                            model.hoverPoint = nil
+                        }
                     }
                     .onGeometryChange(for: CGRect.self) { $0.frame(in: .named("matrixPage")) } action: { model.matrixContentFrame = $0 }
                     .onChange(of: model.dragPointer) { _, pointer in updateDrop(pointer, n: n, m: m, cs: cs) }
@@ -41,6 +47,8 @@ struct MatrixCanvas: View {
         }
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .named("matrixPage")) } action: { model.matrixViewport = $0 }
         .blockBackground()
+        .overlay(alignment: .topLeading) { HoverCardLayer() }
+        .overlay { EmptyMatrixHint() }
     }
 
     /// While something is dragged from the list: where it would land.
@@ -134,6 +142,7 @@ struct MatrixCanvas: View {
         DragGesture(minimumDistance: 0)
             .onChanged { value in
                 let h = hit(value.location, n: n, m: m, cs: cs)
+                model.isSelecting = true
                 if dragStart == nil {
                     // The start of the gesture: the gutters pick a whole row or column; a cell starts a block, or is added with command
                     // and extends with shift.
@@ -150,7 +159,7 @@ struct MatrixCanvas: View {
                     model.selection.select(from: start, to: pair)
                 }
             }
-            .onEnded { _ in dragStart = nil }
+            .onEnded { _ in dragStart = nil; model.isSelecting = false }
             .simultaneously(with: SpatialTapGesture(count: 2).onEnded { value in
                 // Double-click on an empty cell: what is chosen in the list goes there.
                 guard let pair = pair(at: value.location, n: n, m: m, cs: cs), model.document?.impulses(at: pair).isEmpty == true else { return }

@@ -162,13 +162,20 @@ struct AudioFilesGroup: View {
 
 struct DisplayView: View {
     @Environment(AppearanceSettings.self) private var appearance
+    @Environment(AppModel.self) private var model
 
     var body: some View {
+        @Bindable var model = model
         SettingsPage {
             Text("Affichage").font(.title2).fontWeight(.semibold)
             SettingsGroup("Apparence") {
                 OptionRow("Apparence") { AppearanceModePicker(settings: appearance) }
                 OptionRow("Couleur d'accent") { AccentSwatches(settings: appearance) }
+            }
+            SettingsGroup("Matrice") {
+                OptionRow("Carte d'aperçu au survol", "Quand le pointeur est sur une case, une petite carte montre ce qu'elle contient : fichier et voie, gain, retard, début et longueur.") {
+                    Toggle("Carte d'aperçu au survol", isOn: $model.showsHoverCard).toggleStyle(.switch).labelsHidden().accentTint()
+                }
             }
         }
     }

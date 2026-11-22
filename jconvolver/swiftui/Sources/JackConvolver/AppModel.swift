@@ -40,6 +40,11 @@ final class AppModel {
     var selection = MatrixSelection()
     var cellSize: CGFloat = 26
     var hoverPair: ConvPair?
+    /// Where the pointer is above the matrix, in the coordinates of the matrix (for the card that follows it).
+    var hoverPoint: CGPoint?
+    /// A selection is being made (a drag on the matrix, or command or shift held down): the card is not shown, it would be in the way.
+    var isSelecting = false
+    var selectionKeyDown = false
     /// Where what is being dragged would land, while it is dragged over the matrix.
     var dropPlan: PlacementPlan?
     var draggedItems: [Placeable] = []
@@ -75,6 +80,7 @@ final class AppModel {
     var showsNewConfiguration = false
     var showsPortNames = false
     var showsResize = false
+    var showsGestures = false
     /// The impulse response whose detail window is open.
     var detail: DetailTarget?
 
@@ -83,10 +89,16 @@ final class AppModel {
     @ObservationIgnored let catalog = SoundFileCatalog()
     @ObservationIgnored private let defaults: UserDefaults
 
+    /// Whether the card with what is on a cell shows above the matrix, under the pointer. Kept between launches.
+    var showsHoverCard = true {
+        didSet { defaults.set(showsHoverCard, forKey: "showsHoverCard") }
+    }
+
     /// - Parameter defaults: where the settings are kept; nil for a throw-away store (the debug aids use it: they must not touch
     ///   what the person has set up).
     init(defaults: UserDefaults?) {
         self.defaults = defaults ?? UserDefaults(suiteName: "jackconvolver.debug.\(UUID().uuidString)") ?? .standard
+        showsHoverCard = self.defaults.object(forKey: "showsHoverCard") as? Bool ?? true
         recents = (self.defaults.stringArray(forKey: "recentFiles") ?? []).map { URL(fileURLWithPath: $0) }
             .filter { FileManager.default.fileExists(atPath: $0.path) }
     }
