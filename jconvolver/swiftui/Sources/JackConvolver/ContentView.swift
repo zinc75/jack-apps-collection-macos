@@ -99,7 +99,23 @@ struct ContentView: View {
         .onChange(of: model.jack.sampleRate) { _, _ in model.refreshProblems() }
         .navigationTitle("Jack Convolver")
         .navigationSubtitle("Jack Apps Collection for macOS")
-        .toolbar { ToolbarItem(placement: .primaryAction) { JackStatusPill() } }
+        .toolbar {
+            // The tools of the page come first, the state of JACK always last: it is not part of them.
+            if model.page == .matrix, model.isOpen { MatrixToolbar(model: model) }
+            // Under macOS 26 the items of a placement share glass capsules: the pill draws its own, apart from the tools.
+            if #available(macOS 26, *) {
+                ToolbarSpacer(.fixed, placement: .primaryAction)
+                ToolbarItem(placement: .primaryAction) {
+                    JackStatusPill()
+                        // As high as the other capsules of the toolbar.
+                        .padding(.horizontal, 10).frame(height: 36)
+                        .glassEffect(.regular, in: Capsule())
+                }
+                .sharedBackgroundVisibility(.hidden)
+            } else {
+                ToolbarItem(placement: .primaryAction) { JackStatusPill() }
+            }
+        }
         .sheet(isPresented: $model.showsNewConfiguration) { NewConfigurationSheet() }
         .sheet(isPresented: $model.showsCommand) { CommandSheet() }
         .sheet(isPresented: $model.showsPortNames) { PortNamesSheet() }

@@ -50,6 +50,42 @@ extension AppModel {
         setBinFiles(files.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending })
     }
 
+    /// Files and folders together, from the open panel or from the Finder: a folder gives the sound files it holds (not the folders in it).
+    /// What is not a sound file is left out, and said.
+    func addFilesAndFolders(_ urls: [URL]) {
+        var files: [URL] = []
+        for url in urls {
+            var isFolder: ObjCBool = false
+            guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isFolder) else { continue }
+            if isFolder.boolValue {
+                let names = (try? FileManager.default.contentsOfDirectory(atPath: url.path)) ?? []
+                files += names.filter { Self.audioExtensions.contains(($0 as NSString).pathExtension.lowercased()) && !$0.hasPrefix(".") }
+                    .map { url.appendingPathComponent($0) }
+            } else {
+                files.append(url)
+            }
+        }
+        let before = binFiles.count
+        let readable = files.filter { catalog.info(at: $0.path) != nil }
+        if !readable.isEmpty { addToBin(readable) }
+        if readable.count < files.count || (files.isEmpty && !urls.isEmpty) {
+            message = readable.isEmpty ? String(localized: "Aucun fichier audio lisible dans ce qui a été choisi.")
+                                       : String(localized: "\(files.count - readable.count) fichier(s) ne sont pas des fichiers audio lisibles : ils sont laissés de côté.")
+        } else if binFiles.count == before, !readable.isEmpty {
+            // Everything was in the list already.
+        }
+    }
+
+    /// One panel for files and folders.
+    func chooseForBin() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = true
+        panel.message = String(localized: "Choisissez des fichiers de réponses impulsionnelles, ou des dossiers qui en contiennent.")
+        if panel.runModal() == .OK { addFilesAndFolders(panel.urls) }
+    }
+
     func chooseFilesForBin() {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = false

@@ -14,6 +14,8 @@ struct FileBin: View {
     @Environment(\.appAccentColor) private var accent
     /// The row from which a shift-click extends.
     @State private var anchor = 0
+    /// Something from the Finder is above the list.
+    @State private var targeted = false
 
     private struct Row: Identifiable {
         let id: String
@@ -55,11 +57,8 @@ struct FileBin: View {
             HStack {
                 Text("Fichiers de RI").font(.headline)
                 Spacer()
-                Menu {
-                    Button("Ajouter des fichiers…") { model.chooseFilesForBin() }
-                    Button("Ajouter un dossier…") { model.chooseFolderForBin() }
-                } label: { Label("Ajouter", systemImage: "plus") }
-                    .menuStyle(.button).fixedSize()
+                // One button, one panel for files and folders (they can also be dropped here from the Finder).
+                Button("Ajouter…") { model.chooseForBin() }
             }
             if model.fileURL != nil {
                 Text(model.configDirectory).font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.head)
@@ -67,32 +66,30 @@ struct FileBin: View {
             TextField("Filtrer par nom", text: $model.binFilter).textFieldStyle(.roundedBorder)
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 1) {
+                    if model.binFiles.isEmpty { EmptyBinCard().padding(.bottom, 6) }
                     ForEach(Array(shown.enumerated()), id: \.element.id) { index, row in
                         if row.id == "@dirac" { Text("Filtres").font(.caption).foregroundStyle(.secondary).padding(.top, 10).padding(.horizontal, 6) }
                         rowView(row, index: index, all: shown)
                     }
                 }
             }
-            Divider()
-            VStack(alignment: .leading, spacing: 6) {
-                Menu("Placer à la sélection") {
-                    if model.placesOnAllChosenCells {
-                        Button("Sur toutes les cases choisies") { model.placePicked(mode: .row) }
-                            .disabled(!model.canPlaceOnChosenCells)
-                    } else {
-                        Button("En ligne") { model.placePicked(mode: .row) }
-                        Button("En colonne") { model.placePicked(mode: .column) }
-                        Button("En diagonale") { model.placePicked(mode: .diagonal) }
-                    }
-                }
-                .disabled(model.picked.isEmpty)
-                Text("Glissez sur la matrice. Plusieurs éléments : en ligne, ⌥ en colonne, ⇧ en diagonale ; ce qui dépasse la matrice n'est pas placé.")
-                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            }
         }
         .padding(12)
         .frame(maxHeight: .infinity, alignment: .top)
         .blockBackground()
+        // Sound files and folders dropped from the Finder go into the list.
+        .dropDestination(for: URL.self) { urls, _ in
+            model.addFilesAndFolders(urls)
+            return !urls.isEmpty
+        } isTargeted: { targeted = $0 }
+        .overlay {
+            if targeted {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(accent, style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
+                    .background(accent.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .allowsHitTesting(false)
+            }
+        }
     }
 
     private func rowView(_ row: Row, index: Int, all: [Row]) -> some View {
@@ -145,5 +142,36 @@ struct FileBin: View {
             model.picked = Set(row.items)
             anchor = index
         }
+    }
+}
+
+/// When the list has no sound file: what to do first, with the two ways to add some.
+struct EmptyBinCard: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.appAccentColor) private var accent
+
+    var body: some View {
+        VStack(spacing: 10) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    .fill(LinearGradient(colors: [accent.opacity(0.95), accent.opacity(0.55)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .frame(width: 36, height: 36)
+                Image(systemName: "waveform.badge.plus").font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
+            }
+            Text("Aucun fichier de RI").font(.headline)
+            Text("Ajoutez vos fichiers audio de RI, ou un dossier qui les contient : ils peupleront la matrice.")
+                .font(.callout).foregroundStyle(.secondary).multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+            VStack(spacing: 6) {
+                Button { model.chooseFolderForBin() } label: { Label("Ajouter un dossier…", systemImage: "folder.badge.plus").frame(maxWidth: .infinity) }
+                    .buttonStyle(.borderedProminent).accentTint()
+                Button { model.chooseFilesForBin() } label: { Label("Ajouter des fichiers…", systemImage: "plus").frame(maxWidth: .infinity) }
+                    .buttonStyle(.bordered)
+                Text("ou glissez-les ici depuis le Finder").font(.caption).foregroundStyle(.secondary)
+            }
+        }
+              .padding(.horizontal, 12).padding(.vertical, 12)
+        .frame(maxWidth: .infinity)
+        .background(.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(.primary.opacity(0.14), style: StrokeStyle(lineWidth: 1, dash: [5, 4])))
     }
 }

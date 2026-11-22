@@ -111,13 +111,8 @@ struct EmptyMatrixHint: View {
                 Text("Glissez un fichier de la liste sur une case de la matrice : chaque case relie une entrée à une sortie.")
                     .font(.callout).foregroundStyle(.secondary).multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
             }
-            HStack(spacing: 8) {
-                Button { model.chooseFilesForBin() } label: { Label("Ajouter des fichiers…", systemImage: "plus") }
-                    .buttonStyle(.borderedProminent).accentTint()
-                Button { model.showsGestures = true } label: { Label("Gestes", systemImage: "questionmark.circle") }
-                    .buttonStyle(.bordered)
-            }
-            .controlSize(.regular)
+            Button { model.showsGestures = true } label: { Label("Voir les gestes", systemImage: "questionmark.circle") }
+                .buttonStyle(.bordered).controlSize(.regular)
         }
         .padding(.horizontal, 22).padding(.vertical, 20)
         .frame(width: width)

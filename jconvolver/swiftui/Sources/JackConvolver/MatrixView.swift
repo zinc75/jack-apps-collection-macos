@@ -12,17 +12,23 @@ struct MatrixView: View {
     var body: some View {
         if model.document == nil {
             SettingsPage {
-                Text("Configuration des RI").font(.title2).fontWeight(.semibold)
+                Text("Matrice de convolution").font(.title2).fontWeight(.semibold)
                 Text("Aucune configuration ouverte.").foregroundStyle(.secondary)
             }
         } else {
             VStack(alignment: .leading, spacing: 12) {
+                // The title and the line under it say what this view is for.
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Configuration des RI").font(.title2).fontWeight(.semibold)
-                    Text("Glissez des réponses impulsionnelles (RI) sur les cases : chaque case relie une entrée à une sortie.")
-                        .font(.callout).foregroundStyle(.secondary)
+                    if model.viewMode == .table {
+                        Text("Tableau des convolutions").font(.title2).fontWeight(.semibold)
+                        Text("Chaque ligne correspond à une réponse impulsionnelle. Réglage rapide du gain et des paramètres temporels.")
+                            .font(.callout).foregroundStyle(.secondary)
+                    } else {
+                        Text("Matrice de convolution").font(.title2).fontWeight(.semibold)
+                        Text("Glissez des réponses impulsionnelles (RI) sur les cases : chaque case relie une entrée à une sortie.")
+                            .font(.callout).foregroundStyle(.secondary)
+                    }
                 }
-                MatrixToolbar()
                 if model.viewMode == .table {
                     ImpulseTable().frame(minHeight: 300)
                 } else {
@@ -30,11 +36,13 @@ struct MatrixView: View {
                         FileBin().frame(width: 270)
                         MatrixCanvas()
                     }
-                    .frame(minHeight: 260)
+                    // The list and the matrix take the height there is; the detail under them keeps its own.
+                    .frame(minHeight: 260, maxHeight: .infinity)
                     SelectionPanel().frame(height: 190)
                 }
             }
             .padding(24)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .coordinateSpace(name: "matrixPage")
             .overlay(alignment: .topLeading) { DraggedItemsBadge() }
         }
@@ -64,57 +72,60 @@ struct DraggedItemsBadge: View {
     }
 }
 
-/// The actions of the page: empty the matrix, undo and redo, save.
-struct MatrixToolbar: View {
+/// The window toolbar on this page: the way to look at the impulse responses at the centre, then undo and redo, the actions on the
+/// matrix, the help, and save. The state of JACK keeps its own place (`JackStatusPill`, in the toolbar of the window).
+struct MatrixToolbar: ToolbarContent {
+    let model: AppModel
+
+    var body: some ToolbarContent {
+        @Bindable var model = model
+        ToolbarItem(placement: .principal) {
+            // Two words: the native segmented control.
+            Picker("Vue", selection: $model.viewMode) {
+                Text("Matrice").tag(ViewMode.matrix)
+                Text("Tableau").tag(ViewMode.table)
+            }
+            .pickerStyle(.segmented).labelsHidden().accentTint()
+            .help("Voir les RI en matrice ou en tableau")
+        }
+        ToolbarItemGroup(placement: .primaryAction) {
+            Button { model.undo() } label: { Label("Annuler", systemImage: "arrow.uturn.backward") }
+                .disabled(!model.canUndo).help("Annuler")
+            Button { model.redo() } label: { Label("Rétablir", systemImage: "arrow.uturn.forward") }
+                .disabled(!model.canRedo).help("Rétablir")
+        }
+        ToolbarItemGroup(placement: .primaryAction) {
+            Button { model.showsResize = true } label: { Label("Entrées et sorties…", systemImage: "arrow.up.left.and.arrow.down.right") }
+                .help("Changer le nombre d'entrées et de sorties")
+            if model.mode == .realTime {
+                Button { model.showsPortNames = true } label: { Label("Noms des ports JACK…", systemImage: "pencil") }
+                    .help("Noms des ports JACK")
+            }
+            // Not asked for confirmation: it can be undone.
+            Button { model.clearAll() } label: { Label("Tout vider", systemImage: "trash") }
+                .disabled((model.document?.placedPairs ?? 0) == 0)
+                .help("Retirer toutes les RI de la matrice (annulable)")
+        }
+        ToolbarItem(placement: .primaryAction) {
+            // Save: the picture and the word together (there is no picture for it that means it alone).
+            Button { model.save() } label: { Label(model.savesAsNew ? "Enregistrer sous…" : "Enregistrer", systemImage: "square.and.arrow.down") }
+                .labelStyle(.titleAndIcon)
+                .disabled(!model.isEdited && !model.savesAsNew)
+                .help(model.savesAsNew ? "Enregistrer sous… (⌘S)" : "Enregistrer (⌘S)")
+        }
+    }
+}
+
+/// In the top right corner of the matrix: what can be done with the mouse and the keys, written down.
+struct GesturesButton: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        @Bindable var model = model
-        HStack(spacing: 8) {
-            Picker("Vue", selection: $model.viewMode) {
-                Label("Matrice", systemImage: "square.grid.3x3").tag(ViewMode.matrix)
-                Label("Tableau", systemImage: "tablecells").tag(ViewMode.table)
-            }
-            .pickerStyle(.segmented).labelsHidden().fixedSize().accentTint()
-            Text(verbatim: summary).foregroundStyle(.secondary).padding(.leading, 6).lineLimit(1).fixedSize()
-            Spacer(minLength: 8)
-            // The words go when there is no room for them: the pictures stay, with their help.
-            ViewThatFits(in: .horizontal) {
-                actions(labels: true)
-                actions(labels: false)
-            }
-            Button { model.showsGestures = true } label: { Image(systemName: "questionmark.circle") }
-                .help("Les gestes de la matrice").keyboardShortcut("?", modifiers: .command)
-            Button { model.undo() } label: { Image(systemName: "arrow.uturn.backward") }
-                .disabled(!model.canUndo).help("Annuler").keyboardShortcut("z", modifiers: .command)
-            Button { model.redo() } label: { Image(systemName: "arrow.uturn.forward") }
-                .disabled(!model.canRedo).help("Rétablir").keyboardShortcut("z", modifiers: [.command, .shift])
-            Button(model.savesAsNew ? "Enregistrer sous…" : "Enregistrer") { model.save() }
-                .buttonStyle(.borderedProminent).accentTint().disabled(!model.isEdited && !model.savesAsNew)
-        }
-    }
-
-    private func actions(labels: Bool) -> some View {
-        HStack(spacing: 8) {
-            Button { model.showsResize = true } label: { actionLabel("Entrées et sorties…", "arrow.up.left.and.arrow.down.right", labels) }
-                .help("Entrées et sorties…")
-            if model.mode == .realTime {
-                Button { model.showsPortNames = true } label: { actionLabel("Noms des ports JACK…", "pencil", labels) }
-                    .help("Noms des ports JACK…")
-            }
-            Button { model.clearAll() } label: { actionLabel("Tout vider", "trash", labels) }
-                .disabled((model.document?.placedPairs ?? 0) == 0).help("Tout vider")
-        }
-    }
-
-    @ViewBuilder
-    private func actionLabel(_ title: LocalizedStringKey, _ symbol: String, _ labels: Bool) -> some View {
-        if labels { Label(title, systemImage: symbol) } else { Image(systemName: symbol) }
-    }
-
-    private var summary: String {
-        guard let d = model.document else { return "" }
-        return String(localized: "\(d.placedPairs) RI · \(d.inputCount) entrées × \(d.outputCount) sorties")
+        Button { model.showsGestures = true } label: { Image(systemName: "questionmark.circle").font(.system(size: 15)) }
+            .buttonStyle(.plain).foregroundStyle(.secondary)
+            .help("Les gestes de la matrice")
+            .keyboardShortcut("?", modifiers: .command)
+            .padding(10)
     }
 }
 

@@ -68,6 +68,7 @@ struct MatrixCanvas: View {
         .overlay(alignment: .topLeading) { HoverCardLayer() }
         .overlay { EmptyMatrixHint() }
         .overlay(alignment: .bottomTrailing) { ResetZoomButton() }
+        .overlay(alignment: .topTrailing) { GesturesButton() }
     }
 
     // MARK: The size of the cells

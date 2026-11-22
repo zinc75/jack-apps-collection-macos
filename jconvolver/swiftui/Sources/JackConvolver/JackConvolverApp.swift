@@ -102,7 +102,7 @@ struct JackConvolverApp: App {
             CommandGroup(replacing: .toolbar) {
                 Button("Accueil") { model.page = .home }.keyboardShortcut("1", modifiers: .command)
                 Divider()
-                Button("Configuration RI") { model.page = .matrix }.keyboardShortcut("2", modifiers: .command).disabled(!model.isOpen)
+                Button("Convolutions") { model.page = .matrix }.keyboardShortcut("2", modifiers: .command).disabled(!model.isOpen)
                 Button("Connexions") { model.page = .ports }.keyboardShortcut("3", modifiers: .command).disabled(!model.isOpen)
                 Button("Lancement") { model.page = .launch }.keyboardShortcut("4", modifiers: .command).disabled(!model.isOpen)
                 Button("Journal") { model.page = .log }.keyboardShortcut("5", modifiers: .command).disabled(!model.isOpen)
@@ -123,6 +123,19 @@ struct JackConvolverApp: App {
                 Button("Tout ce qui utilise ce fichier") {
                     model.selectPairsUsingFile(of: ConvPair(input: model.selection.bounds.firstInput, output: model.selection.bounds.firstOutput))
                 }.disabled(!model.isOpen)
+                Divider()
+                // The way to place without the mouse: what is chosen in the list goes on the chosen cell.
+                if model.placesOnAllChosenCells {
+                    Button("Placer sur toutes les cases choisies") { model.placePicked(mode: .row) }
+                        .disabled(!model.isOpen || !model.canPlaceOnChosenCells)
+                } else {
+                    Menu("Placer ici ce qui est choisi dans la liste") {
+                        Button("En ligne") { model.placePicked(mode: .row) }
+                        Button("En colonne") { model.placePicked(mode: .column) }
+                        Button("En diagonale") { model.placePicked(mode: .diagonal) }
+                    }
+                    .disabled(!model.isOpen || model.picked.isEmpty)
+                }
                 Divider()
                 Button("Retirer les RI de la sélection") { model.clearSelection() }.disabled(!model.canCopy)
             }
