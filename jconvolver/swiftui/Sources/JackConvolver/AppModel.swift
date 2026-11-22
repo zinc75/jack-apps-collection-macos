@@ -39,6 +39,25 @@ final class AppModel {
     /// What is selected in the matrix, how big its cells are drawn, and what the pointer is over.
     var selection = MatrixSelection()
     var cellSize: CGFloat = 26
+    /// The size of a cell that makes the matrix fill the block it is in, and whether the person chose another one (pinch, command and
+    /// scroll): the matrix follows the size of the window until then.
+    var fitCellSize: CGFloat = 26
+    var zoomIsManual = false
+    /// The pointer is somewhere in the block of the matrix (not only above the cells): where the wheel zooms.
+    var pointerInMatrixBlock = false
+
+    /// Goes back to the size that fills the block.
+    func resetZoom() { zoomIsManual = false; cellSize = fitCellSize }
+
+    /// Zooms by a factor (a pinch, the wheel). A size that is the one that fits goes back to following the window.
+    func zoom(by factor: CGFloat) {
+        cellSize = min(max(cellSize * factor, 6), 80)
+        zoomIsManual = true
+    }
+
+    func endZoom() {
+        if abs(cellSize - fitCellSize) < 0.75 { resetZoom() }
+    }
     var hoverPair: ConvPair?
     /// Where the pointer is above the matrix, in the coordinates of the matrix (for the card that follows it).
     var hoverPoint: CGPoint?
@@ -194,6 +213,7 @@ final class AppModel {
 
     private func resetEditing() {
         history.clear()
+        zoomIsManual = false
         setClipboard([])
         selection = MatrixSelection()
         hoverPair = nil
@@ -248,6 +268,17 @@ final class AppModel {
         fileURL = target
         remember(target)
         return true
+    }
+
+    /// Takes a file off the list of recent ones (the file itself is left alone).
+    func forgetRecent(_ url: URL) {
+        recents.removeAll { $0 == url }
+        defaults.set(recents.map(\.path), forKey: "recentFiles")
+    }
+
+    func clearRecents() {
+        recents = []
+        defaults.set([String](), forKey: "recentFiles")
     }
 
     private func remember(_ url: URL) {

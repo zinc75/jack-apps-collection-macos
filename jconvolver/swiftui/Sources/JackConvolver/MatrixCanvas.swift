@@ -10,6 +10,9 @@ struct MatrixCanvas: View {
     @Environment(AppModel.self) private var model
     @Environment(\.appAccentColor) private var accent
     @State private var dragStart: ConvPair?
+    @State private var viewportSize = CGSize.zero
+    @State private var zoomOrigin: CGFloat?
+    @State private var wheel = WheelMonitor()
 
     private let labelWidth: CGFloat = 76
 
@@ -46,9 +49,45 @@ struct MatrixCanvas: View {
             }
         }
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .named("matrixPage")) } action: { model.matrixViewport = $0 }
+        .onGeometryChange(for: CGSize.self) { $0.size } action: { viewportSize = $0; applyFit() }
+        .onChange(of: n) { applyFit() }
+        .onChange(of: m) { applyFit() }
+        .onAppear { wheel.start(model) }
+        // The whole block zooms, not only the cells: pinch, and command with the wheel while the pointer is anywhere in it.
+        .simultaneousGesture(MagnifyGesture()
+            .onChanged { value in
+                let origin = zoomOrigin ?? model.cellSize
+                zoomOrigin = origin
+                model.zoom(by: origin * value.magnification / max(model.cellSize, 1))
+            }
+            .onEnded { _ in zoomOrigin = nil; model.endZoom() })
+        .onContinuousHover { phase in
+            if case .active = phase { model.pointerInMatrixBlock = true } else { model.pointerInMatrixBlock = false }
+        }
         .blockBackground()
         .overlay(alignment: .topLeading) { HoverCardLayer() }
         .overlay { EmptyMatrixHint() }
+        .overlay(alignment: .bottomTrailing) { ResetZoomButton() }
+    }
+
+    // MARK: The size of the cells
+
+    /// The size of a cell with which the matrix fills the block, as far as it goes: the whole matrix is seen, without scrolling.
+    private func fitSize(n: Int, m: Int) -> CGFloat {
+        guard n > 0, m > 0, viewportSize.width > 0, viewportSize.height > 0 else { return 26 }
+        func size(top: CGFloat) -> CGFloat {
+            min((viewportSize.width - labelWidth - 3) / CGFloat(m), (viewportSize.height - top - 3) / CGFloat(n))
+        }
+        let big = size(top: 64)
+        let cs = big >= 18 ? big : size(top: 22)
+        return min(max(cs.rounded(.down), 6), 64)
+    }
+
+    private func applyFit() {
+        let n = model.document?.inputCount ?? 0, m = model.document?.outputCount ?? 0
+        let fit = fitSize(n: n, m: m)
+        model.fitCellSize = fit
+        if !model.zoomIsManual { model.cellSize = fit }
     }
 
     /// While something is dragged from the list: where it would land.
@@ -312,4 +351,20 @@ struct MatrixCanvas: View {
         let room = max(3, Int(width / 6))
         return text.count <= room ? text : String(text.prefix(room - 1)) + "…"
     }
+}
+
+/// Command and the scroll wheel (or two fingers on the trackpad) zoom the matrix while the pointer is above it.
+final class WheelMonitor {
+    private var token: Any?
+    func start(_ model: AppModel) {
+        guard token == nil else { return }
+        token = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak model] event in
+            guard let model, event.modifierFlags.contains(.command), model.pointerInMatrixBlock else { return event }
+            let step = event.hasPreciseScrollingDeltas ? 0.012 : 0.06
+            model.zoom(by: exp(event.scrollingDeltaY * step))
+            if event.phase.contains(.ended) || event.momentumPhase.contains(.ended) { model.endZoom() }
+            return nil
+        }
+    }
+    deinit { if let token { NSEvent.removeMonitor(token) } }
 }

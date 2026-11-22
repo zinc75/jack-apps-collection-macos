@@ -28,10 +28,7 @@ struct MatrixView: View {
                 } else {
                     HStack(alignment: .top, spacing: 14) {
                         FileBin().frame(width: 270)
-                        VStack(alignment: .leading, spacing: 6) {
-                            MatrixCanvas()
-                            MatrixFooter()
-                        }
+                        MatrixCanvas()
                     }
                     .frame(minHeight: 260)
                     SelectionPanel().frame(height: 190)
@@ -121,16 +118,16 @@ struct MatrixToolbar: View {
     }
 }
 
-/// Under the matrix: the size of the cells.
-struct MatrixFooter: View {
+/// In the corner of the matrix, once its size is not the one that fills the block: back to that size.
+struct ResetZoomButton: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        @Bindable var model = model
-        HStack(spacing: 12) {
-            Spacer()
-            Text("Zoom").font(.caption).foregroundStyle(.secondary)
-            Slider(value: $model.cellSize, in: 10...44).frame(width: 140).controlSize(.small).accentTint()
+        if model.zoomIsManual, abs(model.cellSize - model.fitCellSize) >= 0.75 {
+            Button { model.resetZoom() } label: { Label("Ajuster à la fenêtre", systemImage: "arrow.up.left.and.arrow.down.right") }
+                .buttonStyle(.bordered).controlSize(.small)
+                .help("Remet la matrice à la taille qui remplit le bloc")
+                .padding(10)
         }
     }
 }

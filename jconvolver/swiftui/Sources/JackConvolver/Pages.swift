@@ -27,18 +27,26 @@ struct HomeView: View {
             if !model.recents.isEmpty {
                 SettingsGroup("Récentes") {
                     ForEach(model.recents, id: \.self) { url in
-                        Button { model.open(url) } label: {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(url.lastPathComponent).fontWeight(.medium)
-                                Text(url.deletingLastPathComponent().path).font(.caption).foregroundStyle(.secondary)
+                        HStack(spacing: 4) {
+                            Button { model.open(url) } label: {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(url.lastPathComponent).fontWeight(.medium)
+                                    Text(url.deletingLastPathComponent().path).font(.caption).foregroundStyle(.secondary)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.leading, 14).padding(.vertical, 8)
+                                .contentShape(Rectangle())
                             }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 14).padding(.vertical, 8)
-                            .contentShape(Rectangle())
+                            .buttonStyle(.plain)
+                            // Off the list only: the file stays where it is.
+                            Button { model.forgetRecent(url) } label: { Image(systemName: "trash") }
+                                .buttonStyle(.borderless).foregroundStyle(.secondary).padding(.trailing, 12)
+                                .help("Retirer de la liste (le fichier n'est pas supprimé)")
                         }
-                        .buttonStyle(.plain)
                     }
                 }
+                Button("Vider la liste") { model.clearRecents() }
+                    .buttonStyle(.link).font(.callout).foregroundStyle(.secondary)
             }
         }
     }
