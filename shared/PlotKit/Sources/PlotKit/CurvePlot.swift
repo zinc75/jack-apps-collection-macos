@@ -42,8 +42,23 @@ public struct CurvePlot: View {
         self.previewMeasure = previewMeasure.map { PlotSegment(x0: $0.x0, y0: $0.y0, x1: $0.x1, y1: $0.y1) }
     }
 
-    /// The curves as they are drawn: the phases unwrapped when the inspector says so.
-    private var shown: [PlotCurve] { (controller?.display.unwrapPhase ?? false) ? curves.map { $0.unwrapped() } : curves }
+    /// The curves as they are drawn: the phases unwrapped and/or without their delay when the inspector says so.
+    private var shown: [PlotCurve] {
+        let unwrap = controller?.display.unwrapPhase ?? false, removeDelay = controller?.display.removeDelay ?? false
+        return unwrap || removeDelay ? curves.map { $0.processed(unwrap: unwrap, removeDelay: removeDelay) } : curves
+    }
+
+    /// What "Remove delay" takes out of each phase: the delay given with the curve, or the one of the straight line that fits it.
+    private func updateDelays() {
+        guard let controller else { return }
+        controller.phaseDelays = curves.compactMap { c in
+            guard c.phase != nil, let seconds = c.delay ?? c.estimatedDelay() else { return nil }
+            return PlotController.PhaseDelay(name: c.name, seconds: seconds, isEstimated: c.delay == nil)
+        }
+    }
+
+    /// The phase runs over another range once it is unwrapped or without its delay: the vertical axis is fitted again.
+    private func refitVertical() { viewport.y = PlotViewport.curves(shown, xScale: viewport.x.scale, yScale: effectiveYScale).y }
 
     private var effectiveYScale: AmplitudeScale { yScaleSwitchable ? (controller?.yScale ?? yScale) : yScale }
 
@@ -53,6 +68,7 @@ public struct CurvePlot: View {
             .onAppear {
                 guard let controller else { return }
                 controller.hasPhase = curves.contains { $0.phase != nil }
+                updateDelays()
                 controller.scaleSupport = yScaleSwitchable ? [.x, .y] : [.x]
                 controller.xScale = viewport.x.scale
                 if yScaleSwitchable { controller.yScale = yScale }
@@ -64,10 +80,9 @@ public struct CurvePlot: View {
                 let span = viewport.x.bounds.upperBound - viewport.x.bounds.lowerBound
                 viewport.x = viewport.x.switched(to: new, minSpan: new == .logarithmic ? 1.01 : span * 1e-4, positiveFloor: positive)
             }
-            .onChange(of: controller?.display.unwrapPhase) { _, _ in
-                // Unwrapped, a phase runs over thousands of degrees: the vertical axis is fitted again.
-                viewport.y = PlotViewport.curves(shown, xScale: viewport.x.scale, yScale: effectiveYScale).y
-            }
+            .onChange(of: controller?.display.unwrapPhase) { _, _ in refitVertical() }
+            .onChange(of: controller?.display.removeDelay) { _, _ in refitVertical(); updateDelays() }
+            .onChange(of: curves.map(\.name)) { _, _ in updateDelays() }
             .onChange(of: controller?.yScale) { _, new in
                 guard yScaleSwitchable, let new else { return }
                 // The values are not in the same units any more: the vertical axis is fitted again.

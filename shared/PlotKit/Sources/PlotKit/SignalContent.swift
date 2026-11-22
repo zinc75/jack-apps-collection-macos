@@ -81,10 +81,10 @@ struct SignalContent: PlotContent {
         }
     }
 
-    /// The samples joined by a line, with the area to the zero line (or to the floor in decibels) filled: what a signal looks
-    /// like between the envelope, where a column holds many samples, and the stems, where each sample can be seen alone.
+    /// The samples joined by a line: what a signal looks like between the envelope, where a column holds many samples (and the body
+    /// is filled), and the stems, where each sample can be seen alone.
     private func drawSampleLine(_ ctx: inout GraphicsContext, _ t: PlotTransform, _ palette: PlotPalette, _ signal: PlotSignal, _ colour: Color) {
-        let plot = t.rect, range = t.viewport.x.range
+        let range = t.viewport.x.range
         let first = max(0, Int(floor(range.lowerBound)) - 1), last = min(signal.count - 1, Int(ceil(range.upperBound)) + 1)
         guard first < last else { return }
         var line = Path()
@@ -92,17 +92,7 @@ struct SignalContent: PlotContent {
             let p = CGPoint(x: t.x(Double(i)), y: t.y(amplitude.value(signal.sample(at: i))))
             if i == first { line.move(to: p) } else { line.addLine(to: p) }
         }
-        let baseline = amplitude.isDecibels ? plot.maxY + 2 : t.y(0)
-        var area = line
-        area.addLine(to: CGPoint(x: t.x(Double(last)), y: baseline))
-        area.addLine(to: CGPoint(x: t.x(Double(first)), y: baseline))
-        area.closeSubpath()
-        if amplitude.isDecibels {
-            fillShape(&ctx, area, shading(colour, plot, [(0.5, 0), (0.03, 1)], palette), palette)
-        } else {
-            let zero = min(1, max(0, (t.y(0) - plot.minY) / plot.height))
-            fillShape(&ctx, area, shading(colour, plot, [(0.5, 0), (0.28, zero), (0.5, 1)], palette), palette)
-        }
+        // No fill here: it stands in for the oscillations that the envelope does not draw, and every point is drawn now.
         ctx.stroke(line, with: .color(colour), style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
     }
 

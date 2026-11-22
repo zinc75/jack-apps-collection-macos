@@ -43,6 +43,8 @@ public final class PlotDisplayOptions {
     public var gradient = PlotGradient()
     /// A phase is drawn unwrapped (continuous) instead of between −180° and +180°.
     public var unwrapPhase = false
+    /// The delay is taken out of a phase (the straight line it makes).
+    public var removeDelay = false
     public init() {}
 }
 
@@ -88,6 +90,19 @@ public struct PlotInspector: View {
                 Divider().padding(.vertical, 4)
                 Toggle(labels.unwrapPhase, isOn: $options.unwrapPhase)
                 Text(labels.unwrapPhaseHelp).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                Toggle(labels.removeDelay, isOn: $options.removeDelay).padding(.top, 4)
+                Text(labels.removeDelayHelp).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                // The value that is taken out, for each phase, and where it comes from.
+                ForEach(controller.phaseDelays, id: \.name) { d in
+                    HStack(spacing: 6) {
+                        Text(d.name).lineLimit(1)
+                        Spacer(minLength: 8)
+                        Text(TickLabels.engineering(d.seconds, unit: "s")).monospacedDigit()
+                        Text("(" + (d.isEstimated ? labels.delayFitted : labels.delayGiven) + ")").foregroundStyle(.secondary)
+                    }
+                    .font(.callout)
+                    .foregroundStyle(options.removeDelay ? .primary : .secondary)
+                }
             }
         }
         .toggleStyle(.checkbox)

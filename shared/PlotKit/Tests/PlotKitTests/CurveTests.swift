@@ -171,3 +171,73 @@ final class LargeValueTextTests: XCTestCase {
         XCTAssertTrue(probe.yFlag.hasSuffix(" °"), probe.yFlag)
     }
 }
+
+final class RemoveDelayTests: XCTestCase {
+    private func wrap(_ v: Double, _ period: Double) -> Double { v - period * ((v + period / 2) / period).rounded(.down) }
+    private let delay = 0.0125   // seconds
+    private func xs() -> [Double] { (1..<400).map { Double($0) * 20 } }   // a step under 1/(2τ) = 40 Hz: finer than half a turn per point
+
+    private func delayed(_ unit: PhaseUnit = .degrees, host: Double? = nil, extra: ((Double) -> Double)? = nil) -> PlotCurve {
+        let p = unit.period
+        // H(f) = e^(−j 2π f τ): a phase that falls by one turn per 1/τ hertz.
+        let y = xs().map { wrap(-p * $0 * delay + (extra?($0) ?? 0), p) }
+        return PlotCurve(name: "p", x: xs(), y: y, phase: unit, delay: host)
+    }
+
+    func testTheDelayIsEstimatedFromTheFit() {
+        let c = delayed()
+        XCTAssertEqual(c.estimatedDelay()!, delay, accuracy: 1e-9)
+        XCTAssertEqual(delayed(.radians).estimatedDelay()!, delay, accuracy: 1e-9)
+        XCTAssertNil(PlotCurve(name: "m", x: [1, 2], y: [1, 2]).estimatedDelay(), "not a phase")
+        XCTAssertNil(PlotCurve(name: "p", x: [5], y: [1], phase: .degrees).estimatedDelay(), "one point")
+    }
+
+    func testRemovingTheDelayFlattensAPureDelayWhetherUnwrappedOrNot() {
+        let c = delayed()
+        for v in c.processed(unwrap: false, removeDelay: true).y { XCTAssertEqual(v, 0, accuracy: 1e-6) }
+        let un = c.processed(unwrap: true, removeDelay: true).y
+        for v in un { XCTAssertEqual(v, un[0], accuracy: 1e-6, "flat, and continuous (no turns left)") }
+    }
+
+    func testWhatIsLeftIsThePhaseOfTheSystem() {
+        // A delay and a bump of the system's own phase: removing the delay leaves the bump.
+        let bump = { (f: Double) in 40 * sin(f / 4000) }
+        let c = delayed(extra: bump)
+        let rest = c.processed(unwrap: true, removeDelay: true)
+        let un = rest.y
+        // Before, the phase falls over thousands of degrees; after, it only moves about as much as the system's own bump (80° wide).
+        XCTAssertGreaterThan(abs(c.processed(unwrap: true, removeDelay: false).y.last! - c.processed(unwrap: true, removeDelay: false).y.first!), 1000)
+        XCTAssertLessThan(un.max()! - un.min()!, 110)
+    }
+
+    func testTheHostDelayWinsOverTheFit() {
+        let c = delayed(host: 0.0125)
+        for v in c.processed(unwrap: false, removeDelay: true).y { XCTAssertEqual(v, 0, accuracy: 1e-6) }
+        let wrong = delayed(host: 0.02)   // a delay that is not the one of the curve: the straight line left is not flat
+        let y = wrong.processed(unwrap: true, removeDelay: true).y
+        XCTAssertGreaterThan(abs(y.last! - y.first!), 1000)
+    }
+
+    func testNothingToDoLeavesTheCurve() {
+        let c = delayed()
+        XCTAssertEqual(c.processed(unwrap: false, removeDelay: false).y, c.y)
+        let m = PlotCurve(name: "m", x: [1, 2, 3], y: [170, -170, 170], delay: 1)
+        XCTAssertEqual(m.processed(unwrap: true, removeDelay: true).y, m.y, "not a phase")
+    }
+
+    func testRadiansUseTheirPeriod() {
+        let c = delayed(.radians, host: delay)
+        for v in c.processed(unwrap: false, removeDelay: true).y { XCTAssertEqual(v, 0, accuracy: 1e-9) }
+    }
+}
+
+@MainActor
+final class DelayValueTests: XCTestCase {
+    func testTheControllerCarriesTheDelaysTheInspectorShows() {
+        let c = PlotController()
+        c.phaseDelays = [.init(name: "Ch. 1", seconds: 0.0125, isEstimated: false), .init(name: "Ch. 2", seconds: 0.0131, isEstimated: true)]
+        XCTAssertEqual(TickLabels.engineering(c.phaseDelays[0].seconds, unit: "s"), "12.5 ms")
+        XCTAssertTrue(c.phaseDelays[1].isEstimated)
+        XCTAssertEqual(PlotLabels().delayFitted, "fitted")
+    }
+}

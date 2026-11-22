@@ -23,6 +23,14 @@ public final class PlotController {
     public var showsInspector = false
     /// The plot shows a phase: the inspector then offers to unwrap it.
     public var hasPhase = false
+    /// The delay of each phase curve, which "Remove delay" takes out: the plot says it, the inspector shows it.
+    public struct PhaseDelay: Equatable, Sendable {
+        public var name: String
+        public var seconds: Double
+        /// Fitted to the phase, rather than given with the curve.
+        public var isEstimated: Bool
+    }
+    public var phaseDelays: [PhaseDelay] = []
     /// How the plot looks: what the inspector sets, what the plots follow.
     public let display = PlotDisplayOptions()
 

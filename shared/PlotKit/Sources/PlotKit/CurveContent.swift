@@ -15,16 +15,52 @@ public struct PlotCurve: Identifiable {
     public var color: Color?
     /// Whether the area under the curve has a gradient.
     public var filled: Bool
-    /// The unit, if the values are a phase: it can then be unwrapped (the inspector offers it).
+    /// The unit, if the values are a phase: it can then be unwrapped, and its delay removed (the inspector offers both).
     public var phase: PhaseUnit?
+    /// The delay to remove from a phase, in seconds (the abscissas being hertz): the time of the direct sound of an impulse
+    /// response, say. Without it the delay is the one of the straight line that fits the unwrapped phase.
+    public var delay: Double?
 
-    public init(name: String, x: [Double], y: [Double], color: Color? = nil, filled: Bool = true, phase: PhaseUnit? = nil) {
+    public init(name: String, x: [Double], y: [Double], color: Color? = nil, filled: Bool = true, phase: PhaseUnit? = nil, delay: Double? = nil) {
         self.name = name
         self.x = x
         self.y = y
         self.color = color
         self.filled = filled
         self.phase = phase
+        self.delay = delay
+    }
+
+    /// The delay, in seconds, of the straight line that fits the unwrapped phase best (least squares): the mean delay, which for an
+    /// impulse response is its centre of energy in time. nil when there are too few points or the abscissas do not vary.
+    public func estimatedDelay() -> Double? {
+        guard let phase else { return nil }
+        let u = unwrapped()
+        var n = 0.0, sx = 0.0, sy = 0.0, sxx = 0.0, sxy = 0.0
+        for i in 0..<min(u.y.count, u.x.count) where u.y[i].isFinite && u.x[i].isFinite {
+            n += 1; sx += u.x[i]; sy += u.y[i]; sxx += u.x[i] * u.x[i]; sxy += u.x[i] * u.y[i]
+        }
+        let denominator = n * sxx - sx * sx
+        guard n >= 2, abs(denominator) > 1e-12 else { return nil }
+        let slope = (n * sxy - sx * sy) / denominator   // phase units per hertz
+        return -slope / phase.period
+    }
+
+    /// The curve as it is drawn: the phase unwrapped, and/or without its delay. Taking the delay away adds the straight line that
+    /// the delay makes, `period × f × delay`; unwrapped the result stays continuous, otherwise it is brought back between
+    /// −half a period and +half a period. A curve that is not a phase is returned as it is.
+    public func processed(unwrap: Bool, removeDelay: Bool) -> PlotCurve {
+        guard let phase, unwrap || removeDelay else { return self }
+        var copy = unwrap ? unwrapped() : self
+        if removeDelay, let seconds = delay ?? estimatedDelay() {
+            let period = phase.period
+            for i in 0..<min(copy.y.count, copy.x.count) where copy.y[i].isFinite && copy.x[i].isFinite {
+                var v = copy.y[i] + period * copy.x[i] * seconds
+                if !unwrap { v -= period * ((v + period / 2) / period).rounded(.down) }
+                copy.y[i] = v
+            }
+        }
+        return copy
     }
 
     /// The same curve with its phase unwrapped: each value is brought within half a period of the one before it, by adding whole
