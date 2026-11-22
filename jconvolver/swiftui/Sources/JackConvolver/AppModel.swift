@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import AppKit
+import JackBridge
 import JConvolverKit
 import Observation
 import SoundFileKit
@@ -123,6 +124,11 @@ final class AppModel {
     var showsProblems = false
     var showsNewConfiguration = false
     var showsPortNames = false
+    /// Which side the page of the connections shows: the inputs (from JACK to jconvolver) or the outputs.
+    var connectionSide: PortSide = .input
+    /// The connections made to the running program, as the configuration says: what the page of the connections changes is
+    /// made at once, and these are what to take away when a connection is removed.
+    @ObservationIgnored var appliedLinks: Set<JackLink> = []
     var showsResize = false
     var showsGestures = false
     /// The impulse response whose detail window is open.
@@ -234,6 +240,7 @@ final class AppModel {
     private func documentChanged() {
         if let document { selection.clamp(inputs: document.inputCount, outputs: document.outputCount) }
         refreshProblems()
+        syncConnections()
     }
 
     private func resetEditing() {
@@ -384,6 +391,7 @@ final class AppModel {
             controller.acknowledgeEnd()
             runCount += 1
             try controller.start(command, executable: executable)
+            appliedLinks = mode == .realTime ? wantedLinks : []
         } catch {
             message = String(localized: "Le moteur ne peut pas démarrer : \(error.localizedDescription)")
         }

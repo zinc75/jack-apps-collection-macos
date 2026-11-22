@@ -32,9 +32,10 @@ public struct ConfLine: Equatable, Sendable {
         case jackClient(String)
         case jackServer(String)
         case convolverNew(inputs: Int, outputs: Int, partition: Int, maxLength: Int, density: Double?)
-        /// A name for an input, and a port to connect it to.
-        case inputName(number: Int, name: String, connection: String?)
-        case outputName(number: Int, name: String, connection: String?)
+        /// A name for an input, and the ports to connect it to (several on a line is what the 0004 patch of jconvolver reads;
+        /// a jconvolver without it connects the first and ignores the others).
+        case inputName(number: Int, name: String, connections: [String])
+        case outputName(number: Int, name: String, connections: [String])
         case changeDirectory(String)
         case read(Read)
         case dirac(input: Int, output: Int, gain: Double, delay: Int)
@@ -63,8 +64,8 @@ extension ConfLine.Kind {
 
     /// The line as it is written in a file.
     public var formatted: String {
-        func words(_ name: String, _ connection: String?) -> String {
-            ConfWord.format(name) + (connection.map { " " + ConfWord.format($0) } ?? "")
+        func words(_ name: String, _ connections: [String]) -> String {
+            ([name] + connections).map { ConfWord.format($0) }.joined(separator: " ")
         }
         switch self {
         case .blank: return ""
@@ -73,8 +74,8 @@ extension ConfLine.Kind {
         case .jackServer(let name): return "/jack/server " + ConfWord.format(name)
         case .convolverNew(let i, let o, let p, let m, let d):
             return "/convolver/new \(i) \(o) \(p) \(m)" + (d.map { " " + Self.number($0) } ?? "")
-        case .inputName(let n, let name, let connection): return "/input/name \(n) " + words(name, connection)
-        case .outputName(let n, let name, let connection): return "/output/name \(n) " + words(name, connection)
+        case .inputName(let n, let name, let connections): return "/input/name \(n) " + words(name, connections)
+        case .outputName(let n, let name, let connections): return "/output/name \(n) " + words(name, connections)
         case .changeDirectory(let path): return "/cd " + ConfWord.format(path)
         case .read(let r):
             return "/impulse/read \(r.input) \(r.output) \(Self.number(r.gain)) \(r.delay) \(r.offset) \(r.length) \(r.channel) " + ConfWord.format(r.file)
@@ -164,9 +165,11 @@ public struct ConvConfig: Equatable, Sendable {
             return (.convolverNew(inputs: i, outputs: o, partition: p, maxLength: m, density: scan.double()), nil)
         case "/input/name", "/output/name":
             guard let n = scan.int(), let name = scan.word() else { return badParameters }
-            let connection = scan.word()
-            return (command == "/input/name" ? .inputName(number: n, name: name, connection: connection)
-                                             : .outputName(number: n, name: name, connection: connection), nil)
+            // The ports to connect to: as many as the line has. The empty word is none, and text from a `#` is not a port.
+            var connections: [String] = []
+            while let w = scan.word(), !w.hasPrefix("#") { if !w.isEmpty { connections.append(w) } }
+            return (command == "/input/name" ? .inputName(number: n, name: name, connections: connections)
+                                             : .outputName(number: n, name: name, connections: connections), nil)
         case "/impulse/read":
             guard let i = scan.int(), let o = scan.int(), let g = scan.double(), let d = scan.int(), let off = scan.int(),
                   let len = scan.int(), let ch = scan.int(), let file = scan.word() else { return badParameters }

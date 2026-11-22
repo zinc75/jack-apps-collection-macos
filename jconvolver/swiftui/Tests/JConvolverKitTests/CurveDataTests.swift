@@ -121,3 +121,63 @@ final class DistributeTests: XCTestCase {
         XCTAssertEqual(plan.left, 1)
     }
 }
+
+final class WiringTests: XCTestCase {
+    private func document() -> ConvDocument { ConvDocument(inputs: 2, outputs: 3) }
+
+    func testConnectionsAddAndLeave() {
+        var d = document()
+        d.toggleConnection("system:capture_1", .input, 0)
+        d.toggleConnection("system:capture_2", .input, 0)
+        XCTAssertEqual(d.connections(.input, 0), ["system:capture_1", "system:capture_2"], "a channel can have several ports")
+        XCTAssertEqual(d.mixedInputs, [0])
+        d.toggleConnection("system:capture_1", .input, 0)
+        XCTAssertEqual(d.connections(.input, 0), ["system:capture_2"])
+        d.toggleConnection("system:capture_2", .input, 0)
+        XCTAssertTrue(d.connections(.input, 0).isEmpty)
+    }
+
+    func testDefaultPortNamesAndUnconnected() {
+        var d = document()
+        XCTAssertEqual(d.portName(.input, 1), "in-2")
+        XCTAssertEqual(d.portName(.output, 2), "out-3")
+        d.toggleConnection("system:playback_1", .output, 1)
+        XCTAssertEqual(d.unconnectedChannels(.output), [0, 2])
+    }
+
+    func testSoundCardAndClear() {
+        var d = document()
+        d.toggleConnection("Max:in1", .output, 1)
+        d.connectToSoundCard(.output, ports: ["system:playback_1", "system:playback_2"])
+        XCTAssertEqual(d.connections(.output, 1), ["system:playback_2"], "back to the sound card leaves nothing else")
+        XCTAssertTrue(d.connections(.output, 2).isEmpty, "no port left for the third output")
+        d.clearConnections(.output)
+        XCTAssertEqual(d.unconnectedChannels(.output), [0, 1, 2])
+    }
+
+    func testSummedDestinationsAndFileRoundTrip() throws {
+        var d = document()
+        d.toggleConnection("Max:in1", .output, 0)
+        d.toggleConnection("Max:in1", .output, 1)
+        d.toggleConnection("Max:in2", .output, 2)
+        d.toggleConnection("Max:in 3", .output, 2)
+        XCTAssertEqual(d.summedDestinations, ["Max:in1"])
+        let text = d.makeConfig(automatic: d.automaticHeader(period: 256, lengthOfFile: { _ in nil })).text
+        XCTAssertTrue(text.contains("/output/name 1 out-1 Max:in1"), text)
+        XCTAssertTrue(text.contains("/output/name 3 out-3 Max:in2 \"Max:in 3\""), text)
+        XCTAssertFalse(text.contains("/input/name"))
+        // Read back: the same ports, in the same order.
+        let config = ConvConfig.parse(text).config
+        let back = ConvDocument.make(from: config).document
+        XCTAssertEqual(back.connections(.output, 2), ["Max:in2", "Max:in 3"])
+    }
+
+    func testSeveralPortsOnALineAndComment() {
+        let text = "/convolver/new 1 1 256 128\n/input/name 1 in a:out_1 \"b c:out 2\" '' # not a port\n"
+        let back = ConvDocument.make(from: ConvConfig.parse(text).config).document
+        XCTAssertEqual(back.connections(.input, 0), ["a:out_1", "b c:out 2"])
+        XCTAssertEqual(ConfWord.split("a  \"b c\"  d"), ["a", "b c", "d"])
+        XCTAssertNil(ConfWord.split("\"unclosed"))
+        XCTAssertEqual(ConfWord.join(["a", "b c"]), "a \"b c\"")
+    }
+}

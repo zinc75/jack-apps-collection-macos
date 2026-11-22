@@ -116,18 +116,6 @@ struct ModeTile: View {
     }
 }
 
-// MARK: Ports (the page that comes next)
-
-struct PortsView: View {
-    var body: some View {
-        SettingsPage {
-            Text("Connexions JACK").font(.title2).fontWeight(.semibold)
-            Text("Les connexions des entrées et des sorties aux ports des autres applications arrivent dans les prochaines versions de cette interface.")
-                .foregroundStyle(.secondary)
-        }
-    }
-}
-
 /// What is to settle, one line each, the worst first.
 struct ProblemList: View {
     @Environment(AppModel.self) private var model

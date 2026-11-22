@@ -18,7 +18,7 @@ struct ContentView: View {
                 switch model.page {
                 case .home: HomeView()
                 case .matrix: MatrixView()
-                case .ports: PortsView()
+                case .ports: ConnectionsView()
                 case .launch: LaunchView()
                 case .log: LogView()
                 case .display: DisplayView()

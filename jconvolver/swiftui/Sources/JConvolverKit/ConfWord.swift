@@ -5,6 +5,20 @@ import Foundation
 /// The words of the configuration files: a name or a path that may be quoted. The reading follows `sstring.cc` of
 /// jconvolver, so that a file means the same thing here as for the program.
 public enum ConfWord {
+    /// All the words of a text, as they are written after a command (the empty word is not kept); nil when the quoting is wrong.
+    public static func split(_ text: String) -> [String]? {
+        var rest = Substring(text), words: [String] = []
+        while true {
+            if rest.allSatisfy({ $0 == " " || $0 == "\t" }) { return words }
+            guard let (word, next) = read(rest) else { return nil }
+            if !word.isEmpty { words.append(word) }
+            rest = next
+        }
+    }
+
+    /// The words as a text that `split` reads back, one blank between them.
+    public static func join(_ words: [String]) -> String { words.map { format($0) }.joined(separator: " ") }
+
     private static func isControl(_ c: Unicode.Scalar) -> Bool { c.value < 0x20 || c.value == 0x7f }
 
     /// Reads the first word of `text`: blanks before it are skipped, and it ends at a blank, at a control character or at

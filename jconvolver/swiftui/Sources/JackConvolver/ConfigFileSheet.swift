@@ -195,7 +195,7 @@ private struct PortsTab: View {
                 group("Entrées", "/input/name", d.content.inputs, isInput: true)
                 group("Sorties", "/output/name", d.content.outputs, isInput: false)
             }
-            Text("Un nom est unique, entrées et sorties confondues. Une voie n'est écrite dans le fichier que si elle est nommée ou connectée. Le fichier ne garde qu'un seul port de connexion par voie.")
+            Text("Un nom est unique, entrées et sorties confondues. Une voie n'est écrite dans le fichier que si elle est nommée ou connectée. Plusieurs ports de connexion se séparent par des espaces (entre guillemets si le nom en contient) : une autre version de jconvolver ne connecte que le premier.")
                 .font(.callout).foregroundStyle(.secondary)
             FilteredProblems { kind in
                 switch kind { case .emptyPortName, .duplicatePortName, .sharedPortName, .tooManyPorts: true; default: false }
@@ -214,8 +214,10 @@ private struct PortsTab: View {
                         edit(i, isInput) { $0.name = value.isEmpty ? nil : value }
                         return true
                     }
-                    CommitField(text: port.connection ?? "", placeholder: String(localized: "connecter à un port JACK (facultatif)"), width: nil) { value in
-                        edit(i, isInput) { $0.connection = value.isEmpty ? nil : value }
+                    CommitField(text: ConfWord.join(port.connections), placeholder: String(localized: "connecter à des ports JACK (facultatif)"), width: nil) { value in
+                        // Several ports are separated by blanks; a name with blanks is between quotes.
+                        guard let ports = ConfWord.split(value) else { return false }
+                        edit(i, isInput) { $0.connections = ports }
                         return true
                     }
                 }

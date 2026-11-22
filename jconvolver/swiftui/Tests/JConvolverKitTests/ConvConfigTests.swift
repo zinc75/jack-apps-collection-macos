@@ -40,8 +40,8 @@ final class ConvConfigTests: XCTestCase {
             .jackClient("jconvolver"),
             .jackServer("myserver"),
             .convolverNew(inputs: 2, outputs: 4, partition: 256, maxLength: 48000, density: 0.5),
-            .inputName(number: 1, name: "In.L", connection: "system:capture_1"),
-            .outputName(number: 3, name: "Out 3", connection: nil),
+            .inputName(number: 1, name: "In.L", connections: ["system:capture_1"]),
+            .outputName(number: 3, name: "Out 3", connections: []),
             .changeDirectory("/Users/eric/IR files"),
             .read(.init(input: 1, output: 2, gain: 0.5, delay: 10, offset: 20, length: 300, channel: 2, file: "room.wav")),
             .dirac(input: 1, output: 1, gain: 1, delay: 0),
@@ -124,7 +124,7 @@ final class ConvConfigTests: XCTestCase {
     func testNamesAndPathsWithBlanksAreQuoted() {
         XCTAssertEqual(ConfLine.Kind.read(.init(input: 1, output: 1, gain: 1, delay: 0, offset: 0, length: 0, channel: 1, file: "my room.wav")).formatted,
                        "/impulse/read 1 1 1 0 0 0 1 \"my room.wav\"")
-        XCTAssertEqual(ConfLine.Kind.outputName(number: 2, name: "Left front", connection: "system:playback_1").formatted,
+        XCTAssertEqual(ConfLine.Kind.outputName(number: 2, name: "Left front", connections: ["system:playback_1"]).formatted,
                        "/output/name 2 \"Left front\" system:playback_1")
     }
 

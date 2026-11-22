@@ -51,13 +51,19 @@ public struct ConvImpulse: Equatable, Sendable {
     }
 }
 
-/// What a port has in the file: a name of its own, and a port to connect it to.
+/// What a port has in the file: a name of its own, and the ports to connect it to.
 public struct ConvPortSpec: Equatable, Sendable {
     public var name: String?
-    public var connection: String?
-    public init(name: String? = nil, connection: String? = nil) { self.name = name; self.connection = connection }
+    public var connections: [String]
+    public init(name: String? = nil, connections: [String] = []) { self.name = name; self.connections = connections }
+    public init(name: String? = nil, connection: String?) { self.init(name: name, connections: connection.map { [$0] } ?? []) }
+    /// The first port: the one that every version of jconvolver connects.
+    public var connection: String? {
+        get { connections.first }
+        set { connections = newValue.map { [$0] } ?? [] }
+    }
     /// Whether the file has to say something about this port.
-    public var isCustom: Bool { name != nil || connection != nil }
+    public var isCustom: Bool { name != nil || !connections.isEmpty }
 }
 
 /// The three numbers of `/convolver/new`.
@@ -151,11 +157,11 @@ public struct ConvDocument: Equatable, Sendable {
                     content.maxLength = m
                     content.density = d
                 }
-            case .inputName(let n, let name, let connection):
-                if n >= 1, n <= content.inputs.count { content.inputs[n - 1] = ConvPortSpec(name: name, connection: connection) }
+            case .inputName(let n, let name, let connections):
+                if n >= 1, n <= content.inputs.count { content.inputs[n - 1] = ConvPortSpec(name: name, connections: connections) }
                 else { issues.append(ConfIssue(line: number, message: "Bad input or output number.")) }
-            case .outputName(let n, let name, let connection):
-                if n >= 1, n <= content.outputs.count { content.outputs[n - 1] = ConvPortSpec(name: name, connection: connection) }
+            case .outputName(let n, let name, let connections):
+                if n >= 1, n <= content.outputs.count { content.outputs[n - 1] = ConvPortSpec(name: name, connections: connections) }
                 else { issues.append(ConfIssue(line: number, message: "Bad input or output number.")) }
             default: break
             }
@@ -300,10 +306,10 @@ public struct ConvDocument: Equatable, Sendable {
                                             maxLength: content.maxLength ?? automatic.maxLength,
                                             density: content.density ?? automatic.density)))
         for (i, port) in content.inputs.enumerated() where port.isCustom {
-            lines.append(ConfLine(.inputName(number: i + 1, name: port.name ?? "in-\(i + 1)", connection: port.connection)))
+            lines.append(ConfLine(.inputName(number: i + 1, name: port.name ?? "in-\(i + 1)", connections: port.connections)))
         }
         for (o, port) in content.outputs.enumerated() where port.isCustom {
-            lines.append(ConfLine(.outputName(number: o + 1, name: port.name ?? "out-\(o + 1)", connection: port.connection)))
+            lines.append(ConfLine(.outputName(number: o + 1, name: port.name ?? "out-\(o + 1)", connections: port.connections)))
         }
 
         // Files are grouped by folder so that a `/cd` is written once for each, the pulses and filters come first, and a
