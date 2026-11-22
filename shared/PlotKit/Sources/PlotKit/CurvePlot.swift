@@ -45,7 +45,7 @@ public struct CurvePlot: View {
     private var effectiveYScale: AmplitudeScale { yScaleSwitchable ? (controller?.yScale ?? yScale) : yScale }
 
     public var body: some View {
-        PlotView(content: CurveContent(curves: curves, yScale: effectiveYScale, xUnitText: xUnit, yUnitText: yUnit), viewport: $viewport,
+        PlotView(content: CurveContent(curves: curves, yScale: effectiveYScale, xUnitText: xUnit, yUnitText: yUnit, gradient: controller?.display.gradient ?? PlotGradient()), viewport: $viewport,
                  accent: accent, labels: labels, controller: controller, previewHover: previewHover, previewMeasure: previewMeasure, previewBox: nil)
             .onAppear {
                 guard let controller else { return }

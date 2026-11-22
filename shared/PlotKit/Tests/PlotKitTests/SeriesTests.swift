@@ -47,16 +47,68 @@ final class SeriesTests: XCTestCase {
         XCTAssertEqual(set.visible.map(\.id), [0])
     }
 
-    func testOnlyAloneCurveHasTheGradient() {
+    func testTheSeriesDoNotDecideTheGradient() {
+        // Whether the area under a curve has a gradient is up to the plot and its display options, not to the set of channels.
         let set = PlotSeriesSet(count: 2)
-        let both = set.curves { _ in ([1, 2], [1, 2]) }
-        XCTAssertEqual(both.map(\.filled), [false, false])
-        set.items[1].isVisible = false
-        XCTAssertEqual(set.curves { _ in ([1, 2], [1, 2]) }.map(\.filled), [true])
+        XCTAssertEqual(set.curves { _ in ([1, 2], [1, 2]) }.map(\.filled), [true, true])
+        XCTAssertEqual(set.curves({ _ in ([1, 2], [1, 2]) }, filled: false).map(\.filled), [false, false])
     }
 
     func testNames() {
         let set = PlotSeriesSet(count: 3, names: ["L", "R"])
         XCTAssertEqual(set.items.map(\.name), ["L", "R", "3"])
+    }
+}
+
+final class GradientPolicyTests: XCTestCase {
+    func testByDefaultOneCurveHasAGradientAndSeveralAnOpaqueBody() {
+        let g = PlotGradient()
+        XCTAssertEqual(g.fill(curves: 1), .gradient(1))
+        // The fill is never missing, and with several curves it is opaque: the one on top hides the ones under it.
+        for n in [2, 3, 8] { XCTAssertEqual(g.fill(curves: n), .solid(0.5)) }
+    }
+
+    func testTheOptionsChangeTheStyleNotThePresenceOfTheFill() {
+        guard case .flat(let one) = PlotGradient(enabled: false).fill(curves: 1) else { return XCTFail() }
+        XCTAssertGreaterThan(one, 0, "gradient off: a flat fill, not nothing")
+        XCTAssertEqual(PlotGradient(enabled: false, withSeveral: true).fill(curves: 3), PlotGradient(enabled: false).fill(curves: 3), "the main switch wins")
+        guard case .gradient(let k) = PlotGradient(enabled: true, withSeveral: true).fill(curves: 3) else { return XCTFail() }
+        XCTAssertGreaterThan(k, 0)
+        XCTAssertLessThan(k, 1, "a little lighter than the gradient of a single curve")
+    }
+}
+
+@MainActor
+final class SeriesOrderTests: XCTestCase {
+    private func signal() -> PlotSignal { PeakPyramid(samples: [0, 0, 0, 0]) }
+
+    func testBringToFrontPutsAChannelFirstWithoutChangingColours() {
+        let set = PlotSeriesSet(count: 3, accent: .purple)
+        let colours = set.items.map(\.color)
+        set.bringToFront(2)
+        XCTAssertEqual(set.items.map(\.id), [2, 0, 1])
+        XCTAssertEqual(set.items[0].color, colours[2], "the colour belongs to the channel, not to its place")
+        let traces = set.traces { _ in signal() }
+        XCTAssertEqual(traces.map(\.name), ["3", "1", "2"], "the first is drawn on top")
+        XCTAssertEqual(traces[0].color, colours[2])
+        set.bringToFront(2)
+        XCTAssertEqual(set.items.map(\.id), [2, 0, 1], "already first: nothing moves")
+    }
+
+    func testDraggingARowReordersTheChannels() {
+        let set = PlotSeriesSet(count: 4)
+        set.move(fromOffsets: IndexSet(integer: 3), toOffset: 1)
+        XCTAssertEqual(set.items.map(\.id), [0, 3, 1, 2])
+        set.move(fromOffsets: IndexSet(integer: 0), toOffset: 4)
+        XCTAssertEqual(set.items.map(\.id), [3, 1, 2, 0])
+    }
+
+    func testTheOrderIsKeptWhenSomeChannelsAreHidden() {
+        let set = PlotSeriesSet(count: 3)
+        set.bringToFront(1)
+        set.items[0].isVisible = false
+        XCTAssertEqual(set.visible.map(\.id), [0, 2], "the hidden one leaves, the others keep their order")
+        set.items[0].isVisible = true
+        XCTAssertEqual(set.visible.map(\.id), [1, 0, 2])
     }
 }

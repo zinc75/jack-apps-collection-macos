@@ -41,6 +41,18 @@ public final class PlotSeriesSet {
 
     public var visible: [PlotSeries] { items.filter(\.isVisible) }
 
+    /// Puts a channel first: it is drawn on top of the others, where they overlap. The colours do not move with the order: they
+    /// belong to the channels.
+    public func bringToFront(_ id: Int) {
+        guard let i = items.firstIndex(where: { $0.id == id }), i > 0 else { return }
+        items.insert(items.remove(at: i), at: 0)
+    }
+
+    /// Moves channels in the list (a drag of a row): the order is the order of drawing, the first on top.
+    public func move(fromOffsets source: IndexSet, toOffset destination: Int) {
+        items.move(fromOffsets: source, toOffset: destination)
+    }
+
     /// Shows only this channel, or all of them again when it is the only one shown.
     public func solo(_ id: Int) {
         let onlyThis = items.allSatisfy { $0.isVisible == ($0.id == id) }
@@ -57,7 +69,8 @@ public final class PlotSeriesSet {
         let shown = visible
         return shown.map { s in
             let data = curve(s.id)
-            return PlotCurve(name: s.name, x: data.x, y: data.y, color: s.color, filled: filled && shown.count == 1)
+            // Whether the area under a curve has a gradient is up to the plot: the display options and the number of curves decide.
+            return PlotCurve(name: s.name, x: data.x, y: data.y, color: s.color, filled: filled)
         }
     }
 }
@@ -92,24 +105,35 @@ public struct PlotChannelList: View {
             }
             .buttonStyle(.link).font(.callout)
             Divider()
-            ScrollView {
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach($series.items) { $item in
-                        HStack(spacing: 8) {
-                            Toggle("", isOn: $item.isVisible).labelsHidden().toggleStyle(.checkbox).tint(item.color)
-                            ColorPicker("", selection: $item.color, supportsOpacity: false).labelsHidden().frame(width: 38)
-                            Text(item.name).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
-                                .foregroundStyle(item.isVisible ? .primary : .secondary)
-                            Button(labels.onlyChannel) { series.solo(item.id) }.buttonStyle(.link).font(.callout)
-                        }
-                        .padding(.vertical, 2)
+            // The rows are dragged to reorder them: the first is drawn on top.
+            List {
+                ForEach($series.items) { $item in
+                    HStack(spacing: 8) {
+                        Image(systemName: "line.3.horizontal").font(.system(size: 11)).foregroundStyle(.tertiary).help(labels.channelsHelp)
+                        Toggle("", isOn: $item.isVisible).labelsHidden().toggleStyle(.checkbox).tint(item.color)
+                        ColorPicker("", selection: $item.color, supportsOpacity: false).labelsHidden().frame(width: 38)
+                        Text(item.name).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
+                            .foregroundStyle(item.isVisible ? .primary : .secondary)
+                        Button { series.bringToFront(item.id) } label: { Image(systemName: "square.2.layers.3d.top.filled") }
+                            .buttonStyle(.borderless).help(labels.toFront)
+                            .disabled(series.items.first?.id == item.id)
+                        Button(labels.onlyChannel) { series.solo(item.id) }.buttonStyle(.link).font(.callout)
+                    }
+                    .listRowSeparator(.hidden)
+                    .contextMenu {
+                        Button(labels.toFront) { series.bringToFront(item.id) }.disabled(series.items.first?.id == item.id)
+                        Button(labels.onlyChannel) { series.solo(item.id) }
                     }
                 }
+                .onMove { series.move(fromOffsets: $0, toOffset: $1) }
             }
-            .frame(maxHeight: inInspector ? .infinity : 360)
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .frame(height: min(CGFloat(series.items.count) * 34 + 10, inInspector ? 440 : 360))
+            Text(labels.channelsHelp).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }
-        .padding(14)
-        .frame(minWidth: inInspector ? 0 : 280, maxWidth: inInspector ? .infinity : 280, maxHeight: inInspector ? .infinity : nil, alignment: .top)
+        .padding(inInspector ? 0 : 14)
+        .frame(minWidth: inInspector ? 0 : 280, maxWidth: inInspector ? .infinity : 280, alignment: .top)
     }
 }
 

@@ -80,6 +80,14 @@ struct CurveContent: PlotContent {
     var yScale: AmplitudeScale
     var xUnitText: String
     var yUnitText: String
+    var gradient = PlotGradient()
+
+    /// The area under a line (to the baseline) is a gradient or nothing; the band of the extremes, which is the body of a dense
+    /// curve, is always there.
+    private var gradientStrength: Double {
+        if case .gradient(let k) = gradient.fill(curves: curves.count) { return k }
+        return 0
+    }
 
     var xUnit: String { xUnitText }
     var xDivisor: Double { 1 }
@@ -108,7 +116,8 @@ struct CurveContent: PlotContent {
         guard last > first else { return }
         let count = last - first + 1
         let baseline = (yScale.isDecibels || !t.viewport.y.range.contains(0)) ? plot.maxY + 2 : t.y(0)
-        let gradient = Gradient(colors: [colour.opacity(0.40), colour.opacity(0.03)])
+        let gradient = Gradient(colors: [colour.opacity(0.40 * gradientStrength), colour.opacity(0.03 * gradientStrength)])
+        let filled = curve.filled && gradientStrength > 0
         let start = CGPoint(x: 0, y: plot.minY), end = CGPoint(x: 0, y: plot.maxY)
 
         if count <= 3 * Int(plot.width) {
@@ -128,7 +137,7 @@ struct CurveContent: PlotContent {
                 if spacing > 14 { dots.addEllipse(in: CGRect(x: p.x - 2.8, y: p.y - 2.8, width: 5.6, height: 5.6)) }
             }
             if let r = run { closeArea(&area, r, baseline) }
-            if curve.filled { ctx.fill(area, with: .linearGradient(gradient, startPoint: start, endPoint: end)) }
+            if filled { ctx.fill(area, with: .linearGradient(gradient, startPoint: start, endPoint: end)) }
             ctx.stroke(line, with: .color(colour), style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
             if spacing > 14 {
                 ctx.fill(dots, with: .color(colour))
@@ -167,7 +176,7 @@ struct CurveContent: PlotContent {
         band.closeSubpath()
         ctx.fill(band, with: .color(colour.opacity(0.22)))
         // The area under the line, to the baseline.
-        if curve.filled {
+        if filled {
             var area = line
             area.addLine(to: CGPoint(x: lastX, y: baseline))
             area.addLine(to: CGPoint(x: firstX, y: baseline))

@@ -21,10 +21,32 @@ struct SignalContent: PlotContent {
     var traces: [PlotTrace]
     var sampleRate: Double?
     var amplitude: AmplitudeScale
+    var gradient = PlotGradient()
 
     private var length: Int { traces.map { $0.signal.count }.max() ?? 0 }
-    /// How strong the gradient under a trace is: full for one, light for several, which would hide each other.
-    private var fill: Double { traces.count == 1 ? 1 : 0.22 }
+    /// How the body of a trace is filled, as the display options say: by default a gradient for one trace, and for several an opaque
+    /// body, so that the trace on top is the one that is seen where they overlap (the first is drawn last, on top).
+    private func shading(_ colour: Color, _ plot: CGRect, _ stops: [(opacity: Double, at: Double)], _ palette: PlotPalette) -> GraphicsContext.Shading {
+        switch gradient.fill(curves: traces.count) {
+        case .flat(let alpha):
+            return .color(colour.opacity(alpha))
+        case .solid(let k):
+            // In decibels the body is the area under the line, down to the floor: opaque, it would hide every trace under the first.
+            if amplitude.isDecibels { return .color(colour.opacity(0.16)) }
+            return .color(colour.mix(with: palette.isDark ? Color(white: 0.14) : Color(white: 0.97), by: 1 - k))
+        case .gradient(let k):
+            return .linearGradient(Gradient(stops: stops.map { .init(color: colour.opacity($0.opacity * k), location: $0.at) }),
+                                   startPoint: CGPoint(x: 0, y: plot.minY), endPoint: CGPoint(x: 0, y: plot.maxY))
+        }
+    }
+
+    /// Fills a body. With several traces it is first painted in the colour of the background, whatever its style (a gradient is
+    /// translucent): the trace on top hides what is under it, as it does when it is opaque. Not in decibels, where the body is the
+    /// whole area under the line.
+    private func fillShape(_ ctx: inout GraphicsContext, _ path: Path, _ shading: GraphicsContext.Shading, _ palette: PlotPalette) {
+        if traces.count > 1, !amplitude.isDecibels { ctx.fill(path, with: .color(palette.isDark ? Color(white: 0.14) : Color(white: 0.97))) }
+        ctx.fill(path, with: shading)
+    }
 
     /// Pixels between two samples, from which the samples are drawn one by one.
     static let stemThreshold: CGFloat = 7
@@ -76,14 +98,10 @@ struct SignalContent: PlotContent {
         area.addLine(to: CGPoint(x: t.x(Double(first)), y: baseline))
         area.closeSubpath()
         if amplitude.isDecibels {
-            ctx.fill(area, with: .linearGradient(Gradient(colors: [colour.opacity(0.5 * fill), colour.opacity(0.03 * fill)]),
-                                                 startPoint: CGPoint(x: 0, y: plot.minY), endPoint: CGPoint(x: 0, y: plot.maxY)))
+            fillShape(&ctx, area, shading(colour, plot, [(0.5, 0), (0.03, 1)], palette), palette)
         } else {
             let zero = min(1, max(0, (t.y(0) - plot.minY) / plot.height))
-            ctx.fill(area, with: .linearGradient(
-                Gradient(stops: [.init(color: colour.opacity(0.5 * fill), location: 0), .init(color: colour.opacity(0.08 * fill), location: zero),
-                                 .init(color: colour.opacity(0.5 * fill), location: 1)]),
-                startPoint: CGPoint(x: 0, y: plot.minY), endPoint: CGPoint(x: 0, y: plot.maxY)))
+            fillShape(&ctx, area, shading(colour, plot, [(0.5, 0), (0.28, zero), (0.5, 1)], palette), palette)
         }
         ctx.stroke(line, with: .color(colour), style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
     }
@@ -128,8 +146,7 @@ struct SignalContent: PlotContent {
             area.addLine(to: CGPoint(x: px(e.valid.upperBound - 1), y: plot.maxY + 2))
             area.addLine(to: CGPoint(x: px(e.valid.lowerBound), y: plot.maxY + 2))
             area.closeSubpath()
-            ctx.fill(area, with: .linearGradient(Gradient(colors: [colour.opacity(0.5 * fill), colour.opacity(0.03 * fill)]),
-                                                 startPoint: CGPoint(x: 0, y: plot.minY), endPoint: CGPoint(x: 0, y: plot.maxY)))
+            fillShape(&ctx, area, shading(colour, plot, [(0.5, 0), (0.03, 1)], palette), palette)
             ctx.stroke(line, with: .color(colour), style: StrokeStyle(lineWidth: 1.4, lineJoin: .round))
             return
         }
@@ -151,10 +168,7 @@ struct SignalContent: PlotContent {
         band.closeSubpath()
         // Strong at the extremes, light around the zero line.
         let zero = min(1, max(0, (t.y(0) - plot.minY) / plot.height))
-        ctx.fill(band, with: .linearGradient(
-            Gradient(stops: [.init(color: colour.opacity(0.55 * fill), location: 0), .init(color: colour.opacity(0.10 * fill), location: zero),
-                             .init(color: colour.opacity(0.55 * fill), location: 1)]),
-            startPoint: CGPoint(x: 0, y: plot.minY), endPoint: CGPoint(x: 0, y: plot.maxY)))
+        fillShape(&ctx, band, shading(colour, plot, [(0.52, 0), (0.30, zero), (0.52, 1)], palette), palette)
         ctx.stroke(top, with: .color(colour), style: StrokeStyle(lineWidth: 1.25, lineJoin: .round))
         ctx.stroke(bottom, with: .color(colour.opacity(0.8)), style: StrokeStyle(lineWidth: 1.1, lineJoin: .round))
     }

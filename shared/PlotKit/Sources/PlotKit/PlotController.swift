@@ -15,10 +15,14 @@ public final class PlotController {
     public var showsHelp = false
     /// The channels of the file, if the plot has several: the toolbar then has one button that opens the list of them.
     public var series: PlotSeriesSet?
-    /// Whether the list of the channels is shown (as a popover, or in the inspector of the window).
+    /// Whether the list of the channels is shown in a popover (the window has no inspector).
     public var showsChannels = false
-    /// The window shows the list itself, in an inspector bound to `showsChannels`: the button then opens no popover over the plot.
-    public var channelsInInspector = false
+    /// The window has an inspector bound to `showsInspector`, with `PlotInspector` in it: one button of the toolbar shows and hides it,
+    /// and the channels are in it, not in a popover over the plot.
+    public var hasInspector = false
+    public var showsInspector = false
+    /// How the plot looks: what the inspector sets, what the plots follow.
+    public let display = PlotDisplayOptions()
 
     /// The scales a plot lets the person switch, in the toolbar: the plot says which, and the others are not shown.
     public struct ScaleSupport: OptionSet, Sendable {
@@ -69,20 +73,29 @@ public struct PlotToolbarContent: ToolbarContent {
     }
 
     public var body: some ToolbarContent {
-        if let series = controller.series, series.items.count > 1 {
+        channelsPart
+        toolsPart
+        scalesPart
+        trailingPart
+    }
+
+    @ToolbarContentBuilder private var channelsPart: some ToolbarContent {
+        if let series = controller.series, series.items.count > 1, !controller.hasInspector {
             ToolbarItem(placement: .primaryAction) {
                 Button { controller.showsChannels.toggle() } label: {
                     Label("\(labels.channels) \(series.visible.count)/\(series.items.count)", systemImage: "waveform.path.ecg")
                 }
                 .labelStyle(.titleAndIcon)
                 .help(labels.channels)
-                .popover(isPresented: Binding(get: { controller.showsChannels && !controller.channelsInInspector }, set: { controller.showsChannels = $0 }),
-                         arrowEdge: .bottom) {
+                .popover(isPresented: Binding(get: { controller.showsChannels }, set: { controller.showsChannels = $0 }), arrowEdge: .bottom) {
                     PlotChannelList(series: series, labels: labels)
                 }
             }
             gap
         }
+    }
+
+    @ToolbarContentBuilder private var toolsPart: some ToolbarContent {
         ToolbarItemGroup(placement: .primaryAction) {
             modeButton(.zoomBox, "rectangle.dashed", labels.zoomBox)
             modeButton(.pan, "hand.draw", labels.pan)
@@ -102,6 +115,9 @@ public struct PlotToolbarContent: ToolbarContent {
             Button { controller.showEverything() } label: { Label(labels.reset, systemImage: "arrow.counterclockwise") }
                 .help(labels.reset)
         }
+    }
+
+    @ToolbarContentBuilder private var scalesPart: some ToolbarContent {
         gap
         ToolbarItemGroup(placement: .primaryAction) {
             if controller.scaleSupport.contains(.x) {
@@ -125,6 +141,9 @@ public struct PlotToolbarContent: ToolbarContent {
                 .help(labels.yAxis)
             }
         }
+    }
+
+    @ToolbarContentBuilder private var trailingPart: some ToolbarContent {
         gap
         ToolbarItem(placement: .primaryAction) {
             Button { controller.showsHelp.toggle() } label: { Label(labels.gesturesTitle, systemImage: "info.circle") }
@@ -132,6 +151,13 @@ public struct PlotToolbarContent: ToolbarContent {
                 .popover(isPresented: Binding(get: { controller.showsHelp }, set: { controller.showsHelp = $0 }), arrowEdge: .bottom) {
                     PlotGesturesHelp(title: labels.gesturesTitle, sections: labels.gestures)
                 }
+        }
+        if controller.hasInspector {
+            gap
+            ToolbarItem(placement: .primaryAction) {
+                Button { controller.showsInspector.toggle() } label: { Label(labels.inspector, systemImage: "sidebar.trailing") }
+                    .help(labels.inspector)
+            }
         }
     }
 

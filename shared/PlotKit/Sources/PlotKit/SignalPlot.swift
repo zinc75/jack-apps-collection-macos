@@ -49,7 +49,7 @@ public struct SignalPlot: View {
     private var effectiveAmplitude: AmplitudeScale { controller?.yScale ?? amplitude }
 
     public var body: some View {
-        PlotView(content: SignalContent(traces: traces, sampleRate: sampleRate, amplitude: effectiveAmplitude), viewport: $viewport, accent: accent,
+        PlotView(content: SignalContent(traces: traces, sampleRate: sampleRate, amplitude: effectiveAmplitude, gradient: controller?.display.gradient ?? PlotGradient()), viewport: $viewport, accent: accent,
                  labels: labels, controller: controller, previewHover: previewHover, previewMeasure: previewMeasure, previewBox: previewBox)
             .onAppear {
                 guard let controller else { return }
