@@ -55,7 +55,7 @@ struct PlotView: View {
                             autoscale: { viewport = content.autoscale(viewport) }, reset: { viewport = viewport.fitted() })
             }
             GeometryReader { geometry in
-                let layout = PlotLayout(size: geometry.size)
+                let layout = makeLayout(geometry.size)
                 // The commands of the window toolbar act on this plot: they are given again with each state of it.
                 let _ = controller?.zoomAction = { zoomButton($0) }
                 let _ = controller?.autoscaleAction = { viewport = content.autoscale(viewport) }
@@ -65,7 +65,7 @@ struct PlotView: View {
                         PlotDrawing(content: content, viewport: viewport, palette: PlotPalette(accent: accent, isDark: colorScheme == .dark),
                                     scale: displayScale, hover: hover ?? previewHover, box: boxMark ?? previewBox,
                                     measure: mode == .measure ? (measure ?? previewMeasure) : nil, annotations: annotations,
-                                    region: region.map { PlotRegionDraw(range: $0.range.wrappedValue, style: $0.style) })
+                                    region: region.map { PlotRegionDraw(range: $0.range.wrappedValue, style: $0.style, dragging: regionDragPart) })
                             .draw(&context, size: size, cache: cache)
                     }
                     PlotInteractionLayer(layout: layout, mode: mode, events: events(layout), cursors: regionCursors(layout))
@@ -78,13 +78,21 @@ struct PlotView: View {
         }
     }
 
+    /// The layout of the plot: with a rail under it for the sliders of a region, if it has one.
+    private func makeLayout(_ size: CGSize) -> PlotLayout { PlotLayout(size: size, railHeight: region == nil ? 0 : PlotRegionMath.railHeight) }
+
+    private var regionDragPart: PlotRegionPart? {
+        if case .region(let part, _, _)? = drag { return part }
+        return region?.previewDragging
+    }
+
     private var boxMark: PlotMeasure? { if case .box(let b)? = drag { return b } else { return nil } }
 
     private func transform(_ layout: PlotLayout) -> PlotTransform { PlotTransform(viewport: viewport, rect: layout.plot) }
 
     /// A click on a zoom button: around the centre of the plot, on the horizontal axis, with ⌥ on the vertical one, with ⇧ on both.
     private func zoomButton(_ factor: Double) {
-        let layout = PlotLayout(size: plotSize)
+        let layout = makeLayout(plotSize)
         let anchor = CGPoint(x: layout.plot.midX, y: layout.plot.midY)
         let mods = PlotModifiers(NSEvent.modifierFlags)
         viewport = PlotGestures.zoom(viewport, axes: PlotGestures.axes(option: mods.option, shift: mods.shift), factor: factor, anchor: anchor, in: transform(layout))
@@ -130,19 +138,24 @@ struct PlotView: View {
     private func regionPart(at p: CGPoint, _ layout: PlotLayout) -> PlotRegionPart? {
         guard let region else { return nil }
         let t = transform(layout), range = region.range.wrappedValue
-        return PlotRegionMath.part(at: p, lo: t.x(range.lowerBound), hi: t.x(range.upperBound), plot: layout.plot)
+        return PlotRegionMath.part(at: p, lo: t.x(range.lowerBound), hi: t.x(range.upperBound), plot: layout.plot, rail: layout.rail)
     }
 
-    /// The cursors over the handles and the bar of the region.
+    /// The cursors over the knobs and the rail of the region, and over its edges in the plot.
     private func regionCursors(_ layout: PlotLayout) -> [PlotCursorRect] {
         guard let region else { return [] }
-        let t = transform(layout), range = region.range.wrappedValue, plot = layout.plot, tol = PlotRegionMath.tolerance
+        let t = transform(layout), range = region.range.wrappedValue, plot = layout.plot, rail = layout.rail
+        let tol = PlotRegionMath.tolerance, hit = PlotRegionMath.knobHit
         let lo = t.x(range.lowerBound), hi = t.x(range.upperBound)
         var out: [PlotCursorRect] = []
-        if hi - lo > 2 * tol {
-            out.append(PlotCursorRect(rect: CGRect(x: lo + tol, y: plot.minY, width: hi - lo - 2 * tol, height: PlotRegionMath.barHeight), kind: .grab))
+        // The part of the rail between the knobs slides the region; the knobs stretch it.
+        if hi - lo > 2 * hit {
+            out.append(PlotCursorRect(rect: CGRect(x: lo + hit, y: rail.minY, width: hi - lo - 2 * hit, height: rail.height), kind: .grab))
         }
-        for x in [lo, hi] { out.append(PlotCursorRect(rect: CGRect(x: x - tol, y: plot.minY, width: 2 * tol, height: plot.height), kind: .resizeHorizontal)) }
+        for x in [lo, hi] {
+            out.append(PlotCursorRect(rect: CGRect(x: x - hit, y: rail.minY, width: 2 * hit, height: rail.height), kind: .resizeHorizontal))
+            out.append(PlotCursorRect(rect: CGRect(x: x - tol, y: plot.minY, width: 2 * tol, height: plot.height), kind: .resizeHorizontal))
+        }
         return out
     }
 

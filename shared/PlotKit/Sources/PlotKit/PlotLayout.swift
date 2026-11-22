@@ -8,18 +8,22 @@ import Foundation
 public struct PlotLayout: Equatable, Sendable {
     public var size: CGSize
     public var plot: CGRect
-    /// The strip under the plot, where the labels of the horizontal axis are.
+    /// The strip right under the plot that holds the sliders of an editable region (empty when there is none).
+    public var rail: CGRect
+    /// The strip under the plot (and its rail), where the labels of the horizontal axis are.
     public var xAxis: CGRect
     /// The strip left of the plot, where the labels of the vertical axis are.
     public var yAxis: CGRect
 
     public static let left: CGFloat = 66, bottom: CGFloat = 42, top: CGFloat = 12, right: CGFloat = 18
 
-    public init(size: CGSize) {
+    /// - Parameter railHeight: the height of the strip of the sliders of a region, between the plot and the labels of its axis.
+    public init(size: CGSize, railHeight: CGFloat = 0) {
         self.size = size
-        let width = max(0, size.width - Self.left - Self.right), height = max(0, size.height - Self.top - Self.bottom)
+        let width = max(0, size.width - Self.left - Self.right), height = max(0, size.height - Self.top - Self.bottom - railHeight)
         plot = CGRect(x: Self.left, y: Self.top, width: width, height: height)
-        xAxis = CGRect(x: plot.minX, y: plot.maxY, width: width, height: Self.bottom)
+        rail = CGRect(x: plot.minX, y: plot.maxY, width: width, height: railHeight)
+        xAxis = CGRect(x: plot.minX, y: plot.maxY + railHeight, width: width, height: Self.bottom)
         yAxis = CGRect(x: 0, y: plot.minY, width: Self.left, height: height)
     }
 

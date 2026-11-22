@@ -65,7 +65,7 @@ struct PlotDrawing {
     private func crisp(_ v: CGFloat) -> CGFloat { (v * scale).rounded(.down) / scale + 0.5 / scale }
 
     func draw(_ context: inout GraphicsContext, size: CGSize, cache: EnvelopeCache) {
-        let layout = PlotLayout(size: size)
+        let layout = PlotLayout(size: size, railHeight: region == nil ? 0 : PlotRegionMath.railHeight)
         let plot = layout.plot
         guard plot.width > 40, plot.height > 30 else { return }
         let t = PlotTransform(viewport: viewport, rect: plot)
@@ -126,7 +126,7 @@ struct PlotDrawing {
             let text = context.resolve(Text(verbatim: x.labels.texts[i]).font(font()).foregroundColor(palette.text))
             let w = text.measure(in: CGSize(width: 200, height: 30)).width
             if px - w / 2 > lastRight + 8 {
-                context.draw(text, at: CGPoint(x: px, y: plot.maxY + 8), anchor: .top)
+                context.draw(text, at: CGPoint(x: px, y: layout.xAxis.minY + 8), anchor: .top)
                 lastRight = px + w / 2
             }
         }
@@ -155,7 +155,10 @@ struct PlotDrawing {
             rotated.draw(rotated.resolve(Text(verbatim: content.yUnit).font(font(10.5, weight: .semibold)).foregroundColor(palette.text)), at: .zero, anchor: .center)
         }
 
-        if let probe { drawCrosshair(&context, probe, plot) }
+        // The sliders of a region, under the plot.
+        drawRail(&context, t, plot, layout.rail, palette)
+
+        if let probe { drawCrosshair(&context, probe, plot, labelTop: layout.xAxis.minY) }
     }
 
     private func crosshair(_ t: PlotTransform, _ plot: CGRect) -> PlotProbe? {
@@ -203,7 +206,7 @@ struct PlotDrawing {
         drawTooltip(&ctx, content.measureReadout(m), near: CGPoint(x: (a.x + b.x) / 2 + 14, y: (a.y + b.y) / 2 - 10), in: t.rect, border: colour)
     }
 
-    private func drawCrosshair(_ ctx: inout GraphicsContext, _ probe: PlotProbe, _ plot: CGRect) {
+    private func drawCrosshair(_ ctx: inout GraphicsContext, _ probe: PlotProbe, _ plot: CGRect, labelTop: CGFloat) {
         let x = probe.point.x, y = probe.point.y
         guard plot.insetBy(dx: -1, dy: -1).contains(probe.point) || !probe.onData else { return }
         let dash = StrokeStyle(lineWidth: 1 / scale, dash: [3, 3])
@@ -212,7 +215,7 @@ struct PlotDrawing {
         ctx.stroke(v, with: .color(palette.spike), style: dash)
         ctx.stroke(h, with: .color(palette.spike), style: dash)
         let colour = palette.trace(probe.trace, probe.customColor)
-        flag(&ctx, probe.xFlag, at: CGPoint(x: x, y: plot.maxY + 20), anchor: .center, colour: colour)
+        flag(&ctx, probe.xFlag, at: CGPoint(x: x, y: labelTop + 20), anchor: .center, colour: colour)
         flag(&ctx, probe.yFlag, at: CGPoint(x: plot.minX - 4, y: y), anchor: .trailing, colour: colour)
         if probe.onData {
             let marker = Path(ellipseIn: CGRect(x: x - 5.5, y: y - 5.5, width: 11, height: 11))
@@ -222,7 +225,7 @@ struct PlotDrawing {
         }
     }
 
-    private func flag(_ ctx: inout GraphicsContext, _ text: String, at p: CGPoint, anchor: UnitPoint, colour: Color) {
+    func flag(_ ctx: inout GraphicsContext, _ text: String, at p: CGPoint, anchor: UnitPoint, colour: Color) {
         let resolved = ctx.resolve(Text(verbatim: text).font(font(10.5, weight: .semibold)).foregroundColor(.white))
         let size = resolved.measure(in: CGSize(width: 300, height: 30))
         let box = CGRect(x: p.x - size.width * anchor.x - 6, y: p.y - size.height * anchor.y - 2, width: size.width + 12, height: size.height + 4)

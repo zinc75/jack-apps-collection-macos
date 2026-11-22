@@ -6,16 +6,35 @@ import XCTest
 final class RegionTests: XCTestCase {
     private let plot = CGRect(x: 50, y: 10, width: 500, height: 300)
 
-    func testHandlesAndBar() {
-        // The region is from x = 100 to x = 300 on the screen.
+    func testEdgesInThePlot() {
+        // The region is from x = 100 to x = 300 on the screen: its edges are taken in the plot, and nothing else is.
         XCTAssertEqual(PlotRegionMath.part(at: CGPoint(x: 102, y: 150), lo: 100, hi: 300, plot: plot), .start)
         XCTAssertEqual(PlotRegionMath.part(at: CGPoint(x: 297, y: 200), lo: 100, hi: 300, plot: plot), .end)
-        // The bar is at the top of the plot.
-        XCTAssertEqual(PlotRegionMath.part(at: CGPoint(x: 200, y: 15), lo: 100, hi: 300, plot: plot), .move)
-        // Elsewhere in the region, or outside the plot, there is nothing to take.
         XCTAssertNil(PlotRegionMath.part(at: CGPoint(x: 200, y: 150), lo: 100, hi: 300, plot: plot))
-        XCTAssertNil(PlotRegionMath.part(at: CGPoint(x: 200, y: 5), lo: 100, hi: 300, plot: plot))
-        XCTAssertNil(PlotRegionMath.part(at: CGPoint(x: 400, y: 15), lo: 100, hi: 300, plot: plot))
+        XCTAssertNil(PlotRegionMath.part(at: CGPoint(x: 200, y: 15), lo: 100, hi: 300, plot: plot))
+        XCTAssertNil(PlotRegionMath.part(at: CGPoint(x: 400, y: 150), lo: 100, hi: 300, plot: plot))
+    }
+
+    /// The rail under the plot: its knobs stretch the region, the part between them slides it.
+    func testRailKnobsAndSlide() {
+        let rail = CGRect(x: 50, y: 310, width: 500, height: 28)
+        XCTAssertEqual(PlotRegionMath.part(at: CGPoint(x: 105, y: 322), lo: 100, hi: 300, plot: plot, rail: rail), .start)
+        XCTAssertEqual(PlotRegionMath.part(at: CGPoint(x: 295, y: 330), lo: 100, hi: 300, plot: plot, rail: rail), .end)
+        XCTAssertEqual(PlotRegionMath.part(at: CGPoint(x: 200, y: 322), lo: 100, hi: 300, plot: plot, rail: rail), .move)
+        // On the rail but outside the region there is nothing to take.
+        XCTAssertNil(PlotRegionMath.part(at: CGPoint(x: 450, y: 322), lo: 100, hi: 300, plot: plot, rail: rail))
+        // A knob and an edge are reached from the plot too.
+        XCTAssertEqual(PlotRegionMath.part(at: CGPoint(x: 102, y: 150), lo: 100, hi: 300, plot: plot, rail: rail), .start)
+    }
+
+    /// The layout leaves room for the rail between the plot and the labels of the axis.
+    func testLayoutWithARail() {
+        let plain = PlotLayout(size: CGSize(width: 800, height: 400))
+        let railed = PlotLayout(size: CGSize(width: 800, height: 400), railHeight: 28)
+        XCTAssertEqual(railed.plot.height, plain.plot.height - 28)
+        XCTAssertEqual(railed.rail.minY, railed.plot.maxY)
+        XCTAssertEqual(railed.xAxis.minY, railed.rail.maxY)
+        XCTAssertEqual(plain.rail.height, 0)
     }
 
     /// A region so narrow that both handles are within reach: the side of the pointer decides.

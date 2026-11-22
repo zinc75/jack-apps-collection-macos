@@ -3,7 +3,7 @@
 import SwiftUI
 
 /// How an editable region looks and what it may be.
-public struct PlotRegionStyle: Equatable {
+public struct PlotRegionStyle {
     public var color: Color
     /// The smallest length, in the units of the horizontal axis.
     public var minLength: Double
@@ -11,29 +11,41 @@ public struct PlotRegionStyle: Equatable {
     public var bounds: ClosedRange<Double>?
     /// The ends are whole numbers (sample numbers).
     public var snapsToIntegers: Bool
-    /// Written in the bar of the region when it is wide enough.
+    /// Written next to the region when it is wide enough.
     public var name: String
+    /// What is written in the bubbles that follow a slider while it is dragged: a position or a length, in the units of the axis (the sample
+    /// number, and the time it makes, for instance). A whole number when there is none.
+    public var format: (@Sendable (Double) -> String)?
 
-    public init(color: Color = .accentColor, minLength: Double = 1, bounds: ClosedRange<Double>? = nil, snapsToIntegers: Bool = true, name: String = "") {
+    public init(color: Color = .accentColor, minLength: Double = 1, bounds: ClosedRange<Double>? = nil, snapsToIntegers: Bool = true, name: String = "",
+                format: (@Sendable (Double) -> String)? = nil) {
         self.color = color
         self.minLength = minLength
         self.bounds = bounds
         self.snapsToIntegers = snapsToIntegers
         self.name = name
+        self.format = format
     }
+
+    func text(_ value: Double) -> String { format?(value) ?? String(Int(value.rounded())) }
 }
 
-/// A range of the horizontal axis that the person can change in the plot: two handles on its edges and a bar over it to slide it. What
-/// is outside is dimmed and its edges are dotted lines. The range is updated while a handle is dragged; `onCommit` is called when the
-/// drag ends, so that an application that keeps an undo history records one change, not one per movement.
+/// A range of the horizontal axis that the person can change in the plot: two sliders on a rail under the plot, as the levels of the color
+/// adjustment of Preview have (drag a knob to move an end, the part of the rail between them to slide the whole range), and dotted lines
+/// across the plot. What is outside is dimmed. While a slider is dragged, bubbles say where the ends are and how long the range is. The range
+/// is updated while the drag goes on; `onCommit` is called when it ends, so that an application that keeps an undo history records one change.
 public struct PlotRegionEditor {
     public var range: Binding<ClosedRange<Double>>
     public var style: PlotRegionStyle
     public var onCommit: () -> Void
+    /// A part to show as if it were being dragged (the bubbles that tell the positions), for previews and tests.
+    public var previewDragging: PlotRegionPart?
 
-    public init(range: Binding<ClosedRange<Double>>, style: PlotRegionStyle = PlotRegionStyle(), onCommit: @escaping () -> Void = {}) {
+    public init(range: Binding<ClosedRange<Double>>, style: PlotRegionStyle = PlotRegionStyle(), previewDragging: PlotRegionPart? = nil,
+                onCommit: @escaping () -> Void = {}) {
         self.range = range
         self.style = style
+        self.previewDragging = previewDragging
         self.onCommit = onCommit
     }
 }
@@ -41,22 +53,33 @@ public struct PlotRegionEditor {
 /// What a drag on a region moves.
 public enum PlotRegionPart: Equatable, Sendable { case start, end, move }
 
-/// Where the handles are and what a drag does to the range: apart from the view so that it can be tested.
+/// Where the sliders are and what a drag does to the range: apart from the view so that it can be tested.
 enum PlotRegionMath {
-    /// How near the pointer must be to an edge to take its handle, in points.
+    /// How near the pointer must be to an edge of the region in the plot to take it, in points.
     static let tolerance: CGFloat = 6
-    /// The height of the bar that slides the region, at the top of the plot.
-    static let barHeight: CGFloat = 16
+    /// The height of the rail of the sliders, under the plot.
+    static let railHeight: CGFloat = 28
+    /// How near the pointer must be to a knob on the rail to take it, in points.
+    static let knobHit: CGFloat = 11
 
     /// The part of the region under a point of the view, given where its edges are on the screen (`lo` and `hi`).
-    static func part(at p: CGPoint, lo: CGFloat, hi: CGFloat, plot: CGRect) -> PlotRegionPart? {
+    static func part(at p: CGPoint, lo: CGFloat, hi: CGFloat, plot: CGRect, rail: CGRect? = nil) -> PlotRegionPart? {
+        // The rail first: the knobs, then the part of the rail between them.
+        if let rail, !rail.isEmpty, p.y >= rail.minY - 2, p.y <= rail.maxY + 2 {
+            let nearLo = abs(p.x - lo) <= knobHit, nearHi = abs(p.x - hi) <= knobHit
+            if nearLo || nearHi {
+                if nearLo && nearHi { return p.x < (lo + hi) / 2 ? .start : .end }
+                return nearLo ? .start : .end
+            }
+            if p.x > lo, p.x < hi { return .move }
+            return nil
+        }
         guard p.y >= plot.minY, p.y <= plot.maxY, p.x >= plot.minX - tolerance, p.x <= plot.maxX + tolerance else { return nil }
         let nearLo = abs(p.x - lo) <= tolerance, nearHi = abs(p.x - hi) <= tolerance
         if nearLo || nearHi {
             if nearLo && nearHi { return p.x < (lo + hi) / 2 ? .start : .end }
             return nearLo ? .start : .end
         }
-        if p.y <= plot.minY + barHeight, p.x > lo, p.x < hi { return .move }
         return nil
     }
 
@@ -84,10 +107,12 @@ enum PlotRegionMath {
 struct PlotRegionDraw {
     var range: ClosedRange<Double>
     var style: PlotRegionStyle
+    /// The part that is being dragged, if one is: bubbles tell then where the ends are.
+    var dragging: PlotRegionPart?
 }
 
 extension PlotDrawing {
-    /// The dimming outside the region, its dotted edges, its bar and its handles.
+    /// In the plot: the dimming outside the region, its dotted edges and its name.
     func drawRegion(_ ctx: inout GraphicsContext, _ t: PlotTransform, _ plot: CGRect, _ palette: PlotPalette) {
         guard let region else { return }
         let color = region.style.color
@@ -98,26 +123,59 @@ extension PlotDrawing {
             let left = max(hi, plot.minX)
             ctx.fill(Path(CGRect(x: left, y: plot.minY, width: plot.maxX - left, height: plot.height)), with: .color(dim))
         }
-        // The bar over the region: the part that slides it.
-        let barLeft = max(lo, plot.minX), barRight = min(hi, plot.maxX)
-        if barRight > barLeft {
-            let bar = CGRect(x: barLeft, y: plot.minY, width: barRight - barLeft, height: PlotRegionMath.barHeight)
-            ctx.fill(Path(bar), with: .color(color.opacity(0.30)))
-            if !region.style.name.isEmpty, bar.width > 70 {
-                ctx.draw(ctx.resolve(Text(verbatim: region.style.name).font(.system(size: 10, weight: .semibold)).foregroundColor(palette.text)),
-                         at: CGPoint(x: bar.midX, y: bar.midY), anchor: .center)
-            }
-        }
-        // The dotted edges and the grips of the handles.
-        for (x, isStart) in [(lo, true), (hi, false)] where x >= plot.minX - 1 && x <= plot.maxX + 1 {
+        for x in [lo, hi] where x >= plot.minX - 1 && x <= plot.maxX + 1 {
             var line = Path(); line.move(to: CGPoint(x: x, y: plot.minY)); line.addLine(to: CGPoint(x: x, y: plot.maxY))
             ctx.stroke(line, with: .color(color), style: StrokeStyle(lineWidth: 1.4, dash: [3, 3]))
-            let grip = CGRect(x: x - 3.5, y: plot.minY + 1, width: 7, height: PlotRegionMath.barHeight - 2)
-            ctx.fill(Path(roundedRect: grip, cornerRadius: 2.5), with: .color(color))
-            var ridge = Path()
-            ridge.move(to: CGPoint(x: x, y: grip.minY + 3)); ridge.addLine(to: CGPoint(x: x, y: grip.maxY - 3))
-            ctx.stroke(ridge, with: .color(.white.opacity(0.85)), lineWidth: 1)
-            _ = isStart
         }
+        if !region.style.name.isEmpty, hi - lo > 80 {
+            ctx.draw(ctx.resolve(Text(verbatim: region.style.name).font(.system(size: 10, weight: .semibold)).foregroundColor(color)),
+                     at: CGPoint(x: max(lo, plot.minX) + 8, y: plot.minY + 6), anchor: .topLeading)
+        }
+    }
+
+    /// Under the plot: the rail, the part of it that is the region, the two knobs, and the bubbles of a drag.
+    func drawRail(_ ctx: inout GraphicsContext, _ t: PlotTransform, _ plot: CGRect, _ rail: CGRect, _ palette: PlotPalette) {
+        guard let region, rail.height > 0 else { return }
+        let color = region.style.color
+        let lo = t.x(region.range.lowerBound), hi = t.x(region.range.upperBound)
+        let trackY = rail.midY + 2, trackHeight: CGFloat = 4
+        let track = CGRect(x: plot.minX, y: trackY - trackHeight / 2, width: plot.width, height: trackHeight)
+        ctx.fill(Path(roundedRect: track, cornerRadius: 2), with: .color(palette.gridMajor))
+        // The part of the rail that is the region: the one a drag slides.
+        let a = min(max(lo, plot.minX), plot.maxX), b = min(max(hi, plot.minX), plot.maxX)
+        if b > a { ctx.fill(Path(roundedRect: CGRect(x: a, y: trackY - 3, width: b - a, height: 6), cornerRadius: 3), with: .color(color.opacity(region.dragging == .move ? 1 : 0.8))) }
+        for (x, part) in [(lo, PlotRegionPart.start), (hi, PlotRegionPart.end)] where x >= plot.minX - 1 && x <= plot.maxX + 1 {
+            knob(&ctx, at: x, in: rail, color: color, isActive: region.dragging == part)
+        }
+        if let dragging = region.dragging {
+            // Where the ends are, in the units the .conf file uses, and how long the region is.
+            let bubbleY = plot.maxY - 8
+            flag(&ctx, region.style.text(region.range.lowerBound), at: CGPoint(x: lo - 4, y: bubbleY), anchor: .bottomTrailing, colour: color)
+            flag(&ctx, region.style.text(region.range.upperBound), at: CGPoint(x: hi + 4, y: bubbleY), anchor: .bottomLeading, colour: color)
+            if dragging == .move || hi - lo > 150 {
+                flag(&ctx, "↔ " + region.style.text(region.range.upperBound - region.range.lowerBound), at: CGPoint(x: (lo + hi) / 2, y: bubbleY - 28), anchor: .bottom, colour: color)
+            }
+        }
+    }
+
+    /// A knob of the rail: a pentagon that points up to the plot, like the sliders of the levels of Preview, in the colour of the region, with a
+    /// white edge and a bar that says it is a slider.
+    private func knob(_ ctx: inout GraphicsContext, at x: CGFloat, in rail: CGRect, color: Color, isActive: Bool) {
+        let half: CGFloat = isActive ? 10 : 9
+        let tip = rail.minY + 0.5, shoulder = rail.minY + 10, bottom = rail.maxY - 1
+        var shape = Path()
+        shape.move(to: CGPoint(x: x, y: tip))
+        shape.addLine(to: CGPoint(x: x + half, y: shoulder))
+        shape.addLine(to: CGPoint(x: x + half, y: bottom - 2))
+        shape.addQuadCurve(to: CGPoint(x: x + half - 2, y: bottom), control: CGPoint(x: x + half, y: bottom))
+        shape.addLine(to: CGPoint(x: x - half + 2, y: bottom))
+        shape.addQuadCurve(to: CGPoint(x: x - half, y: bottom - 2), control: CGPoint(x: x - half, y: bottom))
+        shape.addLine(to: CGPoint(x: x - half, y: shoulder))
+        shape.closeSubpath()
+        ctx.fill(shape.offsetBy(dx: 0, dy: 1), with: .color(.black.opacity(0.35)))
+        ctx.fill(shape, with: .color(color))
+        ctx.stroke(shape, with: .color(.white.opacity(0.9)), style: StrokeStyle(lineWidth: 1.2, lineJoin: .round))
+        // The bar inside, as the knobs of Preview have.
+        ctx.fill(Path(roundedRect: CGRect(x: x - 4.5, y: bottom - 7, width: 9, height: 3), cornerRadius: 1.5), with: .color(.white))
     }
 }

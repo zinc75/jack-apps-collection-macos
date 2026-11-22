@@ -260,9 +260,21 @@ public struct PlotInspector: View {
         @Bindable var options = controller.display
         VStack(alignment: .leading, spacing: 0) {
             if !controller.hasPhase {
-                PlotInspectorSection(id: "fill", title: labels.fill, isOn: $options.gradient.enabled, info: labels.gradientHelp) {
-                    Toggle(labels.gradientWithSeveral, isOn: $options.gradient.withSeveral).disabled(!options.gradient.enabled)
-                        .toggleStyle(.checkbox)
+                // The fill is always there where a curve has one: what is chosen is its style, not whether it exists.
+                PlotInspectorSection(id: "fill", title: labels.fill, info: labels.gradientHelp) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text(labels.fillStyle).foregroundStyle(.secondary)
+                            Spacer(minLength: 8)
+                            Picker(labels.fillStyle, selection: $options.gradient.enabled) {
+                                Text(labels.fillGradient).tag(true)
+                                Text(labels.fillFlat).tag(false)
+                            }
+                            .labelsHidden().fixedSize()
+                        }
+                        Toggle(labels.gradientWithSeveral, isOn: $options.gradient.withSeveral).disabled(!options.gradient.enabled)
+                            .toggleStyle(.checkbox)
+                    }
                 }
             }
             if controller.hasMagnitude { smoothingSection(options: options) }
