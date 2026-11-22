@@ -64,9 +64,9 @@ struct JackConvolverApp: App {
                 .environment(model)
                 .environment(appearance)
                 .appAccent(appearance)
-                .frame(minWidth: 1130, minHeight: 720)
+                .frame(minWidth: 1130, minHeight: 900)
         }
-        .defaultSize(width: 1180, height: 820)
+        .defaultSize(width: 1180, height: 940)
         .windowResizability(.contentMinSize)
         .commands {
             CommandGroup(replacing: .newItem) {

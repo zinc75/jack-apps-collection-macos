@@ -155,19 +155,20 @@ struct RoundButton: View {
     }
 }
 
-/// On the right: real time or sound files, and the command line.
+/// On the right: the mode (real time or sound files), and the command line.
 struct ModeColumn: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
         @Bindable var model = model
         VStack(alignment: .trailing, spacing: 8) {
-            Picker("Mode", selection: $model.mode) {
-                Text("Temps réel").tag(RunMode.realTime)
-                Text("Sur fichier audio").tag(RunMode.file)
+            // The mode is chosen on the home page; here it is only said, and a click goes there.
+            Button { model.page = .home } label: {
+                Label(model.mode == .file ? "Sur fichier audio" : "Temps réel", systemImage: model.mode == .file ? "waveform.path" : "dot.radiowaves.left.and.right")
+                    .font(.caption).foregroundStyle(.secondary)
             }
-            .pickerStyle(.segmented).labelsHidden().fixedSize().accentTint()
-            .disabled(model.controller.isRunning)
+            .buttonStyle(.plain)
+            .help("Le mode se choisit sur la page d'accueil")
             Button("Ligne de commande générée") { model.showsCommand = true }
                 .disabled(!model.isOpen)
         }
