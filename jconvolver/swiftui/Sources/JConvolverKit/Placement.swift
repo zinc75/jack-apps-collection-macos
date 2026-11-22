@@ -13,9 +13,9 @@ public enum Placeable: Hashable, Sendable {
 
 /// How several things dropped at once follow each other from the pair they are dropped on.
 public enum PlacementMode: Sendable {
-    /// Along the outputs of an input, then on to the next input.
+    /// Along the outputs of the input, as far as the matrix goes.
     case row
-    /// Along the inputs of an output, then on to the next output.
+    /// Along the inputs of the output, as far as the matrix goes.
     case column
     /// Down the diagonal: the next input and the next output.
     case diagonal
@@ -42,11 +42,9 @@ public enum Placement {
             let pair: ConvPair
             switch mode {
             case .row:
-                let p = start.input * outputs + start.output + k
-                pair = ConvPair(input: p / max(outputs, 1), output: p % max(outputs, 1))
+                pair = ConvPair(input: start.input, output: start.output + k)
             case .column:
-                let p = start.output * inputs + start.input + k
-                pair = ConvPair(input: p % max(inputs, 1), output: p / max(inputs, 1))
+                pair = ConvPair(input: start.input + k, output: start.output)
             case .diagonal:
                 pair = ConvPair(input: start.input + k, output: start.output + k)
             }
@@ -54,6 +52,17 @@ public enum Placement {
             items.append(.init(pair: pair, what: what))
         }
         return PlacementPlan(items: items, left: things.count - items.count)
+    }
+
+    /// What is dropped on several chosen pairs. One thing goes on every one of them; several go on the pairs in order, row by row (or
+    /// column by column): the pairs that are left over stay as they are, and the things that are left over are counted in `left`.
+    public static func distribute(_ things: [Placeable], over pairs: [ConvPair], byColumns: Bool = false) -> PlacementPlan {
+        let ordered = pairs.sorted { byColumns ? ($0.output, $0.input) < ($1.output, $1.input) : ($0.input, $0.output) < ($1.input, $1.output) }
+        if things.count == 1, let one = things.first {
+            return PlacementPlan(items: ordered.map { .init(pair: $0, what: one) }, left: 0)
+        }
+        let n = min(things.count, ordered.count)
+        return PlacementPlan(items: (0..<n).map { .init(pair: ordered[$0], what: things[$0]) }, left: things.count - n)
     }
 }
 

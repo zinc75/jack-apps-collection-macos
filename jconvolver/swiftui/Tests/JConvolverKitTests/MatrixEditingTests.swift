@@ -141,13 +141,14 @@ final class MatrixEditingTests: XCTestCase {
 
     func testAlongARow() {
         let plan = Placement.plan(channels(3), from: p(1, 2), mode: .row, inputs: 3, outputs: 4)
-        XCTAssertEqual(plan.items.map(\.pair), [p(1, 2), p(1, 3), p(2, 0)])   // the row ends, the next input goes on
-        XCTAssertEqual(plan.left, 0)
+        XCTAssertEqual(plan.items.map(\.pair), [p(1, 2), p(1, 3)])   // the row ends: what is left over is not placed
+        XCTAssertEqual(plan.left, 1)
     }
 
     func testAlongAColumn() {
         let plan = Placement.plan(channels(4), from: p(1, 0), mode: .column, inputs: 3, outputs: 4)
-        XCTAssertEqual(plan.items.map(\.pair), [p(1, 0), p(2, 0), p(0, 1), p(1, 1)])
+        XCTAssertEqual(plan.items.map(\.pair), [p(1, 0), p(2, 0)])
+        XCTAssertEqual(plan.left, 2)
     }
 
     func testDownTheDiagonal() {

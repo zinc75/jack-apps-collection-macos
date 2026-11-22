@@ -46,6 +46,8 @@ final class AppModel {
     /// Dragging from the list of files to the matrix is done by the application (the system drag and drop does not work well here): the
     /// pointer, in the coordinates of the page of the matrix, while something is dragged; and where the matrix is in those coordinates.
     var dragPointer: CGPoint?
+    /// What is dragged cannot be dropped where the pointer is (several things on several chosen cells).
+    var dropBlocked = false
     var matrixViewport: CGRect = .zero
     var matrixContentFrame: CGRect = .zero
     private(set) var history = DocumentHistory()
@@ -104,6 +106,9 @@ final class AppModel {
     func markLogSeen() { logSeen = (controller.log.entries.last?.id ?? -1) + 1 }
 
     func setBinFiles(_ files: [BinFile]) { binFiles = files }
+    /// The dashed outline goes away once what was copied is pasted; what was copied can still be pasted again.
+    func clearClipboardOutline() { clipboardShape = nil }
+
     func setClipboard(_ items: [ClipboardItem], shape: MatrixSelection.Shape? = nil, size: (inputs: Int, outputs: Int) = (0, 0)) {
         clipboard = items
         clipboardShape = items.isEmpty ? nil : shape

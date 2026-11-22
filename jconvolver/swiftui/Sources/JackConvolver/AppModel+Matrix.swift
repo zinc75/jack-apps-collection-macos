@@ -98,6 +98,10 @@ extension AppModel {
 
     // MARK: Dragging from the list
 
+    /// Several cells are chosen: only one thing from the list (a mono file, a pulse) can go on them, on all of them at once.
+    var placesOnAllChosenCells: Bool { selection.pairs.count > 1 }
+    var canPlaceOnChosenCells: Bool { orderedPicks().count == 1 }
+
     /// Starts to drag what is chosen in the list (the row dragged joins the choice when it is not in it).
     func beginItemDrag(_ items: [Placeable]) {
         if !items.allSatisfy({ picked.contains($0) }) { picked = Set(items) }
@@ -106,7 +110,7 @@ extension AppModel {
 
     /// The end of the drag: what is above the matrix is placed there.
     func endItemDrag() {
-        defer { dragPointer = nil; dropPlan = nil; draggedItems = [] }
+        defer { dragPointer = nil; dropPlan = nil; dropBlocked = false; draggedItems = [] }
         if let plan = dropPlan { apply(plan) }
     }
 
@@ -133,6 +137,7 @@ extension AppModel {
         edit(plan.items.count > 1 ? String(localized: "placement de \(plan.items.count) RI") : String(localized: "placement d'une RI")) {
             summary = $0.apply(stored, partition: partition)
         }
+        if plan.left > 0 { message = String(localized: "\(plan.left) voie(s) n'ont pas trouvé de case : elles sont ignorées.") }
         let pairs = plan.items.map(\.pair)
         selection.select(from: ConvPair(input: pairs.map(\.input).min() ?? 0, output: pairs.map(\.output).min() ?? 0),
                          to: ConvPair(input: pairs.map(\.input).max() ?? 0, output: pairs.map(\.output).max() ?? 0))
@@ -146,9 +151,13 @@ extension AppModel {
             message = String(localized: "Choisissez d'abord des éléments dans la liste de fichiers.")
             return
         }
-        // One thing chosen in the list and several cells chosen in the matrix: it goes on every one of the cells.
-        if items.count == 1, selection.pairs.count > 1 {
-            apply(PlacementPlan(items: selection.pairs.sorted().map { .init(pair: $0, what: items[0]) }, left: 0))
+        // Several cells chosen in the matrix: one thing goes on all of them; several things cannot be placed on a set of cells.
+        if selection.pairs.count > 1 {
+            guard items.count == 1 else {
+                message = String(localized: "Plusieurs RI ne peuvent pas être placées sur plusieurs cases : choisissez une seule case, ou une seule RI.")
+                return
+            }
+            apply(Placement.distribute(items, over: selection.pairs))
             return
         }
         let b = selection.bounds
@@ -188,6 +197,7 @@ extension AppModel {
         let items = clipboard
         var count = 0
         edit(String(localized: "collage")) { count = $0.paste(items, at: start) }
+        clearClipboardOutline()
         // What was pasted is chosen, as a block of the size of what was copied (as far as the matrix goes).
         if let document {
             selection.select(from: start, to: ConvPair(input: min(start.input + clipboardSize.inputs - 1, document.inputCount - 1),

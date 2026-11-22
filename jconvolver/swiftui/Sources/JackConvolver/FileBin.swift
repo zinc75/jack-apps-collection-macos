@@ -76,12 +76,17 @@ struct FileBin: View {
             Divider()
             VStack(alignment: .leading, spacing: 6) {
                 Menu("Placer à la sélection") {
-                    Button("En ligne") { model.placePicked(mode: .row) }
-                    Button("En colonne") { model.placePicked(mode: .column) }
-                    Button("En diagonale") { model.placePicked(mode: .diagonal) }
+                    if model.placesOnAllChosenCells {
+                        Button("Sur toutes les cases choisies") { model.placePicked(mode: .row) }
+                            .disabled(!model.canPlaceOnChosenCells)
+                    } else {
+                        Button("En ligne") { model.placePicked(mode: .row) }
+                        Button("En colonne") { model.placePicked(mode: .column) }
+                        Button("En diagonale") { model.placePicked(mode: .diagonal) }
+                    }
                 }
                 .disabled(model.picked.isEmpty)
-                Text("Glissez sur la matrice. Plusieurs éléments : en ligne, ⌥ en colonne, ⇧ en diagonale.")
+                Text("Glissez sur la matrice. Plusieurs éléments : en ligne, ⌥ en colonne, ⇧ en diagonale ; ce qui dépasse la matrice n'est pas placé.")
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
         }

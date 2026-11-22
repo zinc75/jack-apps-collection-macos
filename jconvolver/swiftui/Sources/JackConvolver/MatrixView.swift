@@ -51,10 +51,16 @@ struct DraggedItemsBadge: View {
 
     var body: some View {
         if let pointer = model.dragPointer {
-            Text("\(model.draggedItems.count) RI")
-                .font(.callout.weight(.semibold)).foregroundStyle(.white)
-                .padding(.horizontal, 10).padding(.vertical, 4)
-                .background(accent, in: Capsule())
+            Group {
+                if model.dropBlocked {
+                    Label("Une seule RI sur plusieurs cases", systemImage: "nosign")
+                } else {
+                    Text("\(model.draggedItems.count) RI")
+                }
+            }
+            .font(.callout.weight(.semibold)).foregroundStyle(.white)
+            .padding(.horizontal, 10).padding(.vertical, 4)
+            .background(model.dropBlocked ? Color.red : accent, in: Capsule())
                 .position(x: pointer.x + 24, y: pointer.y + 20)
                 .allowsHitTesting(false)
         }
@@ -73,14 +79,13 @@ struct MatrixToolbar: View {
                 Label("Tableau", systemImage: "tablecells").tag(ViewMode.table)
             }
             .pickerStyle(.segmented).labelsHidden().fixedSize().accentTint()
-            Text(verbatim: summary).foregroundStyle(.secondary).padding(.leading, 6)
-            Spacer()
-            Button { model.showsResize = true } label: { Label("Entrées et sorties…", systemImage: "arrow.up.left.and.arrow.down.right") }
-            if model.mode == .realTime {
-                Button { model.showsPortNames = true } label: { Label("Noms des ports JACK…", systemImage: "pencil") }
+            Text(verbatim: summary).foregroundStyle(.secondary).padding(.leading, 6).lineLimit(1).fixedSize()
+            Spacer(minLength: 8)
+            // The words go when there is no room for them: the pictures stay, with their help.
+            ViewThatFits(in: .horizontal) {
+                actions(labels: true)
+                actions(labels: false)
             }
-            Button { model.clearAll() } label: { Label("Tout vider", systemImage: "trash") }
-                .disabled((model.document?.placedPairs ?? 0) == 0)
             Button { model.undo() } label: { Image(systemName: "arrow.uturn.backward") }
                 .disabled(!model.canUndo).help("Annuler").keyboardShortcut("z", modifiers: .command)
             Button { model.redo() } label: { Image(systemName: "arrow.uturn.forward") }
@@ -88,6 +93,24 @@ struct MatrixToolbar: View {
             Button(model.savesAsNew ? "Enregistrer sous…" : "Enregistrer") { model.save() }
                 .buttonStyle(.borderedProminent).accentTint().disabled(!model.isEdited && !model.savesAsNew)
         }
+    }
+
+    private func actions(labels: Bool) -> some View {
+        HStack(spacing: 8) {
+            Button { model.showsResize = true } label: { actionLabel("Entrées et sorties…", "arrow.up.left.and.arrow.down.right", labels) }
+                .help("Entrées et sorties…")
+            if model.mode == .realTime {
+                Button { model.showsPortNames = true } label: { actionLabel("Noms des ports JACK…", "pencil", labels) }
+                    .help("Noms des ports JACK…")
+            }
+            Button { model.clearAll() } label: { actionLabel("Tout vider", "trash", labels) }
+                .disabled((model.document?.placedPairs ?? 0) == 0).help("Tout vider")
+        }
+    }
+
+    @ViewBuilder
+    private func actionLabel(_ title: LocalizedStringKey, _ symbol: String, _ labels: Bool) -> some View {
+        if labels { Label(title, systemImage: symbol) } else { Image(systemName: symbol) }
     }
 
     private var summary: String {

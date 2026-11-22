@@ -96,3 +96,28 @@ final class LatencyBeyondFileTests: XCTestCase {
         XCTAssertFalse(ConvValidator.problems(in: e, context: context).contains { if case .latencyBeyondFile = $0.kind { true } else { false } })
     }
 }
+
+final class DistributeTests: XCTestCase {
+    private func p(_ i: Int, _ o: Int) -> ConvPair { ConvPair(input: i, output: o) }
+    private let a = Placeable.channel(path: "a.wav", channel: 1), b = Placeable.channel(path: "a.wav", channel: 2)
+
+    func testOneThingGoesOnEveryPair() {
+        let plan = Placement.distribute([a], over: [p(1, 1), p(0, 2), p(0, 0)])
+        XCTAssertEqual(plan.items.map(\.pair), [p(0, 0), p(0, 2), p(1, 1)])
+        XCTAssertEqual(plan.left, 0)
+    }
+
+    func testSeveralThingsFollowTheReadingOrderAndLeaveTheRestEmpty() {
+        let plan = Placement.distribute([a, b], over: [p(0, 0), p(0, 1), p(1, 0), p(1, 1)])
+        XCTAssertEqual(plan.items.map(\.pair), [p(0, 0), p(0, 1)])
+        XCTAssertEqual(plan.left, 0)
+        let columns = Placement.distribute([a, b], over: [p(0, 0), p(0, 1), p(1, 0), p(1, 1)], byColumns: true)
+        XCTAssertEqual(columns.items.map(\.pair), [p(0, 0), p(1, 0)])
+    }
+
+    func testThingsLeftOverAreCounted() {
+        let plan = Placement.distribute([a, b, .dirac], over: [p(0, 0), p(0, 1)])
+        XCTAssertEqual(plan.items.count, 2)
+        XCTAssertEqual(plan.left, 1)
+    }
+}

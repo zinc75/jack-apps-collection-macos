@@ -45,12 +45,24 @@ struct MatrixCanvas: View {
 
     /// While something is dragged from the list: where it would land.
     private func updateDrop(_ pointer: CGPoint?, n: Int, m: Int, cs: CGFloat) {
+        model.dropBlocked = false
         guard let pointer, model.matrixViewport.contains(pointer), !model.draggedItems.isEmpty else { model.dropPlan = nil; return }
         let local = CGPoint(x: pointer.x - model.matrixContentFrame.minX, y: pointer.y - model.matrixContentFrame.minY)
         guard let pair = pair(at: local, n: n, m: m, cs: cs) else { model.dropPlan = nil; return }
         let flags = NSEvent.modifierFlags
         let mode: PlacementMode = flags.contains(.option) ? .column : flags.contains(.shift) ? .diagonal : .row
-        model.dropPlan = model.plan(model.draggedItems, from: pair, mode: mode)
+        // Dropped on one of several chosen cells: one thing goes on all of them; several things cannot be dropped there.
+        model.dropBlocked = false
+        if model.selection.pairs.count > 1, model.selection.contains(pair) {
+            if model.draggedItems.count == 1 {
+                model.dropPlan = Placement.distribute(model.draggedItems, over: model.selection.pairs)
+            } else {
+                model.dropPlan = nil
+                model.dropBlocked = true
+            }
+        } else {
+            model.dropPlan = model.plan(model.draggedItems, from: pair, mode: mode)
+        }
     }
 
     // MARK: The menu of a right-click
@@ -70,12 +82,17 @@ struct MatrixCanvas: View {
         }
         .disabled(!hasImpulse)
         Divider()
-        Menu("Placer ici ce qui est choisi dans la liste") {
-            Button("En ligne") { model.placePicked(mode: .row) }
-            Button("En colonne") { model.placePicked(mode: .column) }
-            Button("En diagonale") { model.placePicked(mode: .diagonal) }
+        if model.placesOnAllChosenCells {
+            Button("Placer sur toutes les cases choisies") { model.placePicked(mode: .row) }
+                .disabled(!model.canPlaceOnChosenCells)
+        } else {
+            Menu("Placer ici ce qui est choisi dans la liste") {
+                Button("En ligne") { model.placePicked(mode: .row) }
+                Button("En colonne") { model.placePicked(mode: .column) }
+                Button("En diagonale") { model.placePicked(mode: .diagonal) }
+            }
+            .disabled(model.picked.isEmpty)
         }
-        .disabled(model.picked.isEmpty)
         Divider()
         Button("Sélectionner toute la ligne") {
             if let p = model.hoverPair ?? Optional(ConvPair(input: model.selection.bounds.firstInput, output: 0)), let d = model.document {
@@ -195,12 +212,26 @@ struct MatrixCanvas: View {
             }
         }
 
+        // A drop that cannot be done: the chosen cells are outlined in red.
+        if model.dropBlocked {
+            for pair in model.selection.pairs {
+                let cell = rect(pair, cs: cs).insetBy(dx: 1, dy: 1)
+                context.fill(Path(roundedRect: cell, cornerRadius: radius), with: .color(Color.red.opacity(0.28)))
+                context.stroke(Path(roundedRect: cell.insetBy(dx: 0.75, dy: 0.75), cornerRadius: radius), with: .color(.red), style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+            }
+        }
+
         // What a drop would place.
         if let plan = model.dropPlan {
-            for item in plan.items {
+            for (order, item) in plan.items.enumerated() {
                 let cell = rect(item.pair, cs: cs).insetBy(dx: 1, dy: 1)
                 context.fill(Path(roundedRect: cell, cornerRadius: radius), with: .color(accent.opacity(0.38)))
                 context.stroke(Path(roundedRect: cell.insetBy(dx: 0.75, dy: 0.75), cornerRadius: radius), with: .color(accent), lineWidth: 1.5)
+                // The order in which they are placed, when there are several (it shows where a row ends and the next one goes on).
+                if plan.items.count > 1, cs >= 16 {
+                    context.draw(Text(verbatim: "\(order + 1)").font(.system(size: min(13, cs * 0.5), weight: .semibold)).foregroundColor(.white),
+                                 at: CGPoint(x: cell.midX, y: cell.midY), anchor: .center)
+                }
             }
         }
 
