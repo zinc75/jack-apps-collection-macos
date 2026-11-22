@@ -4,7 +4,7 @@ import CoreGraphics
 import Foundation
 
 /// How an axis maps values to positions.
-public enum AxisScale: Sendable, Equatable {
+public enum AxisScale: Sendable, Hashable {
     case linear, logarithmic
 
     /// The value in the space where a position is proportional to the distance (the logarithm on a logarithmic axis).
@@ -90,7 +90,11 @@ public struct AxisState: Equatable, Sendable {
 
     /// Shows a range of values (a box zoom, a handle of a minimap), kept inside the bounds and above the smallest span.
     public func showing(_ values: ClosedRange<Double>) -> AxisState {
-        with(uLow: scale.forward(values.lowerBound), uHigh: scale.forward(values.upperBound))
+        var out = with(uLow: scale.forward(values.lowerBound), uHigh: scale.forward(values.upperBound))
+        // A logarithmic axis goes through powers of ten and back: the ends that were asked for come back as they were asked.
+        func exact(_ got: Double, _ asked: Double) -> Double { abs(got - asked) <= 1e-12 * max(abs(got), abs(asked), 1) ? asked : got }
+        out.range = exact(out.range.lowerBound, values.lowerBound)...exact(out.range.upperBound, values.upperBound)
+        return out
     }
 
     /// The same axis on another scale, as a person who switches between linear and logarithmic wants it: the range stays as

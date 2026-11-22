@@ -16,6 +16,13 @@ struct PlotPalette {
     var spike: Color { isDark ? Color.white.opacity(0.42) : Color.black.opacity(0.42) }
     var tooltip: Color { isDark ? Color(white: 0.12, opacity: 0.94) : Color(white: 1, opacity: 0.95) }
     var tooltipText: Color { isDark ? .white : .black }
+    /// The colour of the i-th trace (a channel, a curve): the accent first, then colours that are neither the box's nor the measure's.
+    func trace(_ i: Int, _ custom: Color? = nil) -> Color {
+        if let custom { return custom }
+        let others: [Color] = [Color(red: 0.25, green: 0.78, blue: 0.68), Color(red: 1.0, green: 0.45, blue: 0.62), Color(red: 0.48, green: 0.84, blue: 0.36)]
+        return i == 0 ? accent : others[(i - 1) % others.count]
+    }
+
     /// The box of a zoom has a colour of its own too: neither the signal's nor the measure's.
     var box: Color { isDark ? Color(red: 0.32, green: 0.72, blue: 1.0) : Color(red: 0.0, green: 0.46, blue: 0.86) }
     /// The measure has a colour of its own, to tell it from the signal.
@@ -33,30 +40,22 @@ struct PlotMeasure: Equatable {
     var b: CGPoint
 }
 
-/// A measure between two points of the data (a sample and a level), so that it follows the signal when the view moves.
+/// A measure between two points of the data, so that it follows the data when the view moves.
 struct PlotSegment: Equatable {
     var x0: Double, y0: Double
     var x1: Double, y1: Double
 }
 
-/// What is drawn: the axes and their grid, the signal (as the envelope of its columns, or as stems when the samples are far
-/// enough apart to be seen), the crosshair with its readouts, the box of a zoom and the measure.
+/// What is drawn that every plot has: the axes with their grid and labels, the box of a zoom, the measure, and the crosshair
+/// with its flags and its card. The data themselves are drawn by the content of the plot.
 struct PlotDrawing {
-    var signal: PlotSignal
+    var content: any PlotContent
     var viewport: PlotViewport
-    var sampleRate: Double?
-    var amplitude: AmplitudeScale
     var palette: PlotPalette
     var scale: CGFloat
     var hover: CGPoint?
     var box: PlotMeasure?
     var measure: PlotSegment?
-    var labels: PlotLabels
-
-    /// Pixels between two samples, from which the samples are drawn one by one.
-    static let stemThreshold: CGFloat = 7
-    /// From this many pixels between two samples, the samples are joined by a line (below it, the columns hold several).
-    static let lineThreshold: CGFloat = 1
 
     private func font(_ size: CGFloat = 10.5, weight: Font.Weight = .regular) -> Font { .system(size: size, weight: weight).monospacedDigit() }
 
@@ -80,9 +79,8 @@ struct PlotDrawing {
 
         // Grid, minor first.
         for pass in 0..<2 {
-            for (i, tick) in x.set.ticks.enumerated() where tick.isMajor == (pass == 1) {
-                _ = i
-                let px = crisp(t.x(tick.value * x.toSamples))
+            for tick in x.set.ticks where tick.isMajor == (pass == 1) {
+                let px = crisp(t.x(tick.value * x.divisor))
                 var p = Path(); p.move(to: CGPoint(x: px, y: plot.minY)); p.addLine(to: CGPoint(x: px, y: plot.maxY))
                 context.stroke(p, with: .color(tick.isMajor ? palette.gridMajor : palette.gridMinor), lineWidth: line)
             }
@@ -93,15 +91,15 @@ struct PlotDrawing {
             }
         }
 
-        // The signal, clipped to the plot.
+        // The data, clipped to the plot.
         context.drawLayer { layer in
             layer.clip(to: Path(plot))
-            if !amplitude.isDecibels, viewport.y.range.contains(0) {
+            if content.hasZeroLine, viewport.y.scale == .linear, viewport.y.range.contains(0) {
                 let y0 = crisp(t.y(0))
                 var z = Path(); z.move(to: CGPoint(x: plot.minX, y: y0)); z.addLine(to: CGPoint(x: plot.maxX, y: y0))
                 layer.stroke(z, with: .color(palette.zero), lineWidth: line)
             }
-            drawSignal(&layer, t, plot, cache)
+            content.drawData(&layer, t, palette, scale, cache)
             if let box { drawBox(&layer, box) }
             if let measure { drawMeasure(&layer, measure, t) }
         }
@@ -113,14 +111,14 @@ struct PlotDrawing {
         context.stroke(frame, with: .color(palette.axis), lineWidth: line)
 
         // A crosshair puts a flag on each axis: the labels under it are left out.
-        let crosshair = crosshairPoint(t, plot)
+        let probe = crosshair(t, plot)
         var lastRight = -CGFloat.infinity
         for (i, tick) in x.set.ticks.enumerated() {
-            let px = crisp(t.x(tick.value * x.toSamples))
+            let px = crisp(t.x(tick.value * x.divisor))
             var m = Path(); m.move(to: CGPoint(x: px, y: plot.maxY)); m.addLine(to: CGPoint(x: px, y: plot.maxY + (tick.isMajor ? 5 : 3)))
             context.stroke(m, with: .color(palette.axis), lineWidth: line)
             guard tick.isLabelled, !x.labels.texts[i].isEmpty else { continue }
-            if let c = crosshair, abs(px - c.point.x) < 54 { continue }
+            if let c = probe, abs(px - c.point.x) < 54 { continue }
             let text = context.resolve(Text(verbatim: x.labels.texts[i]).font(font()).foregroundColor(palette.text))
             let w = text.measure(in: CGSize(width: 200, height: 30)).width
             if px - w / 2 > lastRight + 8 {
@@ -134,7 +132,7 @@ struct PlotDrawing {
             var m = Path(); m.move(to: CGPoint(x: plot.minX - (tick.isMajor ? 5 : 3), y: py)); m.addLine(to: CGPoint(x: plot.minX, y: py))
             context.stroke(m, with: .color(palette.axis), lineWidth: line)
             guard tick.isLabelled, !yLabels.texts[i].isEmpty else { continue }
-            if let c = crosshair, abs(py - c.point.y) < 14 { continue }
+            if let c = probe, abs(py - c.point.y) < 14 { continue }
             let text = context.resolve(Text(verbatim: yLabels.texts[i]).font(font()).foregroundColor(palette.text))
             let h = text.measure(in: CGSize(width: 200, height: 30)).height
             if py - h / 2 > lastBottom + 2 {
@@ -143,169 +141,37 @@ struct PlotDrawing {
             }
         }
         // The units, once on each axis.
-        let xUnit = x.labels.unit.isEmpty ? labels.samples : x.labels.unit
+        let xUnit = x.labels.unit.isEmpty ? content.xCaption : x.labels.unit
         context.draw(context.resolve(Text(verbatim: xUnit).font(font(10.5, weight: .semibold)).foregroundColor(palette.text)),
                      at: CGPoint(x: plot.midX, y: size.height - 6), anchor: .bottom)
-        if !amplitude.unit.isEmpty {
+        if !content.yUnit.isEmpty {
             var rotated = context
             rotated.translateBy(x: 12, y: plot.midY)
             rotated.rotate(by: .degrees(-90))
-            rotated.draw(rotated.resolve(Text(verbatim: amplitude.unit).font(font(10.5, weight: .semibold)).foregroundColor(palette.text)), at: .zero, anchor: .center)
+            rotated.draw(rotated.resolve(Text(verbatim: content.yUnit).font(font(10.5, weight: .semibold)).foregroundColor(palette.text)), at: .zero, anchor: .center)
         }
 
-        if let crosshair { drawCrosshair(&context, crosshair, t, plot) }
+        if let probe { drawCrosshair(&context, probe, plot) }
     }
 
-    /// Where the crosshair is: under the pointer, or on the nearest sample when the samples can be told apart. The labels of the
-    /// axes that it covers are left out, so this is worked out once for the labels and the crosshair.
-    private struct Crosshair {
-        var point: CGPoint
-        /// The sample it is on, when it is on one.
-        var index: Int?
-    }
-
-    private func crosshairPoint(_ t: PlotTransform, _ plot: CGRect) -> Crosshair? {
+    private func crosshair(_ t: PlotTransform, _ plot: CGRect) -> PlotProbe? {
         guard let hover, plot.contains(hover), box == nil else { return nil }
-        let span = viewport.x.range.upperBound - viewport.x.range.lowerBound
-        let snapped = span > 0 && plot.width / CGFloat(span) >= Self.lineThreshold
-        let i = Int(t.xValue(hover.x).rounded())
-        if snapped, i >= 0, i < signal.count {
-            return Crosshair(point: CGPoint(x: t.x(Double(i)), y: t.y(amplitude.value(signal.sample(at: i)))), index: i)
-        }
-        return Crosshair(point: hover, index: nil)
+        return content.probe(at: hover, t)
     }
 
     // MARK: The axes
 
-    private struct XTicks { var set: TickSet; var labels: AxisLabels; var toSamples: Double }
+    private struct XTicks { var set: TickSet; var labels: AxisLabels; var divisor: Double }
 
-    /// The graduations of the horizontal axis: in time when the sample rate is known, in whole samples otherwise.
+    /// The graduations of the horizontal axis, in the units the content gives (seconds for a time axis in samples).
     private func xAxisTicks(width: CGFloat) -> XTicks {
         let target = max(2, Int(width / 100))
         let r = viewport.x.range
-        let logarithmic = viewport.x.scale == .logarithmic
-        if let sr = sampleRate, sr > 0 {
-            let seconds = (r.lowerBound / sr)...(r.upperBound / sr)
-            let set = logarithmic ? Ticks.logarithmic(in: seconds) : Ticks.linear(in: seconds, approximately: target)
-            return XTicks(set: set, labels: TickLabels.labels(for: set, unit: "s"), toSamples: sr)
-        }
-        let set = logarithmic ? Ticks.logarithmic(in: r) : Ticks.linear(in: r, approximately: target, integersOnly: true)
-        return XTicks(set: set, labels: TickLabels.labels(for: set), toSamples: 1)
-    }
-
-    // MARK: The signal
-
-    private func drawSignal(_ ctx: inout GraphicsContext, _ t: PlotTransform, _ plot: CGRect, _ cache: EnvelopeCache) {
-        let range = viewport.x.range
-        let span = range.upperBound - range.lowerBound
-        guard span > 0, signal.count > 0 else { return }
-        let pixelsPerSample = plot.width / CGFloat(span)
-        if pixelsPerSample >= Self.stemThreshold {
-            drawStems(&ctx, t, plot, pixelsPerSample)
-        } else if pixelsPerSample >= Self.lineThreshold {
-            drawSampleLine(&ctx, t, plot)
-        } else {
-            drawEnvelope(&ctx, t, plot, cache)
-        }
-    }
-
-    /// The samples joined by a line, with the area to the zero line (or to the floor in decibels) filled: what a signal looks
-    /// like between the envelope, where a column holds many samples, and the stems, where each sample can be seen alone.
-    private func drawSampleLine(_ ctx: inout GraphicsContext, _ t: PlotTransform, _ plot: CGRect) {
-        let range = viewport.x.range
-        let first = max(0, Int(floor(range.lowerBound)) - 1), last = min(signal.count - 1, Int(ceil(range.upperBound)) + 1)
-        guard first < last else { return }
-        var line = Path()
-        for i in first...last {
-            let p = CGPoint(x: t.x(Double(i)), y: t.y(amplitude.value(signal.sample(at: i))))
-            if i == first { line.move(to: p) } else { line.addLine(to: p) }
-        }
-        let baseline = amplitude.isDecibels ? plot.maxY + 2 : t.y(0)
-        var area = line
-        area.addLine(to: CGPoint(x: t.x(Double(last)), y: baseline))
-        area.addLine(to: CGPoint(x: t.x(Double(first)), y: baseline))
-        area.closeSubpath()
-        if amplitude.isDecibels {
-            ctx.fill(area, with: .linearGradient(Gradient(colors: [palette.accent.opacity(0.5), palette.accent.opacity(0.03)]),
-                                                 startPoint: CGPoint(x: 0, y: plot.minY), endPoint: CGPoint(x: 0, y: plot.maxY)))
-        } else {
-            let zero = min(1, max(0, (t.y(0) - plot.minY) / plot.height))
-            ctx.fill(area, with: .linearGradient(
-                Gradient(stops: [.init(color: palette.accent.opacity(0.5), location: 0), .init(color: palette.accent.opacity(0.08), location: zero),
-                                 .init(color: palette.accent.opacity(0.5), location: 1)]),
-                startPoint: CGPoint(x: 0, y: plot.minY), endPoint: CGPoint(x: 0, y: plot.maxY)))
-        }
-        ctx.stroke(line, with: .color(palette.accent), style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
-    }
-
-    /// One sample per stem with a head, as an audio editor shows them when it is zoomed in.
-    private func drawStems(_ ctx: inout GraphicsContext, _ t: PlotTransform, _ plot: CGRect, _ pixelsPerSample: CGFloat) {
-        let range = viewport.x.range
-        let first = max(0, Int(floor(range.lowerBound)) - 1), last = min(signal.count - 1, Int(ceil(range.upperBound)) + 1)
-        guard first <= last else { return }
-        let baseline = amplitude.isDecibels ? plot.maxY : t.y(0)
-        let radius: CGFloat = pixelsPerSample >= 16 ? 3.6 : 3
-        var stems = Path(), heads = Path()
-        for i in first...last {
-            let px = t.x(Double(i)), py = t.y(amplitude.value(signal.sample(at: i)))
-            stems.move(to: CGPoint(x: px, y: baseline)); stems.addLine(to: CGPoint(x: px, y: py))
-            heads.addEllipse(in: CGRect(x: px - radius, y: py - radius, width: 2 * radius, height: 2 * radius))
-        }
-        ctx.stroke(stems, with: .color(palette.accent.opacity(0.75)), lineWidth: 1.3)
-        ctx.fill(heads, with: .color(palette.accent))
-        ctx.stroke(heads, with: .color(palette.isDark ? Color.white.opacity(0.55) : Color.white.opacity(0.9)), lineWidth: 0.8)
-    }
-
-    /// The envelope of the columns: the band between the smallest and the largest sample of each (or the line of the largest
-    /// magnitude in decibels), with a gradient, and a stroke on its edges.
-    private func drawEnvelope(_ ctx: inout GraphicsContext, _ t: PlotTransform, _ plot: CGRect, _ cache: EnvelopeCache) {
-        let columns = min(4000, max(2, Int(plot.width * scale)))
-        let range = viewport.x.range
-        signal.envelope(from: range.lowerBound, to: range.upperBound, columns: columns, into: &cache.envelope)
-        let e = cache.envelope
-        guard !e.valid.isEmpty else { return }
-        let step = plot.width / CGFloat(columns)
-        func px(_ c: Int) -> CGFloat { plot.minX + (CGFloat(c) + 0.5) * step }
-
-        if amplitude.isDecibels {
-            var line = Path()
-            for c in e.valid {
-                let p = CGPoint(x: px(c), y: t.y(amplitude.value(max(abs(e.lo[c]), abs(e.hi[c])))))
-                if c == e.valid.lowerBound { line.move(to: p) } else { line.addLine(to: p) }
-            }
-            var area = line
-            area.addLine(to: CGPoint(x: px(e.valid.upperBound - 1), y: plot.maxY + 2))
-            area.addLine(to: CGPoint(x: px(e.valid.lowerBound), y: plot.maxY + 2))
-            area.closeSubpath()
-            ctx.fill(area, with: .linearGradient(Gradient(colors: [palette.accent.opacity(0.5), palette.accent.opacity(0.03)]),
-                                                 startPoint: CGPoint(x: 0, y: plot.minY), endPoint: CGPoint(x: 0, y: plot.maxY)))
-            ctx.stroke(line, with: .color(palette.accent), style: StrokeStyle(lineWidth: 1.4, lineJoin: .round))
-            return
-        }
-
-        var top = Path(), bottom = Path(), band = Path()
-        for c in e.valid {
-            var yHi = t.y(Double(e.hi[c])), yLo = t.y(Double(e.lo[c]))
-            if yLo - yHi < 1 { let mid = (yHi + yLo) / 2; yHi = mid - 0.5; yLo = mid + 0.5 }
-            let p = CGPoint(x: px(c), y: yHi)
-            if c == e.valid.lowerBound { top.move(to: p); band.move(to: p) } else { top.addLine(to: p); band.addLine(to: p) }
-        }
-        for c in e.valid.reversed() {
-            var yHi = t.y(Double(e.hi[c])), yLo = t.y(Double(e.lo[c]))
-            if yLo - yHi < 1 { let mid = (yHi + yLo) / 2; yHi = mid - 0.5; yLo = mid + 0.5 }
-            let p = CGPoint(x: px(c), y: yLo)
-            band.addLine(to: p)
-            if c == e.valid.upperBound - 1 { bottom.move(to: p) } else { bottom.addLine(to: p) }
-        }
-        band.closeSubpath()
-        // Strong at the extremes, light around the zero line.
-        let zero = min(1, max(0, (t.y(0) - plot.minY) / plot.height))
-        ctx.fill(band, with: .linearGradient(
-            Gradient(stops: [.init(color: palette.accent.opacity(0.55), location: 0), .init(color: palette.accent.opacity(0.10), location: zero),
-                             .init(color: palette.accent.opacity(0.55), location: 1)]),
-            startPoint: CGPoint(x: 0, y: plot.minY), endPoint: CGPoint(x: 0, y: plot.maxY)))
-        ctx.stroke(top, with: .color(palette.accent), style: StrokeStyle(lineWidth: 1.25, lineJoin: .round))
-        ctx.stroke(bottom, with: .color(palette.accent.opacity(0.8)), style: StrokeStyle(lineWidth: 1.1, lineJoin: .round))
+        let d = content.xDivisor > 0 ? content.xDivisor : 1
+        let shown = (r.lowerBound / d)...(r.upperBound / d)
+        let set = viewport.x.scale == .logarithmic ? Ticks.logarithmic(in: shown)
+                                                   : Ticks.linear(in: shown, approximately: target, integersOnly: content.xIntegers && d == 1)
+        return XTicks(set: set, labels: TickLabels.labels(for: set, unit: content.xUnit), divisor: d)
     }
 
     // MARK: Interaction marks
@@ -330,53 +196,33 @@ struct PlotDrawing {
             ctx.fill(dot, with: .color(colour))
             ctx.stroke(dot, with: .color(palette.isDark ? .black.opacity(0.5) : .white), lineWidth: 1.2)
         }
-        let dx = m.x1 - m.x0, dy = m.y1 - m.y0
-        var lines: [String] = []
-        if let sr = sampleRate, sr > 0 {
-            lines.append("Δt = " + TickLabels.engineering(dx / sr, unit: "s") + "  (\(Int(dx.rounded())) n)")
-            if dx != 0 { lines.append("1/Δt = " + TickLabels.engineering(abs(sr / dx), unit: "Hz")) }
-        } else {
-            lines.append("Δn = \(Int(dx.rounded()))")
-        }
-        lines.append("Δ = " + (amplitude.isDecibels ? TickLabels.number(dy, decimals: 1) + " dB" : TickLabels.number(dy, decimals: 4)))
-        drawTooltip(&ctx, lines, near: CGPoint(x: (a.x + b.x) / 2 + 14, y: (a.y + b.y) / 2 - 10), in: t.rect, border: colour)
+        drawTooltip(&ctx, content.measureReadout(m), near: CGPoint(x: (a.x + b.x) / 2 + 14, y: (a.y + b.y) / 2 - 10), in: t.rect, border: colour)
     }
 
-    private func drawCrosshair(_ ctx: inout GraphicsContext, _ cross: Crosshair, _ t: PlotTransform, _ plot: CGRect) {
-        let xv = t.xValue(cross.point.x)
-        let index = cross.index
-        let x = cross.point.x, y = cross.point.y
-        guard plot.insetBy(dx: -1, dy: -1).contains(cross.point) || index == nil else { return }
+    private func drawCrosshair(_ ctx: inout GraphicsContext, _ probe: PlotProbe, _ plot: CGRect) {
+        let x = probe.point.x, y = probe.point.y
+        guard plot.insetBy(dx: -1, dy: -1).contains(probe.point) || !probe.onData else { return }
         let dash = StrokeStyle(lineWidth: 1 / scale, dash: [3, 3])
         var v = Path(); v.move(to: CGPoint(x: x, y: plot.minY)); v.addLine(to: CGPoint(x: x, y: plot.maxY))
         var h = Path(); h.move(to: CGPoint(x: plot.minX, y: y)); h.addLine(to: CGPoint(x: plot.maxX, y: y))
         ctx.stroke(v, with: .color(palette.spike), style: dash)
         ctx.stroke(h, with: .color(palette.spike), style: dash)
-
-        // What is under the pointer: flags on the two axes, and a card near it.
-        let samplePosition = index.map(Double.init) ?? xv
-        let xText = sampleRate.map { TickLabels.engineering(samplePosition / $0, unit: "s") } ?? "n = " + String(Int(samplePosition.rounded()))
-        let yValue = index.map { amplitude.value(signal.sample(at: $0)) } ?? t.yValue(y)
-        let yText = amplitude.isDecibels ? TickLabels.number(yValue, decimals: 1) + " dB" : TickLabels.number(yValue, decimals: abs(yValue) < 0.1 ? 4 : 3)
-        flag(&ctx, xText, at: CGPoint(x: x, y: plot.maxY + 20), anchor: .center)
-        flag(&ctx, yText, at: CGPoint(x: plot.minX - 4, y: y), anchor: .trailing)
-        if let i = index {
-            var lines = [String]()
-            if let sr = sampleRate, sr > 0 { lines.append("t = " + TickLabels.engineering(Double(i) / sr, unit: "s")) }
-            lines.append("n = \(i)")
-            let v = Double(signal.sample(at: i))
-            lines.append(TickLabels.number(v, decimals: 4) + "  (" + (v == 0 ? "−∞" : TickLabels.number(20 * log10(abs(v)), decimals: 1)) + " dB)")
-            ctx.fill(Path(ellipseIn: CGRect(x: x - 5.5, y: y - 5.5, width: 11, height: 11)), with: .color(palette.accent))
-            ctx.stroke(Path(ellipseIn: CGRect(x: x - 5.5, y: y - 5.5, width: 11, height: 11)), with: .color(.white), lineWidth: 1.5)
-            drawTooltip(&ctx, lines, near: CGPoint(x: x + 16, y: y - 18), in: plot)
+        let colour = palette.trace(probe.trace, probe.customColor)
+        flag(&ctx, probe.xFlag, at: CGPoint(x: x, y: plot.maxY + 20), anchor: .center, colour: colour)
+        flag(&ctx, probe.yFlag, at: CGPoint(x: plot.minX - 4, y: y), anchor: .trailing, colour: colour)
+        if probe.onData {
+            let marker = Path(ellipseIn: CGRect(x: x - 5.5, y: y - 5.5, width: 11, height: 11))
+            ctx.fill(marker, with: .color(colour))
+            ctx.stroke(marker, with: .color(.white), lineWidth: 1.5)
+            if !probe.card.isEmpty { drawTooltip(&ctx, probe.card, near: CGPoint(x: x + 16, y: y - 18), in: plot, border: colour) }
         }
     }
 
-    private func flag(_ ctx: inout GraphicsContext, _ text: String, at p: CGPoint, anchor: UnitPoint) {
+    private func flag(_ ctx: inout GraphicsContext, _ text: String, at p: CGPoint, anchor: UnitPoint, colour: Color) {
         let resolved = ctx.resolve(Text(verbatim: text).font(font(10.5, weight: .semibold)).foregroundColor(.white))
         let size = resolved.measure(in: CGSize(width: 300, height: 30))
         let box = CGRect(x: p.x - size.width * anchor.x - 6, y: p.y - size.height * anchor.y - 2, width: size.width + 12, height: size.height + 4)
-        ctx.fill(Path(roundedRect: box, cornerRadius: 4), with: .color(palette.accent))
+        ctx.fill(Path(roundedRect: box, cornerRadius: 4), with: .color(colour))
         ctx.draw(resolved, at: CGPoint(x: box.midX, y: box.midY), anchor: .center)
     }
 

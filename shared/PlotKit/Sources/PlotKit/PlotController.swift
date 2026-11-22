@@ -13,6 +13,26 @@ public final class PlotController {
     public var mode: PlotMode = .zoomBox
     /// Whether the help of the gestures is shown.
     public var showsHelp = false
+    /// The channels of the file, if the plot has several: the toolbar then has one button that opens the list of them.
+    public var series: PlotSeriesSet?
+    /// Whether the list of the channels is shown (as a popover, or in the inspector of the window).
+    public var showsChannels = false
+    /// The window shows the list itself, in an inspector bound to `showsChannels`: the button then opens no popover over the plot.
+    public var channelsInInspector = false
+
+    /// The scales a plot lets the person switch, in the toolbar: the plot says which, and the others are not shown.
+    public struct ScaleSupport: OptionSet, Sendable {
+        public let rawValue: Int
+        public init(rawValue: Int) { self.rawValue = rawValue }
+        public static let x = ScaleSupport(rawValue: 1)
+        public static let y = ScaleSupport(rawValue: 2)
+    }
+    public var scaleSupport: ScaleSupport = []
+    /// The scale of the horizontal axis and the way the vertical one is drawn, as the toolbar sets them.
+    public var xScale: AxisScale = .linear
+    public var yScale: AmplitudeScale = .linear
+    /// The floor of the decibel scale the toolbar offers.
+    public var decibelFloor: Double = -120
 
     @ObservationIgnored var zoomAction: (Double) -> Void = { _ in }
     @ObservationIgnored var autoscaleAction: () -> Void = {}
@@ -49,6 +69,20 @@ public struct PlotToolbarContent: ToolbarContent {
     }
 
     public var body: some ToolbarContent {
+        if let series = controller.series, series.items.count > 1 {
+            ToolbarItem(placement: .primaryAction) {
+                Button { controller.showsChannels.toggle() } label: {
+                    Label("\(labels.channels) \(series.visible.count)/\(series.items.count)", systemImage: "waveform.path.ecg")
+                }
+                .labelStyle(.titleAndIcon)
+                .help(labels.channels)
+                .popover(isPresented: Binding(get: { controller.showsChannels && !controller.channelsInInspector }, set: { controller.showsChannels = $0 }),
+                         arrowEdge: .bottom) {
+                    PlotChannelList(series: series, labels: labels)
+                }
+            }
+            gap
+        }
         ToolbarItemGroup(placement: .primaryAction) {
             modeButton(.zoomBox, "rectangle.dashed", labels.zoomBox)
             modeButton(.pan, "hand.draw", labels.pan)
@@ -67,6 +101,29 @@ public struct PlotToolbarContent: ToolbarContent {
                 .help(labels.autoscale)
             Button { controller.showEverything() } label: { Label(labels.reset, systemImage: "arrow.counterclockwise") }
                 .help(labels.reset)
+        }
+        gap
+        ToolbarItemGroup(placement: .primaryAction) {
+            if controller.scaleSupport.contains(.x) {
+                Menu {
+                    Picker(labels.xAxis, selection: Binding(get: { controller.xScale }, set: { controller.xScale = $0 })) {
+                        Text(labels.linear).tag(AxisScale.linear)
+                        Text(labels.logarithmic).tag(AxisScale.logarithmic)
+                    }
+                    .pickerStyle(.inline)
+                } label: { Label(labels.xAxis, systemImage: "arrow.left.and.right") }
+                .help(labels.xAxis)
+            }
+            if controller.scaleSupport.contains(.y) {
+                Menu {
+                    Picker(labels.yAxis, selection: Binding(get: { controller.yScale }, set: { controller.yScale = $0 })) {
+                        Text(labels.linear).tag(AmplitudeScale.linear)
+                        Text(labels.decibels).tag(AmplitudeScale.decibels(floor: controller.decibelFloor))
+                    }
+                    .pickerStyle(.inline)
+                } label: { Label(labels.yAxis, systemImage: "arrow.up.and.down") }
+                .help(labels.yAxis)
+            }
         }
         gap
         ToolbarItem(placement: .primaryAction) {

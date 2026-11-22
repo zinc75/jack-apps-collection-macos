@@ -12,7 +12,7 @@ public protocol PlotSignal: AnyObject, Sendable {
 }
 
 /// How the amplitude is drawn: as it is, or as decibels of its magnitude.
-public enum AmplitudeScale: Equatable, Sendable {
+public enum AmplitudeScale: Hashable, Sendable {
     case linear
     /// Decibels relative to 1, from `floor` (what is lower is drawn at the floor).
     case decibels(floor: Double)
@@ -26,6 +26,16 @@ public enum AmplitudeScale: Equatable, Sendable {
         case .linear: return Double(v)
         case .decibels(let floor):
             let m = abs(Double(v))
+            return m > 0 ? max(floor, 20 * log10(m)) : floor
+        }
+    }
+
+    /// The same for a value that is not a sample (the magnitude of a spectrum, say).
+    public func value(_ v: Double) -> Double {
+        switch self {
+        case .linear: return v
+        case .decibels(let floor):
+            let m = abs(v)
             return m > 0 ? max(floor, 20 * log10(m)) : floor
         }
     }
@@ -59,6 +69,15 @@ public struct PlotLabels: Sendable {
     public var autoscale = "Autoscale vertical axis"
     public var reset = "Show everything"
     public var samples = "samples"
+    public var channels = "Channels"
+    public var allChannels = "All"
+    public var noChannels = "None"
+    public var onlyChannel = "Only"
+    public var xAxis = "Horizontal axis"
+    public var yAxis = "Vertical axis"
+    public var linear = "Linear"
+    public var logarithmic = "Logarithmic"
+    public var decibels = "Decibels"
     public var gesturesTitle = "Gestures of the plot"
     public var gestures = PlotGestureSection.defaults
     public init() {}
