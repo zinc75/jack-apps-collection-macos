@@ -105,3 +105,38 @@ final class ViewportTests: XCTestCase {
         XCTAssertEqual(empty.xValue(5), 0)
     }
 }
+
+final class ScaleSwitchTests: XCTestCase {
+    func testLinearToLogarithmicAndBack() {
+        // The axis of a time signal in samples: from 0, which a logarithmic axis cannot show.
+        var a = AxisState(bounds: 0...480_000, minSpan: 4)
+        a = a.zoomed(by: 8, around: 100_000)
+        let before = a.range
+        let log = a.switched(to: .logarithmic, minSpan: 1.01, positiveFloor: 1)
+        XCTAssertEqual(log.scale, .logarithmic)
+        XCTAssertEqual(log.bounds, 1...480_000, "the bounds start at the floor")
+        XCTAssertEqual(log.range, before, "a range that is positive is kept")
+        let back = log.switched(to: .linear, minSpan: 4)
+        XCTAssertEqual(back.bounds, 0...480_000, "the bounds of the data come back")
+        XCTAssertEqual(back.range, before)
+        XCTAssertEqual(a.switched(to: .linear, minSpan: 4), a, "the same scale changes nothing")
+    }
+
+    func testARangeThatTouchesZeroIsBroughtToTheFloor() {
+        let a = AxisState(bounds: 0...1000, minSpan: 1)
+        let log = a.switched(to: .logarithmic, minSpan: 1.01, positiveFloor: 1)
+        XCTAssertEqual(log.range, 1...1000)
+        XCTAssertEqual(log.fraction(of: sqrt(1000.0)), 0.5, accuracy: 1e-9)
+        // A zoom on the logarithmic axis works with its new minimum span.
+        let z = log.zoomed(by: 1e9, around: 30)
+        XCTAssertEqual(z.range.upperBound / z.range.lowerBound, 1.01, accuracy: 1e-9)
+    }
+
+    func testFrequencyAxisBothWays() {
+        let a = AxisState(bounds: 20...20_000, scale: .logarithmic, minSpan: 1.05)
+        let linear = a.switched(to: .linear, minSpan: 1)
+        XCTAssertEqual(linear.range, 20...20_000)
+        XCTAssertEqual(linear.fraction(of: 10_010), 0.5, accuracy: 1e-3)
+        XCTAssertEqual(linear.switched(to: .logarithmic, minSpan: 1.05).range, 20...20_000)
+    }
+}

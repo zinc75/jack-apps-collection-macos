@@ -34,10 +34,17 @@ public enum Ticks {
 
     /// Graduations of a linear axis: about `target` major ticks, at multiples of 1, 2 or 5 times a power of ten, with minor
     /// ticks between them.
-    public static func linear(in range: ClosedRange<Double>, approximately target: Int) -> TickSet {
+    ///
+    /// - Parameter integersOnly: for an axis of sample numbers: every tick, minor ones too, is a whole number.
+    public static func linear(in range: ClosedRange<Double>, approximately target: Int, integersOnly: Bool = false) -> TickSet {
         let span = range.upperBound - range.lowerBound
         guard span > 0, span.isFinite, range.lowerBound.isFinite else { return TickSet(ticks: [], step: 0, isLogarithmic: false) }
-        let (step, minors) = niceStep(span / Double(max(1, target)))
+        var (step, minors) = niceStep(span / Double(max(1, target)))
+        if integersOnly {
+            if step < 1 { step = 1; minors = 1 }
+            // The minor step must be a whole number too: the first of 5, 4, 2, 1 intervals that divides the step.
+            minors = [minors, 5, 4, 2, 1].first { step / Double($0) == (step / Double($0)).rounded() } ?? 1
+        }
         let minorStep = step / Double(minors)
         // Too many ticks (a target that is absurd for the span): none, rather than a freeze.
         guard span / minorStep < 2000 else { return TickSet(ticks: [], step: step, isLogarithmic: false) }
@@ -114,6 +121,14 @@ public enum TickLabels {
             return number(tick.value / factor, decimals: decimals)
         }
         return AxisLabels(texts: texts, unit: baseUnit.isEmpty ? "" : prefix + baseUnit)
+    }
+
+    /// A measure with the prefix that suits it and a few significant digits: "12.35 ms", "1.5 kHz", "0 s".
+    public static func engineering(_ value: Double, unit: String, significant: Int = 4) -> String {
+        guard value != 0, value.isFinite else { return "0 " + unit }
+        let (factor, prefix) = SIPrefix.choose(for: value)
+        let text = String(format: "%.\(significant)g", value / factor)
+        return (text.hasPrefix("-") ? "−" + text.dropFirst() : text) + " " + prefix + unit
     }
 
     /// A number with a fixed count of decimals, "−" for a negative one and never "−0".

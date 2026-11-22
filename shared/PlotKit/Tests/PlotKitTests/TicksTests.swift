@@ -95,3 +95,17 @@ final class TicksTests: XCTestCase {
         XCTAssertEqual(SIPrefix.choose(for: 3.2e6).factor, 1e6)
     }
 }
+
+final class IntegerTicksTests: XCTestCase {
+    func testSampleAxisTicksAreWholeNumbers() {
+        for range in [0.0...3, 100.0...107, 0.0...47, 5000.0...5400, 0.0...480_000] {
+            for t in Ticks.linear(in: range, approximately: 8, integersOnly: true).ticks {
+                XCTAssertEqual(t.value, t.value.rounded(), "range \(range)")
+            }
+        }
+        let tight = Ticks.linear(in: 10.0...13, approximately: 8, integersOnly: true)
+        XCTAssertEqual(tight.ticks.map(\.value), [10, 11, 12, 13])
+        XCTAssertTrue(tight.ticks.allSatisfy(\.isMajor))
+        XCTAssertFalse(Ticks.linear(in: 0.0...1, approximately: 5).ticks.allSatisfy { $0.value == $0.value.rounded() })
+    }
+}

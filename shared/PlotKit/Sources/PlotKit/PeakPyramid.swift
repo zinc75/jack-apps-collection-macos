@@ -36,7 +36,7 @@ public struct Envelope: Sendable, Equatable {
 ///
 /// Level k holds the minimum and the maximum of blocks of `blocks[k]` samples: 16 at the first level, then four times more
 /// at each of the next. The memory it adds is about a third of the signal. The samples are expected to be finite.
-public final class PeakPyramid: @unchecked Sendable {
+public final class PeakPyramid: PlotSignal, @unchecked Sendable {
     /// The signal itself.
     public let samples: [Float]
     private let blocks: [Int]
@@ -86,6 +86,8 @@ public final class PeakPyramid: @unchecked Sendable {
     }
 
     public var count: Int { samples.count }
+
+    public func sample(at index: Int) -> Float { samples[index] }
 
     /// The extremes of the samples in `range` (clamped to the signal), or nil when it holds none.
     public func extremes(in range: Range<Int>) -> (min: Float, max: Float)? {

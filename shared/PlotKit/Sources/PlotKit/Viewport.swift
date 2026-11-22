@@ -18,12 +18,15 @@ public struct AxisState: Equatable, Sendable {
     public var scale: AxisScale
     public private(set) var range: ClosedRange<Double>
     public private(set) var bounds: ClosedRange<Double>
+    /// The bounds of the data, before a logarithmic scale raised their start: what a return to the linear scale goes back to.
+    private var natural: ClosedRange<Double>
     /// The smallest span that can be shown, in the units of the axis (on a logarithmic axis, as a ratio of the ends).
     public var minSpan: Double
 
     public init(bounds: ClosedRange<Double>, scale: AxisScale = .linear, minSpan: Double = 0) {
         self.scale = scale
         self.bounds = bounds
+        self.natural = bounds
         self.range = bounds
         self.minSpan = minSpan
     }
@@ -90,6 +93,28 @@ public struct AxisState: Equatable, Sendable {
         with(uLow: scale.forward(values.lowerBound), uHigh: scale.forward(values.upperBound))
     }
 
+    /// The same axis on another scale, as a person who switches between linear and logarithmic wants it: the range stays as
+    /// close as it can. A logarithmic axis has no zero or negative values, so its bounds start at `positiveFloor` when they
+    /// went lower (a sample, a hertz: what the data starts at), and `minSpan` is given again because it is a difference on a
+    /// linear axis and a ratio on a logarithmic one.
+    public func switched(to new: AxisScale, minSpan newMinSpan: Double, positiveFloor: Double = 1) -> AxisState {
+        guard new != scale else { return self }
+        var out = self
+        out.scale = new
+        out.minSpan = newMinSpan
+        if new == .logarithmic {
+            let floor = max(positiveFloor, .leastNormalMagnitude)
+            let lowBounds = max(natural.lowerBound, floor)
+            out.bounds = lowBounds...max(natural.upperBound, lowBounds * 1.001)
+            let low = max(range.lowerBound, out.bounds.lowerBound)
+            out.range = low...max(range.upperBound, low * 1.001)
+            if out.range.upperBound > out.bounds.upperBound { out.range = out.bounds }
+        } else {
+            out.bounds = natural
+        }
+        return out
+    }
+
     /// Shows everything.
     public func fitted() -> AxisState {
         var out = self
@@ -101,6 +126,7 @@ public struct AxisState: Equatable, Sendable {
     public func withBounds(_ new: ClosedRange<Double>) -> AxisState {
         var out = self
         out.bounds = new
+        out.natural = new
         if range.lowerBound < new.lowerBound || range.upperBound > new.upperBound { out.range = new }
         return out
     }
