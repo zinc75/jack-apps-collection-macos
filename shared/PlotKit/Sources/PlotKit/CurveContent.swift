@@ -20,8 +20,14 @@ public struct PlotCurve: Identifiable {
     /// The delay to remove from a phase, in seconds (the abscissas being hertz): the time of the direct sound of an impulse
     /// response, say. Without it the delay is the one of the straight line that fits the unwrapped phase.
     public var delay: Double?
+    /// The values are linear magnitudes: the inspector offers to smooth them in fractions of an octave.
+    public var isMagnitude: Bool
+    /// A curve drawn thin and pale behind the others, which cannot be read off: the raw spectrum behind its smoothed one.
+    public var isReference = false
 
-    public init(name: String, x: [Double], y: [Double], color: Color? = nil, filled: Bool = true, phase: PhaseUnit? = nil, delay: Double? = nil) {
+    public init(name: String, x: [Double], y: [Double], color: Color? = nil, filled: Bool = true, phase: PhaseUnit? = nil, delay: Double? = nil,
+                isMagnitude: Bool = false) {
+        self.isMagnitude = isMagnitude
         self.name = name
         self.x = x
         self.y = y
@@ -151,7 +157,7 @@ struct CurveContent: PlotContent {
     /// The area under a line (to the baseline) is a gradient or nothing; the band of the extremes, which is the body of a dense
     /// curve, is always there.
     private var gradientStrength: Double {
-        if case .gradient(let k) = gradient.fill(curves: curves.count) { return k }
+        if case .gradient(let k) = gradient.fill(curves: curves.filter { !$0.isReference }.count) { return k }
         return 0
     }
 
@@ -174,7 +180,10 @@ struct CurveContent: PlotContent {
         for i in curves.indices.reversed() { draw(curves[i], colour(i, palette), &ctx, t, palette) }
     }
 
-    private func draw(_ curve: PlotCurve, _ colour: Color, _ ctx: inout GraphicsContext, _ t: PlotTransform, _ palette: PlotPalette) {
+    private func draw(_ curve: PlotCurve, _ baseColour: Color, _ ctx: inout GraphicsContext, _ t: PlotTransform, _ palette: PlotPalette) {
+        // A reference (the raw spectrum behind its smoothed one) is thin and pale, and has no fill.
+        let thin = curve.isReference
+        let colour = thin ? baseColour.opacity(0.42) : baseColour
         let plot = t.rect, range = t.viewport.x.range
         let n = curve.count
         guard n > 1 else { return }
@@ -183,7 +192,7 @@ struct CurveContent: PlotContent {
         let count = last - first + 1
         let baseline = (yScale.isDecibels || !t.viewport.y.range.contains(0)) ? plot.maxY + 2 : t.y(0)
         let gradient = Gradient(colors: [colour.opacity(0.40 * gradientStrength), colour.opacity(0.03 * gradientStrength)])
-        let filled = curve.filled && gradientStrength > 0
+        let filled = curve.filled && gradientStrength > 0 && !thin
         let start = CGPoint(x: 0, y: plot.minY), end = CGPoint(x: 0, y: plot.maxY)
 
         if count <= 3 * Int(plot.width) {
@@ -204,8 +213,8 @@ struct CurveContent: PlotContent {
             }
             if let r = run { closeArea(&area, r, baseline) }
             if filled { ctx.fill(area, with: .linearGradient(gradient, startPoint: start, endPoint: end)) }
-            ctx.stroke(line, with: .color(colour), style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
-            if spacing > 14 {
+            ctx.stroke(line, with: .color(colour), style: StrokeStyle(lineWidth: thin ? 0.9 : 1.6, lineCap: .round, lineJoin: .round))
+            if spacing > 14, !thin {
                 ctx.fill(dots, with: .color(colour))
                 ctx.stroke(dots, with: .color(palette.isDark ? Color.white.opacity(0.5) : Color.white.opacity(0.9)), lineWidth: 0.8)
             }
@@ -240,7 +249,7 @@ struct CurveContent: PlotContent {
         guard started else { return }
         for p in lows.reversed() { band.addLine(to: p) }
         band.closeSubpath()
-        ctx.fill(band, with: .color(colour.opacity(0.22)))
+        ctx.fill(band, with: .color(colour.opacity(thin ? 0.5 : 0.22)))
         // The area under the line, to the baseline.
         if filled {
             var area = line
@@ -249,7 +258,7 @@ struct CurveContent: PlotContent {
             area.closeSubpath()
             ctx.fill(area, with: .linearGradient(gradient, startPoint: start, endPoint: end))
         }
-        ctx.stroke(line, with: .color(colour), style: StrokeStyle(lineWidth: 1.5, lineJoin: .round))
+        ctx.stroke(line, with: .color(colour), style: StrokeStyle(lineWidth: thin ? 0.8 : 1.5, lineJoin: .round))
     }
 
     private func closeArea(_ area: inout Path, _ run: (start: CGPoint, end: CGPoint), _ baseline: CGFloat) {
@@ -264,7 +273,7 @@ struct CurveContent: PlotContent {
     private func nearestPoint(_ p: CGPoint, _ t: PlotTransform) -> (curve: Int, index: Int, point: CGPoint)? {
         let xv = t.xValue(p.x)
         var best: (curve: Int, index: Int, point: CGPoint, distance: CGFloat)?
-        for (k, curve) in curves.enumerated() {
+        for (k, curve) in curves.enumerated() where !curve.isReference {
             guard let i = curve.nearest(xv), curve.y[i].isFinite else { continue }
             let q = CGPoint(x: t.x(curve.x[i]), y: t.y(level(curve.y[i])))
             let d = hypot(q.x - p.x, q.y - p.y)

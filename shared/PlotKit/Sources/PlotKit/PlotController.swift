@@ -23,6 +23,8 @@ public final class PlotController {
     public var showsInspector = false
     /// The plot shows a phase: the inspector then offers to unwrap it.
     public var hasPhase = false
+    /// The plot shows magnitudes: the inspector then offers to smooth them.
+    public var hasMagnitude = false
     /// The delay of each phase curve, which "Remove delay" takes out: the plot says it, the inspector shows it.
     public struct PhaseDelay: Equatable, Sendable {
         public var name: String

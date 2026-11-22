@@ -44,8 +44,21 @@ public struct CurvePlot: View {
 
     /// The curves as they are drawn: the phases unwrapped and/or without their delay when the inspector says so.
     private var shown: [PlotCurve] {
-        let unwrap = controller?.display.unwrapPhase ?? false, removeDelay = controller?.display.removeDelay ?? false
-        return unwrap || removeDelay ? curves.map { $0.processed(unwrap: unwrap, removeDelay: removeDelay) } : curves
+        let display = controller?.display
+        let unwrap = display?.unwrapPhase ?? false, removeDelay = display?.removeDelay ?? false
+        let smoothing = display?.smoothing ?? .none, keepsRaw = display?.showsUnsmoothed ?? true
+        guard unwrap || removeDelay || smoothing != .none else { return curves }
+        var drawn: [PlotCurve] = [], references: [PlotCurve] = []
+        for c in curves {
+            var p = c.processed(unwrap: unwrap, removeDelay: removeDelay)
+            if p.isMagnitude, smoothing != .none {
+                // The raw spectrum stays behind, thin and pale (the last are drawn first).
+                if keepsRaw { var raw = c; raw.isReference = true; raw.filled = false; references.append(raw) }
+                p = p.smoothed(smoothing)
+            }
+            drawn.append(p)
+        }
+        return drawn + references
     }
 
     /// What "Remove delay" takes out of each phase: the delay given with the curve, or the one of the straight line that fits it.
@@ -68,6 +81,7 @@ public struct CurvePlot: View {
             .onAppear {
                 guard let controller else { return }
                 controller.hasPhase = curves.contains { $0.phase != nil }
+                controller.hasMagnitude = curves.contains { $0.isMagnitude }
                 updateDelays()
                 controller.scaleSupport = yScaleSwitchable ? [.x, .y] : [.x]
                 controller.xScale = viewport.x.scale
@@ -82,6 +96,7 @@ public struct CurvePlot: View {
             }
             .onChange(of: controller?.display.unwrapPhase) { _, _ in refitVertical() }
             .onChange(of: controller?.display.removeDelay) { _, _ in refitVertical(); updateDelays() }
+            .onChange(of: controller?.display.smoothing) { _, _ in refitVertical() }
             .onChange(of: curves.map(\.name)) { _, _ in updateDelays() }
             .onChange(of: controller?.yScale) { _, new in
                 guard yScaleSwitchable, let new else { return }

@@ -45,6 +45,9 @@ public final class PlotDisplayOptions {
     public var unwrapPhase = false
     /// The delay is taken out of a phase (the straight line it makes).
     public var removeDelay = false
+    /// The magnitudes are smoothed over a fraction of an octave, and the raw spectrum stays behind, thin and pale.
+    public var smoothing = OctaveSmoothing.none
+    public var showsUnsmoothed = true
     public init() {}
 }
 
@@ -86,6 +89,15 @@ public struct PlotInspector: View {
                 .padding(.leading, 18)
                 .disabled(!options.gradient.enabled)
             Text(labels.gradientHelp).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            if controller.hasMagnitude {
+                Divider().padding(.vertical, 4)
+                Picker(labels.smoothing, selection: $options.smoothing) {
+                    Text(labels.noSmoothing).tag(OctaveSmoothing.none)
+                    ForEach(OctaveSmoothing.allCases.filter { $0 != .none }, id: \.self) { Text($0.title).tag($0) }
+                }
+                Toggle(labels.showUnsmoothed, isOn: $options.showsUnsmoothed).disabled(options.smoothing == .none)
+                Text(labels.smoothingHelp).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
             if controller.hasPhase {
                 Divider().padding(.vertical, 4)
                 Toggle(labels.unwrapPhase, isOn: $options.unwrapPhase)
