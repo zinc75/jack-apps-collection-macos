@@ -43,11 +43,19 @@ final class AppModel {
     /// Where what is being dragged would land, while it is dragged over the matrix.
     var dropPlan: PlacementPlan?
     var draggedItems: [Placeable] = []
+    /// Dragging from the list of files to the matrix is done by the application (the system drag and drop does not work well here): the
+    /// pointer, in the coordinates of the page of the matrix, while something is dragged; and where the matrix is in those coordinates.
+    var dragPointer: CGPoint?
+    var matrixViewport: CGRect = .zero
+    var matrixContentFrame: CGRect = .zero
     private(set) var history = DocumentHistory()
     /// The matrix or the table, and what the row above the table does: to all the impulse responses or the selected ones, replacing or shifting.
     var viewMode = ViewMode.matrix
     /// What was copied from the matrix.
     private(set) var clipboard: [ClipboardItem] = []
+    /// Where what was copied came from (it stays outlined in the matrix until something else is copied) and how big it is.
+    private(set) var clipboardShape: MatrixSelection.Shape?
+    private(set) var clipboardSize: (inputs: Int, outputs: Int) = (0, 0)
     var bulkOnSelection = false
     var bulkShifts = false
     /// The list of sound files beside the matrix: what is chosen in it, what is open, what is searched for.
@@ -64,6 +72,7 @@ final class AppModel {
     var showsProblems = false
     var showsNewConfiguration = false
     var showsPortNames = false
+    var showsResize = false
     /// The impulse response whose detail window is open.
     var detail: DetailTarget?
 
@@ -95,18 +104,26 @@ final class AppModel {
     func markLogSeen() { logSeen = (controller.log.entries.last?.id ?? -1) + 1 }
 
     func setBinFiles(_ files: [BinFile]) { binFiles = files }
-    func setClipboard(_ items: [ClipboardItem]) { clipboard = items }
+    func setClipboard(_ items: [ClipboardItem], shape: MatrixSelection.Shape? = nil, size: (inputs: Int, outputs: Int) = (0, 0)) {
+        clipboard = items
+        clipboardShape = items.isEmpty ? nil : shape
+        clipboardSize = size
+    }
 
     // MARK: The configuration
 
     var isOpen: Bool { document != nil }
     var isEdited: Bool { document?.isModified ?? false }
-    var name: String { fileURL?.lastPathComponent ?? String(localized: "sans titre.conf") }
+    /// The name of a configuration that has not been saved: shown in the footer and proposed when it is saved. No space in it.
+    var defaultFileName: String { String(localized: "sans_titre") + ".conf" }
+    var name: String { fileURL?.lastPathComponent ?? defaultFileName }
+    /// A configuration that was never saved has no file to save to: it is saved under a name.
+    var savesAsNew: Bool { fileURL == nil }
     var configDirectory: String { fileURL?.deletingLastPathComponent().path ?? NSHomeDirectory() }
 
     func openPanel() {
         let panel = NSOpenPanel()
-        panel.allowedContentTypes = [UTType(filenameExtension: "conf") ?? .plainText, .plainText]
+        panel.allowedContentTypes = [UTType(filenameExtension: "conf") ?? .plainText]
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false
         panel.message = String(localized: "Choisissez un fichier de configuration de jconvolver.")
@@ -120,6 +137,11 @@ final class AppModel {
         }
         let text = String(data: data, encoding: .utf8) ?? String(decoding: data, as: UTF8.self)
         let (config, _) = ConvConfig.parse(text)
+        // Something that is not a configuration of jconvolver (it has no /convolver/new line) is not opened: nothing changes.
+        guard config.convolver != nil else {
+            message = String(localized: "« \(url.lastPathComponent) » n'a pas de ligne /convolver/new : ce n'est pas une configuration de jconvolver.")
+            return
+        }
         let imported = ConvDocument.make(from: config)
         document = imported.document
         fileURL = url
@@ -127,9 +149,6 @@ final class AppModel {
         resetEditing()
         refreshProblems()
         page = .matrix
-        if config.convolver == nil {
-            message = String(localized: "« \(url.lastPathComponent) » n'a pas de ligne /convolver/new : ce n'est pas une configuration de jconvolver.")
-        }
     }
 
     func newConfiguration(inputs: Int, outputs: Int) {
@@ -158,6 +177,7 @@ final class AppModel {
 
     private func resetEditing() {
         history.clear()
+        setClipboard([])
         selection = MatrixSelection()
         hoverPair = nil
         dropPlan = nil
@@ -192,7 +212,7 @@ final class AppModel {
         if asNew || target == nil {
             let panel = NSSavePanel()
             panel.allowedContentTypes = [UTType(filenameExtension: "conf") ?? .plainText]
-            panel.nameFieldStringValue = fileURL?.lastPathComponent ?? "configuration.conf"
+            panel.nameFieldStringValue = fileURL?.lastPathComponent ?? defaultFileName
             panel.canCreateDirectories = true
             guard panel.runModal() == .OK, let url = panel.url else { return false }
             target = url

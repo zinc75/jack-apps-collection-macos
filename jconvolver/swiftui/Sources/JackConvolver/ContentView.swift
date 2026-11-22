@@ -50,6 +50,15 @@ struct ContentView: View {
                let i = d.impulses(at: first).firstIndex(where: { if case .file = $0.source { true } else { false } }) {
                 try? await Task.sleep(for: .milliseconds(800)); model.detail = DetailTarget(pair: first, index: i)
             }
+            // JACKCONVOLVER_FAKEDRAG=over|drop: drags the first file of the list over the cell of the third input and third output
+            // (what the pointer does), and for "drop" lets go of it.
+            if let fake = env["JACKCONVOLVER_FAKEDRAG"], let file = model.binFiles.first {
+                try? await Task.sleep(for: .seconds(2))
+                model.beginItemDrag([.channel(path: file.path, channel: 1)])
+                let f = model.matrixContentFrame, cs = model.cellSize
+                model.dragPointer = CGPoint(x: f.minX + 76 + 2.5 * cs, y: f.minY + 64 + 2.5 * cs)
+                if fake == "drop" { try? await Task.sleep(for: .seconds(1)); model.endItemDrag() }
+            }
             if env["JACKCONVOLVER_AUTORUN"] != nil {
                 try? await Task.sleep(for: .seconds(2))
                 model.toggleRun()
@@ -82,6 +91,7 @@ struct ContentView: View {
         .sheet(isPresented: $model.showsNewConfiguration) { NewConfigurationSheet() }
         .sheet(isPresented: $model.showsCommand) { CommandSheet() }
         .sheet(isPresented: $model.showsPortNames) { PortNamesSheet() }
+        .sheet(isPresented: $model.showsResize) { ResizeSheet() }
         .sheet(item: $model.detail) { ImpulseDetailSheet(target: $0) }
         .sheet(isPresented: $model.showsProblems) { ProblemsSheet() }
         .alert(model.message ?? "", isPresented: Binding(get: { model.message != nil }, set: { if !$0 { model.message = nil } })) {

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+import SoundFileKit
 import XCTest
 @testable import JConvolverKit
 
@@ -62,3 +63,36 @@ final class SpectrumTests: XCTestCase {
     }
 }
 
+
+final class ChangeDirectoryWritingTests: XCTestCase {
+    func testFilesOfAnotherFolderGetOneChangeDirectory() {
+        var d = ConvDocument(inputs: 2, outputs: 2)
+        d.add(ConvImpulse(source: .file(path: "/data/ir/a.wav", channel: 1)), at: ConvPair(input: 0, output: 0))
+        d.add(ConvImpulse(source: .file(path: "/data/ir/b.wav", channel: 1)), at: ConvPair(input: 1, output: 1))
+        d.add(ConvImpulse(source: .file(path: "here.wav", channel: 1)), at: ConvPair(input: 0, output: 1))
+        let text = d.makeConfig(automatic: ConvHeader(partition: 256, maxLength: 1000)).text
+        XCTAssertEqual(text.components(separatedBy: "/cd ").count - 1, 1)
+        XCTAssertTrue(text.contains("/cd /data/ir"))
+        XCTAssertTrue(text.contains(" a.wav"))
+        XCTAssertFalse(text.contains("/data/ir/a.wav"))
+        // The file of the folder of the configuration comes before the /cd.
+        XCTAssertLessThan(text.range(of: "here.wav")!.lowerBound, text.range(of: "/cd /data/ir")!.lowerBound)
+    }
+}
+
+final class LatencyBeyondFileTests: XCTestCase {
+    func testShortFileIsFlaggedWhenCompensationExceedsIt() {
+        let info = SoundFileInfo(channels: 1, sampleRate: 48000, frames: 512, container: "WAV", fileExtension: "wav", encoding: "float",
+                                 bitsPerSample: 32, isLossy: false, sfFormat: 0)
+        var d = ConvDocument(inputs: 1, outputs: 1)
+        d.add(ConvImpulse(source: .file(path: "a.wav", channel: 1)), at: ConvPair(input: 0, output: 0))
+        let context = ConvValidationContext(mode: .realTime(jackRate: 48000), configDirectory: "/x", latencyCompensation: 600, fileInfo: { _ in info })
+        let problems = ConvValidator.problems(in: d, context: context)
+        XCTAssertTrue(problems.contains { if case .latencyBeyondFile = $0.kind { true } else { false } })
+        XCTAssertEqual(problems.first { if case .latencyBeyondFile = $0.kind { true } else { false } }?.severity, .error)
+        // Enough delay: the engine takes away less.
+        var e = ConvDocument(inputs: 1, outputs: 1)
+        e.add(ConvImpulse(source: .file(path: "a.wav", channel: 1), delay: 300), at: ConvPair(input: 0, output: 0))
+        XCTAssertFalse(ConvValidator.problems(in: e, context: context).contains { if case .latencyBeyondFile = $0.kind { true } else { false } })
+    }
+}

@@ -262,8 +262,10 @@ final class MatrixEditingTests: XCTestCase {
         var d = ConvDocument(inputs: 4, outputs: 4)
         d.add(ConvImpulse(source: .dirac, gain: 0.5), at: p(1, 1))
         d.add(ConvImpulse(source: .dirac, gain: 0.25), at: p(2, 3))
-        let items = d.copyOut([p(2, 3), p(1, 1), p(0, 0)])   // (0, 0) is empty: not counted
-        XCTAssertEqual(items.map { [$0.inputOffset, $0.outputOffset] }, [[0, 0], [1, 2]])
+        // (0, 0) is empty and not copied, but it is part of the block: the shape is kept.
+        let items = d.copyOut([p(2, 3), p(1, 1), p(0, 0)])
+        XCTAssertEqual(items.map { [$0.inputOffset, $0.outputOffset] }, [[1, 1], [2, 3]])
+        XCTAssertTrue(d.copyOut([p(0, 0), p(0, 1)]).isEmpty)
     }
 
     func testPasteReplacesAndLeavesOutWhatGoesBeyond() {

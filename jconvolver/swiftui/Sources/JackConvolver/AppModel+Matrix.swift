@@ -96,6 +96,20 @@ extension AppModel {
         return out
     }
 
+    // MARK: Dragging from the list
+
+    /// Starts to drag what is chosen in the list (the row dragged joins the choice when it is not in it).
+    func beginItemDrag(_ items: [Placeable]) {
+        if !items.allSatisfy({ picked.contains($0) }) { picked = Set(items) }
+        draggedItems = orderedPicks()
+    }
+
+    /// The end of the drag: what is above the matrix is placed there.
+    func endItemDrag() {
+        defer { dragPointer = nil; dropPlan = nil; draggedItems = [] }
+        if let plan = dropPlan { apply(plan) }
+    }
+
     // MARK: Placing
 
     /// The path as the configuration says it: the name of the file when it is in the folder of the configuration, else the whole path.
@@ -132,6 +146,11 @@ extension AppModel {
             message = String(localized: "Choisissez d'abord des éléments dans la liste de fichiers.")
             return
         }
+        // One thing chosen in the list and several cells chosen in the matrix: it goes on every one of the cells.
+        if items.count == 1, selection.pairs.count > 1 {
+            apply(PlacementPlan(items: selection.pairs.sorted().map { .init(pair: $0, what: items[0]) }, left: 0))
+            return
+        }
         let b = selection.bounds
         apply(plan(items, from: ConvPair(input: b.firstInput, output: b.firstOutput), mode: mode))
     }
@@ -157,7 +176,9 @@ extension AppModel {
 
     func copySelection() {
         guard let document else { return }
-        setClipboard(document.copyOut(selection.pairs))
+        let b = selection.bounds
+        setClipboard(document.copyOut(selection.pairs), shape: selection.shape,
+                     size: (b.lastInput - b.firstInput + 1, b.lastOutput - b.firstOutput + 1))
     }
 
     /// Puts what was copied with its top left on the first selected pair.
@@ -167,6 +188,11 @@ extension AppModel {
         let items = clipboard
         var count = 0
         edit(String(localized: "collage")) { count = $0.paste(items, at: start) }
+        // What was pasted is chosen, as a block of the size of what was copied (as far as the matrix goes).
+        if let document {
+            selection.select(from: start, to: ConvPair(input: min(start.input + clipboardSize.inputs - 1, document.inputCount - 1),
+                                                        output: min(start.output + clipboardSize.outputs - 1, document.outputCount - 1)))
+        }
         if count < items.count { message = String(localized: "\(items.count - count) RI n'ont pas trouvé de case : la matrice s'arrête.") }
     }
 
@@ -212,6 +238,9 @@ extension AppModel {
 
     /// The pairs with an error: they are outlined in red.
     var pairsInError: Set<ConvPair> { Set(problems.filter { $0.severity == .error }.compactMap(\.pair)) }
+
+    /// The impulse responses with an error: only these are marked in red in the lists, not the others of the same pair.
+    var impulsesInError: Set<ConvProblem.Place> { Set(problems.filter { $0.severity == .error }.flatMap(\.places)) }
 }
 
 extension Array {

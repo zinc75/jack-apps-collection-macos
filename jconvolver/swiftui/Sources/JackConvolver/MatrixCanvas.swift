@@ -29,7 +29,8 @@ struct MatrixCanvas: View {
                     .onContinuousHover { phase in
                         if case .active(let point) = phase { model.hoverPair = pair(at: point, n: n, m: m, cs: cs) } else { model.hoverPair = nil }
                     }
-                    .onDrop(of: [.plainText], delegate: MatrixDropDelegate(model: model) { point in pair(at: point, n: n, m: m, cs: cs) })
+                    .onGeometryChange(for: CGRect.self) { $0.frame(in: .named("matrixPage")) } action: { model.matrixContentFrame = $0 }
+                    .onChange(of: model.dragPointer) { _, pointer in updateDrop(pointer, n: n, m: m, cs: cs) }
                     .focusable()
                     .focusEffectDisabled()
                     .onDeleteCommand { model.clearSelection() }
@@ -38,7 +39,18 @@ struct MatrixCanvas: View {
                     .frame(minWidth: geometry.size.width, minHeight: geometry.size.height, alignment: .topLeading)
             }
         }
+        .onGeometryChange(for: CGRect.self) { $0.frame(in: .named("matrixPage")) } action: { model.matrixViewport = $0 }
         .blockBackground()
+    }
+
+    /// While something is dragged from the list: where it would land.
+    private func updateDrop(_ pointer: CGPoint?, n: Int, m: Int, cs: CGFloat) {
+        guard let pointer, model.matrixViewport.contains(pointer), !model.draggedItems.isEmpty else { model.dropPlan = nil; return }
+        let local = CGPoint(x: pointer.x - model.matrixContentFrame.minX, y: pointer.y - model.matrixContentFrame.minY)
+        guard let pair = pair(at: local, n: n, m: m, cs: cs) else { model.dropPlan = nil; return }
+        let flags = NSEvent.modifierFlags
+        let mode: PlacementMode = flags.contains(.option) ? .column : flags.contains(.shift) ? .diagonal : .row
+        model.dropPlan = model.plan(model.draggedItems, from: pair, mode: mode)
     }
 
     // MARK: The menu of a right-click
@@ -192,6 +204,19 @@ struct MatrixCanvas: View {
             }
         }
 
+        // What was copied stays outlined, dashed, where it came from.
+        if let copied = model.clipboardShape {
+            let dash = StrokeStyle(lineWidth: 1.5, dash: [5, 3])
+            switch copied {
+            case .block(let b):
+                let frame = CGRect(x: labelWidth + CGFloat(b.firstOutput) * cs, y: topMargin + CGFloat(b.firstInput) * cs,
+                                   width: CGFloat(b.lastOutput - b.firstOutput + 1) * cs, height: CGFloat(b.lastInput - b.firstInput + 1) * cs)
+                context.stroke(Path(frame.insetBy(dx: 2.5, dy: 2.5)), with: .color(.white.opacity(0.85)), style: dash)
+            case .picked(let set):
+                for pair in set { context.stroke(Path(rect(pair, cs: cs).insetBy(dx: 2.5, dy: 2.5)), with: .color(.white.opacity(0.85)), style: dash) }
+            }
+        }
+
         // The selection: one frame around a block, a frame for each picked pair.
         switch model.selection.shape {
         case .block(let b):
@@ -246,32 +271,5 @@ struct MatrixCanvas: View {
     private func fit(_ text: String, width: CGFloat) -> String {
         let room = max(3, Int(width / 6))
         return text.count <= room ? text : String(text.prefix(room - 1)) + "…"
-    }
-}
-
-/// What is dragged over the matrix from the list of files: where it would land is shown, and it is placed when it is dropped.
-struct MatrixDropDelegate: DropDelegate {
-    let model: AppModel
-    let pairAt: (CGPoint) -> ConvPair?
-
-    private var mode: PlacementMode {
-        let flags = NSEvent.modifierFlags
-        return flags.contains(.option) ? .column : flags.contains(.shift) ? .diagonal : .row
-    }
-
-    func validateDrop(info: DropInfo) -> Bool { !model.draggedItems.isEmpty }
-
-    func dropUpdated(info: DropInfo) -> DropProposal? {
-        if let pair = pairAt(info.location) { model.dropPlan = model.plan(model.draggedItems, from: pair, mode: mode) } else { model.dropPlan = nil }
-        return DropProposal(operation: .copy)
-    }
-
-    func dropExited(info: DropInfo) { model.dropPlan = nil }
-
-    func performDrop(info: DropInfo) -> Bool {
-        defer { model.dropPlan = nil; model.draggedItems = [] }
-        guard let pair = pairAt(info.location) else { return false }
-        model.apply(model.plan(model.draggedItems, from: pair, mode: mode))
-        return true
     }
 }

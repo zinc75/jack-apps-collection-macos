@@ -43,6 +43,60 @@ struct NewConfigurationSheet: View {
     }
 }
 
+/// Changes the number of inputs and outputs of the configuration that is open.
+struct ResizeSheet: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.dismiss) private var dismiss
+    @State private var inputs = 1
+    @State private var outputs = 1
+
+    /// How many impulse responses go away with the pairs that leave the matrix.
+    private var lost: Int {
+        guard let document = model.document else { return 0 }
+        var after = document
+        after.resize(inputs: inputs, outputs: outputs)
+        return document.content.impulses.values.reduce(0) { $0 + $1.count } - after.content.impulses.values.reduce(0) { $0 + $1.count }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Entrées et sorties").font(.title3).fontWeight(.semibold)
+                Text("Le nombre de voies de la matrice. Les noms et les RI des voies qui restent sont gardés.")
+                    .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
+            Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 10) {
+                GridRow {
+                    Text("Entrées")
+                    NumberField(label: "Entrées", value: $inputs, range: 1...128)
+                    Stepper("", value: $inputs, in: 1...128).labelsHidden()
+                }
+                GridRow {
+                    Text("Sorties")
+                    NumberField(label: "Sorties", value: $outputs, range: 1...128)
+                    Stepper("", value: $outputs, in: 1...128).labelsHidden()
+                }
+            }
+            if lost > 0 {
+                Label(lost == 1 ? "1 RI sera retirée." : "\(lost) RI seront retirées.", systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(Color.alert)
+            }
+            HStack {
+                Spacer()
+                Button("Annuler", role: .cancel) { dismiss() }.keyboardShortcut(.cancelAction)
+                Button("Appliquer") {
+                    model.edit(String(localized: "nombre d'entrées et de sorties")) { $0.resize(inputs: inputs, outputs: outputs) }
+                    dismiss()
+                }
+                .buttonStyle(.borderedProminent).accentTint().keyboardShortcut(.defaultAction)
+                .disabled(inputs == model.document?.inputCount && outputs == model.document?.outputCount)
+            }
+        }
+        .padding(22).frame(width: 440)
+        .onAppear { inputs = model.document?.inputCount ?? 1; outputs = model.document?.outputCount ?? 1 }
+    }
+}
+
 /// The command line that the engine runs, to read and to copy.
 struct CommandSheet: View {
     @Environment(AppModel.self) private var model
@@ -53,11 +107,12 @@ struct CommandSheet: View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Ligne de commande générée").font(.title3).fontWeight(.semibold)
             Text("Collée dans un terminal, elle lance le moteur de la même façon.").font(.callout).foregroundStyle(.secondary)
-            Text(line)
+            // The terminal view is dark in both appearances, with the colours of a shell.
+            Text(CommandHighlighter.attributed(line))
                 .font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
                 .padding(12).frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.black.opacity(0.35), in: RoundedRectangle(cornerRadius: 8))
-                .foregroundStyle(Color(white: 0.9))
+                .background(Color(white: 0.11), in: RoundedRectangle(cornerRadius: 8))
+                .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.primary.opacity(0.12), lineWidth: 0.5))
             HStack {
                 Button("Copier") {
                     NSPasteboard.general.clearContents()
@@ -78,7 +133,7 @@ struct ProblemsSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text(model.problems.isEmpty ? "Prêt à lancer" : "\(model.problems.count) à régler").font(.title3).fontWeight(.semibold)
+            Text(model.problems.isEmpty ? String(localized: "Prêt à lancer") : model.problems.count == 1 ? String(localized: "1 problème à régler") : String(localized: "\(model.problems.count) problèmes à régler")).font(.title3).fontWeight(.semibold)
             ScrollView { ProblemList() }.frame(maxHeight: 380)
             HStack {
                 Spacer()
@@ -148,7 +203,7 @@ struct PortNamesSheet: View {
                 TextField("Préfixe", text: prefix).textFieldStyle(.roundedBorder).frame(width: 80)
                 Button("Numéroter") {
                     let p = prefix.wrappedValue.trimmingCharacters(in: .whitespaces)
-                    names.wrappedValue = names.wrappedValue.indices.map { "\(p.isEmpty ? defaultPrefix : p) \($0 + 1)" }
+                    names.wrappedValue = names.wrappedValue.indices.map { "\(p.isEmpty ? defaultPrefix : p)\($0 + 1)" }
                 }
             }
             ScrollView {

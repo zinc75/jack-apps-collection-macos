@@ -38,6 +38,25 @@ struct MatrixView: View {
                 }
             }
             .padding(24)
+            .coordinateSpace(name: "matrixPage")
+            .overlay(alignment: .topLeading) { DraggedItemsBadge() }
+        }
+    }
+}
+
+/// What follows the pointer while impulse responses are dragged from the list to the matrix.
+struct DraggedItemsBadge: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.appAccentColor) private var accent
+
+    var body: some View {
+        if let pointer = model.dragPointer {
+            Text("\(model.draggedItems.count) RI")
+                .font(.callout.weight(.semibold)).foregroundStyle(.white)
+                .padding(.horizontal, 10).padding(.vertical, 4)
+                .background(accent, in: Capsule())
+                .position(x: pointer.x + 24, y: pointer.y + 20)
+                .allowsHitTesting(false)
         }
     }
 }
@@ -56,6 +75,7 @@ struct MatrixToolbar: View {
             .pickerStyle(.segmented).labelsHidden().fixedSize().accentTint()
             Text(verbatim: summary).foregroundStyle(.secondary).padding(.leading, 6)
             Spacer()
+            Button { model.showsResize = true } label: { Label("Entrées et sorties…", systemImage: "arrow.up.left.and.arrow.down.right") }
             if model.mode == .realTime {
                 Button { model.showsPortNames = true } label: { Label("Noms des ports JACK…", systemImage: "pencil") }
             }
@@ -65,8 +85,8 @@ struct MatrixToolbar: View {
                 .disabled(!model.canUndo).help("Annuler").keyboardShortcut("z", modifiers: .command)
             Button { model.redo() } label: { Image(systemName: "arrow.uturn.forward") }
                 .disabled(!model.canRedo).help("Rétablir").keyboardShortcut("z", modifiers: [.command, .shift])
-            Button("Enregistrer") { model.save() }
-                .buttonStyle(.borderedProminent).accentTint().disabled(!model.isEdited)
+            Button(model.savesAsNew ? "Enregistrer sous…" : "Enregistrer") { model.save() }
+                .buttonStyle(.borderedProminent).accentTint().disabled(!model.isEdited && !model.savesAsNew)
         }
     }
 

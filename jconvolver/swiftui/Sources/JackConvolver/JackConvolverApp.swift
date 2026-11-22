@@ -63,7 +63,7 @@ struct JackConvolverApp: App {
                 .environment(model)
                 .environment(appearance)
                 .appAccent(appearance)
-                .frame(minWidth: 1040, minHeight: 720)
+                .frame(minWidth: 1130, minHeight: 720)
         }
         .defaultSize(width: 1180, height: 820)
         .windowResizability(.contentMinSize)
@@ -73,7 +73,7 @@ struct JackConvolverApp: App {
                 Button("Ouvrir…") { model.openPanel() }.keyboardShortcut("o", modifiers: .command)
             }
             CommandGroup(replacing: .saveItem) {
-                Button("Enregistrer") { model.save() }.keyboardShortcut("s", modifiers: .command).disabled(!model.isOpen)
+                Button(model.savesAsNew ? "Enregistrer sous…" : "Enregistrer") { model.save() }.keyboardShortcut("s", modifiers: .command).disabled(!model.isOpen)
                 Button("Enregistrer sous…") { model.save(asNew: true) }.keyboardShortcut("s", modifiers: [.command, .shift]).disabled(!model.isOpen)
             }
             CommandGroup(replacing: .importExport) {}

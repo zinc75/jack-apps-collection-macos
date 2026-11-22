@@ -22,6 +22,8 @@ public struct ConvProblem: Equatable, Sendable {
         case inputFileChannels(channels: Int, expected: Int)
         /// The compensation of latency removes or shortens this many impulse responses.
         case latencyAffects(count: Int)
+        /// The compensation of latency would take away more frames than the file has after its start: the pair stays silent.
+        case latencyBeyondFile(path: String, frames: Int, removed: Int)
 
         // The ports
         case tooManyPorts(inputs: Int, outputs: Int, maximum: Int)
@@ -48,13 +50,23 @@ public struct ConvProblem: Equatable, Sendable {
         case densityOutOfRange(Double)
     }
 
+    /// One impulse response of the matrix: the pair, and its place among the impulse responses of that pair.
+    public struct Place: Hashable, Sendable {
+        public var pair: ConvPair
+        public var index: Int
+        public init(pair: ConvPair, index: Int) { self.pair = pair; self.index = index }
+    }
+
     public var kind: Kind
     /// The pair it is about, when it is about one.
     public var pair: ConvPair?
+    /// The impulse responses it is about: only these are marked, not the others of the same pair.
+    public var places: [Place]
 
-    public init(_ kind: Kind, pair: ConvPair? = nil) {
+    public init(_ kind: Kind, pair: ConvPair? = nil, index: Int? = nil) {
         self.kind = kind
         self.pair = pair
+        self.places = pair.map { p in index.map { [Place(pair: p, index: $0)] } ?? [] } ?? []
     }
 
     public var severity: Severity {
@@ -124,34 +136,45 @@ public enum ConvValidator {
         if document.placedPairs == 0 { out.append(ConvProblem(.noImpulse)) }
 
         var affected = 0
-        var rateReported = Set<String>()
+        var rateReported: [String: Int] = [:]
         for pair in document.content.impulses.keys.sorted() {
-            for impulse in document.content.impulses[pair] ?? [] {
+            for (index, impulse) in (document.content.impulses[pair] ?? []).enumerated() {
                 switch impulse.source {
                 case .file(let file, let channel):
                     if compensation > 0, impulse.delay < compensation { affected += 1 }
                     let path = ConvConfig.path(of: file, directory: impulse.directory, configDirectory: context.configDirectory)
-                    guard let info = context.fileInfo(path) else { out.append(ConvProblem(.fileMissing(path: path), pair: pair)); continue }
-                    if let rate, info.sampleRate != rate, rateReported.insert(path).inserted {
-                        out.append(ConvProblem(.sampleRateMismatch(path: path, fileRate: info.sampleRate, expectedRate: rate), pair: pair))
+                    guard let info = context.fileInfo(path) else { out.append(ConvProblem(.fileMissing(path: path), pair: pair, index: index)); continue }
+                    // The engine moves the start of the file by what the compensation takes away from the delay.
+                    let removed = max(0, compensation - impulse.delay)
+                    if removed > 0, info.frames > 0, impulse.offset + removed >= Int(info.frames), impulse.offset < Int(info.frames) {
+                        out.append(ConvProblem(.latencyBeyondFile(path: path, frames: Int(info.frames), removed: removed), pair: pair, index: index))
+                    }
+                    if let rate, info.sampleRate != rate {
+                        // One problem for the file; every impulse response that reads it is marked.
+                        if let at = rateReported[path] {
+                            out[at].places.append(ConvProblem.Place(pair: pair, index: index))
+                        } else {
+                            rateReported[path] = out.count
+                            out.append(ConvProblem(.sampleRateMismatch(path: path, fileRate: info.sampleRate, expectedRate: rate), pair: pair, index: index))
+                        }
                     }
                     if info.frames > 0, impulse.offset >= Int(info.frames) {
-                        out.append(ConvProblem(.startBeyondEnd(offset: impulse.offset, frames: Int(info.frames)), pair: pair))
+                        out.append(ConvProblem(.startBeyondEnd(offset: impulse.offset, frames: Int(info.frames)), pair: pair, index: index))
                     }
                     if channel < 1 || channel > info.channels {
-                        out.append(ConvProblem(.channelMissing(channel: channel, channels: info.channels), pair: pair))
+                        out.append(ConvProblem(.channelMissing(channel: channel, channels: info.channels), pair: pair, index: index))
                     }
                 case .dirac:
                     if compensation > 0, impulse.delay < compensation { affected += 1 }
                 case .hilbert(let length):
                     if !Self.hilbertLengthRange.contains(length) {
-                        out.append(ConvProblem(.hilbertLengthOutOfRange(length: length), pair: pair))
+                        out.append(ConvProblem(.hilbertLengthOutOfRange(length: length), pair: pair, index: index))
                     } else if impulse.delay < compensation + length / 2 {
                         if compensation > 0 { affected += 1 }
-                        out.append(ConvProblem(.hilbertDelayTooSmall(delay: impulse.delay, minimum: compensation + length / 2), pair: pair))
+                        out.append(ConvProblem(.hilbertDelayTooSmall(delay: impulse.delay, minimum: compensation + length / 2), pair: pair, index: index))
                     }
                 case .copy(let source):
-                    if document.impulses(at: source).isEmpty { out.append(ConvProblem(.copyOfEmptyPair(source: source), pair: pair)) }
+                    if document.impulses(at: source).isEmpty { out.append(ConvProblem(.copyOfEmptyPair(source: source), pair: pair, index: index)) }
                 }
             }
         }

@@ -135,10 +135,11 @@ public struct ClipboardItem: Equatable, Sendable {
 }
 
 extension ConvDocument {
-    /// The impulse responses of the pairs, with their places counted from the top left of the block that holds the pairs.
+    /// The impulse responses of the pairs, with their places counted from the top left of the block that holds all the pairs, empty ones
+    /// included: what is pasted keeps the shape of what was chosen.
     public func copyOut(_ pairs: [ConvPair]) -> [ClipboardItem] {
         let filled = pairs.filter { !impulses(at: $0).isEmpty }
-        guard let i0 = filled.map(\.input).min(), let o0 = filled.map(\.output).min() else { return [] }
+        guard !filled.isEmpty, let i0 = pairs.map(\.input).min(), let o0 = pairs.map(\.output).min() else { return [] }
         return filled.sorted().map { ClipboardItem(inputOffset: $0.input - i0, outputOffset: $0.output - o0, impulses: impulses(at: $0)) }
     }
 

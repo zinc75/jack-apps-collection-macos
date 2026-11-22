@@ -50,8 +50,9 @@ struct StatusPill: View {
         }
         guard model.isOpen else { return (.ready, "circle", "Aucune configuration ouverte") }
         let count = model.problems.count
-        if model.hasErrors { return (.error, "exclamationmark.circle.fill", "\(count) à régler") }
-        if count > 0 { return (.warning, "exclamationmark.triangle.fill", "\(count) à régler") }
+        let toFix: LocalizedStringKey = count == 1 ? "1 problème à régler" : "\(count) problèmes à régler"
+        if model.hasErrors { return (.error, "exclamationmark.circle.fill", toFix) }
+        if count > 0 { return (.warning, "exclamationmark.triangle.fill", toFix) }
         return (.ready, "checkmark.circle.fill", model.mode == .file ? "Prêt à traiter" : "Prêt à lancer")
     }
 
@@ -59,7 +60,8 @@ struct StatusPill: View {
         let state = content
         let color: Color = switch state.kind { case .ready, .running: .green; case .warning: .orange; case .error: .red }
         Button {
-            if case .ended = model.controller.state { model.page = .log } else if model.problems.isEmpty == false { model.showsProblems = true }
+            // The pill says what is wrong: the problems to settle open their list; the log opens when the engine stopped on a problem.
+            if model.controller.endedOnAProblem { model.page = .log } else if !model.problems.isEmpty { model.showsProblems = true }
         } label: {
             HStack(spacing: 7) {
                 Image(systemName: state.symbol).foregroundStyle(color)

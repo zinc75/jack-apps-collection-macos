@@ -95,7 +95,7 @@ struct ImpulseRowFields: View {
 
     private var isFile: Bool { if case .file = impulse.source { return true } else { return false } }
     private var isCopy: Bool { if case .copy = impulse.source { return true } else { return false } }
-    private var bad: Bool { model.pairsInError.contains(pair) }
+    private var bad: Bool { model.impulsesInError.contains(ConvProblem.Place(pair: pair, index: index)) }
 
     var body: some View {
         HStack(spacing: 8) {
@@ -147,7 +147,12 @@ struct ImpulseRowFields: View {
         return true
     }
     private func commit(length text: String) -> Bool {
-        guard let v = Int(text), v >= 0 else { return false }
+        guard var v = Int(text), v >= 0 else { return false }
+        // Not longer than what is left of the file after the start.
+        if case .file(let file, _) = impulse.source,
+           let info = model.catalog.info(at: ConvConfig.path(of: file, directory: impulse.directory, configDirectory: model.configDirectory)) {
+            v = min(v, max(Int(info.frames) - impulse.offset, 0))
+        }
         change(String(localized: "réglage de la longueur")) { $0.length = v }
         return true
     }
@@ -167,7 +172,7 @@ struct ValueField: View {
             .labelsHidden().textFieldStyle(.roundedBorder).multilineTextAlignment(.trailing).monospacedDigit()
             .frame(width: 70).focused($focused).disabled(!enabled).opacity(enabled ? 1 : 0.35)
             .onAppear { edited = text }
-            .onChange(of: text) { _, new in if !focused { edited = new } }
+            .onChange(of: text) { _, new in edited = new }
             .onSubmit { validate() }
             .onChange(of: focused) { _, now in if !now { validate() } }
     }

@@ -31,6 +31,8 @@ extension ConvProblem {
             return String(localized: "Le fichier d'entrée a \(channels) voie(s) ; la configuration compte \(expected) entrée(s). fconvolver exige le même nombre.")
         case .latencyAffects(let count):
             return String(localized: "La compensation de latence supprime ou raccourcit \(count) RI.")
+        case .latencyBeyondFile(let path, let frames, let removed):
+            return String(localized: "La compensation de latence retire \(removed) échantillons au début de « \(name(path)) », qui n'en a que \(frames) : cette RI restera muette. Donnez-lui un retard, ou baissez la compensation.")
         case .tooManyPorts(let inputs, let outputs, let maximum):
             return String(localized: "\(inputs) entrées et \(outputs) sorties : au plus \(maximum).")
         case .emptyPortName(let isInput, let index):
@@ -44,7 +46,7 @@ extension ConvProblem {
         case .fileMissing(let path):
             return String(localized: "« \(name(path)) » est introuvable dans \((path as NSString).deletingLastPathComponent).")
         case .sampleRateMismatch(let path, let fileRate, let expected):
-            return String(localized: "« \(name(path)) » est à \(hz(fileRate)) Hz, la référence est à \(hz(expected)) Hz.")
+            return String(localized: "« \(name(path)) » est à \(hz(fileRate)) Hz, le serveur JACK est à \(hz(expected)) Hz.")
         case .startBeyondEnd(let offset, let frames):
             return String(localized: "Le début (\(offset)) dépasse la fin du fichier (\(frames) échantillons).")
         case .channelMissing(let channel, let channels):

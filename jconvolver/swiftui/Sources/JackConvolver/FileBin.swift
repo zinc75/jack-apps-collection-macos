@@ -113,14 +113,12 @@ struct FileBin: View {
         .background(selected ? accent.opacity(0.22) : .clear, in: RoundedRectangle(cornerRadius: 6))
         .contentShape(Rectangle())
         .onTapGesture { click(row, index: index, all: all) }
-        .onDrag {
-            if !selected { model.picked = Set(row.items) }
-            model.draggedItems = model.orderedPicks()
-            return NSItemProvider(object: "jackconvolver-items" as NSString)
-        } preview: {
-            Text("\(model.orderedPicks().count) RI").padding(.horizontal, 10).padding(.vertical, 5)
-                .background(accent, in: Capsule()).foregroundStyle(.white)
-        }
+        .gesture(DragGesture(minimumDistance: 5, coordinateSpace: .named("matrixPage"))
+            .onChanged { value in
+                if model.dragPointer == nil { model.beginItemDrag(row.items) }
+                model.dragPointer = value.location
+            }
+            .onEnded { _ in model.endItemDrag() })
     }
 
     private func toggleOpen(_ row: Row) {

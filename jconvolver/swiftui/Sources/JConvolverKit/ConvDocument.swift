@@ -309,7 +309,16 @@ public struct ConvDocument: Equatable, Sendable {
         // Files are grouped by folder so that a `/cd` is written once for each, the pulses and filters come first, and a
         // copy comes after everything it may copy.
         var entries: [(pair: ConvPair, impulse: ConvImpulse)] = []
-        for pair in content.impulses.keys.sorted() { for impulse in content.impulses[pair] ?? [] { entries.append((pair, impulse)) } }
+        for pair in content.impulses.keys.sorted() {
+            for var impulse in content.impulses[pair] ?? [] {
+                // A file given with a whole path is written as a folder (`/cd`, once for all the files of the folder) and a name.
+                if case .file(let path, let channel) = impulse.source, impulse.directory == nil, path.hasPrefix("/") {
+                    impulse.directory = (path as NSString).deletingLastPathComponent
+                    impulse.source = .file(path: (path as NSString).lastPathComponent, channel: channel)
+                }
+                entries.append((pair, impulse))
+            }
+        }
         func isCopy(_ i: ConvImpulse) -> Bool { if case .copy = i.source { return true } else { return false } }
         func isFile(_ i: ConvImpulse) -> Bool { if case .file = i.source { return true } else { return false } }
 
