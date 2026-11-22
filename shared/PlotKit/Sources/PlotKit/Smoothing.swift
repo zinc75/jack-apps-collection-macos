@@ -29,20 +29,21 @@ extension PlotCurve {
         return lo
     }
 
-    /// The magnitudes smoothed over a fraction of an octave: each value becomes the root of the mean of the powers (the squares) of
+    /// The values smoothed over a fraction of an octave. A group delay is averaged as it is; the magnitudes as follows: each value becomes the root of the mean of the powers (the squares) of
     /// the points within half the fraction of an octave on each side of its abscissa, so that the energy in a band is what is read.
     /// The mean is taken over the points, which is right for the regular bins of a Fourier transform; the points of a curve that are
     /// not finite are left out of the means and stay as they are; an abscissa that is not positive (the bin at 0 Hz) is not smoothed.
     /// The values must be magnitudes (not decibels), and the abscissas increasing.
     public func smoothed(_ smoothing: OctaveSmoothing) -> PlotCurve {
-        guard isMagnitude, smoothing != .none else { return self }
+        guard isMagnitude || isGroupDelay, smoothing != .none else { return self }
         let n = count
         guard n > 1 else { return self }
         // Running sums of the power and of the number of values, so that the mean of a band costs two reads.
         var power = [Double](repeating: 0, count: n + 1), number = [Int](repeating: 0, count: n + 1)
         for i in 0..<n {
             let ok = y[i].isFinite
-            power[i + 1] = power[i] + (ok ? y[i] * y[i] : 0)
+            // The power of a magnitude (its square); the value itself for a group delay, which is not an amplitude.
+            power[i + 1] = power[i] + (ok ? (isMagnitude ? y[i] * y[i] : y[i]) : 0)
             number[i + 1] = number[i] + (ok ? 1 : 0)
         }
         let half = pow(2, 1 / (2 * Double(smoothing.rawValue)))
@@ -50,7 +51,10 @@ extension PlotCurve {
         for i in 0..<n where y[i].isFinite && x[i] > 0 {
             let low = lowerBound(x[i] / half), high = upperBound(x[i] * half)
             let k = number[high] - number[low]
-            if k > 0 { out[i] = ((power[high] - power[low]) / Double(k)).squareRoot() }
+            if k > 0 {
+                let mean = (power[high] - power[low]) / Double(k)
+                out[i] = isMagnitude ? mean.squareRoot() : mean
+            }
         }
         var copy = self
         copy.y = out

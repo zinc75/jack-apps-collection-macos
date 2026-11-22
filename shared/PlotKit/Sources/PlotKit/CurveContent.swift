@@ -24,6 +24,8 @@ public struct PlotCurve: Identifiable {
     public var isMagnitude: Bool
     /// A curve drawn thin and pale behind the others, which cannot be read off: the raw spectrum behind its smoothed one.
     public var isReference = false
+    /// The values are a group delay (in milliseconds): they can be smoothed in fractions of an octave too, as plain means.
+    public var isGroupDelay = false
 
     public init(name: String, x: [Double], y: [Double], color: Color? = nil, filled: Bool = true, phase: PhaseUnit? = nil, delay: Double? = nil,
                 isMagnitude: Bool = false) {
@@ -35,6 +37,32 @@ public struct PlotCurve: Identifiable {
         self.filled = filled
         self.phase = phase
         self.delay = delay
+    }
+
+    /// The group delay of a phase, in milliseconds: minus the slope of the unwrapped phase, `−dφ/dω`. The slope at a point is taken
+    /// between its two neighbours (one-sided at the ends), whatever the spacing of the abscissas, which are hertz. A curve that is
+    /// not a phase is returned as it is.
+    public func groupDelay() -> PlotCurve {
+        guard let phase else { return self }
+        let u = unwrapped()
+        let n = min(u.x.count, u.y.count)
+        var out = [Double](repeating: .nan, count: n)
+        for i in 0..<n where u.y[i].isFinite && u.x[i].isFinite {
+            // The nearest finite neighbours on each side.
+            var a = i - 1, b = i + 1
+            while a >= 0, !(u.y[a].isFinite && u.x[a].isFinite) { a -= 1 }
+            while b < n, !(u.y[b].isFinite && u.x[b].isFinite) { b += 1 }
+            let lo = a >= 0 ? a : i, hi = b < n ? b : i
+            guard hi != lo, u.x[hi] != u.x[lo] else { continue }
+            let slope = (u.y[hi] - u.y[lo]) / (u.x[hi] - u.x[lo])   // phase units per hertz
+            out[i] = -slope / phase.period * 1000
+        }
+        var copy = self
+        copy.y = out
+        copy.phase = nil
+        copy.delay = nil
+        copy.isGroupDelay = true
+        return copy
     }
 
     /// The delay, in seconds, of the straight line that fits the unwrapped phase best (least squares): the mean delay, which for an

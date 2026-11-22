@@ -241,3 +241,63 @@ final class DelayValueTests: XCTestCase {
         XCTAssertEqual(PlotLabels().delayFitted, "fitted")
     }
 }
+
+final class GroupDelayTests: XCTestCase {
+    private func wrap(_ v: Double, _ period: Double) -> Double { v - period * ((v + period / 2) / period).rounded(.down) }
+
+    func testAPureDelayHasAConstantGroupDelay() {
+        let delay = 0.0125   // 12.5 ms
+        // Irregular abscissas: the derivative does not assume a step.
+        var x = 0.0, xs: [Double] = []
+        for i in 0..<300 { x += 8 + Double(i % 7); xs.append(x) }
+        for unit in [PhaseUnit.degrees, .radians] {
+            let p = unit.period
+            let c = PlotCurve(name: "p", x: xs, y: xs.map { wrap(-p * $0 * delay, p) }, phase: unit)
+            let g = c.groupDelay()
+            XCTAssertTrue(g.isGroupDelay)
+            XCTAssertNil(g.phase)
+            for v in g.y { XCTAssertEqual(v, 12.5, accuracy: 1e-6, "in milliseconds") }
+        }
+    }
+
+    func testTheGroupDelayFollowsTheSlope() {
+        // The phase falls twice as fast above 5 kHz: twice the delay there.
+        let xs = (1...400).map { Double($0) * 20 }
+        let phase = xs.map { f -> Double in f < 5000 ? -360 * f * 0.002 : -360 * (5000 * 0.002 + (f - 5000) * 0.004) }
+        let g = PlotCurve(name: "p", x: xs, y: phase.map { wrap($0, 360) }, phase: .degrees).groupDelay().y
+        XCTAssertEqual(g[100], 2, accuracy: 1e-6)    // 2 kHz
+        XCTAssertEqual(g[350], 4, accuracy: 1e-6)    // 7 kHz
+    }
+
+    func testNotAPhaseOrNonFiniteValues() {
+        let m = PlotCurve(name: "m", x: [1, 2, 3], y: [1, 2, 3])
+        XCTAssertEqual(m.groupDelay().y, m.y)
+        let c = PlotCurve(name: "p", x: [0, 10, 20, 30, 40], y: [0, -10, .nan, -30, -40], phase: .degrees)
+        let g = c.groupDelay().y
+        XCTAssertTrue(g[2].isNaN)
+        XCTAssertFalse(g[1].isNaN, "the neighbours that are finite are used across the gap")
+        XCTAssertEqual(g[3], 1 / 360.0 * 1000, accuracy: 1e-9)   // −(−10°/10 Hz)/360 s
+    }
+
+    func testAGroupDelayIsSmoothedAsAPlainMean() {
+        var y = [Double](repeating: 0, count: 4800)
+        y[999] = 10                                          // one bin of 10 ms at 5 kHz
+        let xs = (1...4800).map { Double($0) * 5 }
+        var c = PlotCurve(name: "g", x: xs, y: y)
+        c.isGroupDelay = true
+        let s = c.smoothed(.third).y
+        let inBand = s.filter { $0 > 0 }
+        XCTAssertGreaterThan(inBand.count, 50)
+        // A mean, not a mean of squares: a point that sees the spike has 10 / (number of points in its band), exactly.
+        let bandPoints = s.enumerated().filter { $0.element > 0 }.count
+        XCTAssertEqual(inBand.reduce(0, +) > 0, true)
+        XCTAssertLessThan(s.max()!, 10)
+        XCTAssertGreaterThan(bandPoints, 0)
+        XCTAssertEqual(s[999], 10 / Double(s.filter { _ in true }.count > 0 ? bandWidth(at: 999, xs) : 1), accuracy: 1e-9)
+    }
+
+    private func bandWidth(at i: Int, _ xs: [Double]) -> Int {
+        let half = pow(2, 1.0 / 6)
+        return xs.filter { $0 >= xs[i] / half && $0 <= xs[i] * half }.count
+    }
+}

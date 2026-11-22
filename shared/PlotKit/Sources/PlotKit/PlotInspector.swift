@@ -45,6 +45,8 @@ public final class PlotDisplayOptions {
     public var unwrapPhase = false
     /// The delay is taken out of a phase (the straight line it makes).
     public var removeDelay = false
+    /// A phase is shown as its group delay (the slope of the unwrapped phase, in ms).
+    public var showGroupDelay = false
     /// The magnitudes are smoothed over a fraction of an octave, and the raw spectrum stays behind, thin and pale.
     public var smoothing = OctaveSmoothing.none
     public var showsUnsmoothed = true
@@ -89,7 +91,7 @@ public struct PlotInspector: View {
                 .padding(.leading, 18)
                 .disabled(!options.gradient.enabled)
             Text(labels.gradientHelp).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            if controller.hasMagnitude {
+            if controller.hasMagnitude || (controller.hasPhase && options.showGroupDelay) {
                 Divider().padding(.vertical, 4)
                 Picker(labels.smoothing, selection: $options.smoothing) {
                     Text(labels.noSmoothing).tag(OctaveSmoothing.none)
@@ -100,9 +102,11 @@ public struct PlotInspector: View {
             }
             if controller.hasPhase {
                 Divider().padding(.vertical, 4)
-                Toggle(labels.unwrapPhase, isOn: $options.unwrapPhase)
+                Toggle(labels.groupDelay, isOn: $options.showGroupDelay)
+                Text(labels.groupDelayHelp).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                Toggle(labels.unwrapPhase, isOn: $options.unwrapPhase).disabled(options.showGroupDelay).padding(.top, 4)
                 Text(labels.unwrapPhaseHelp).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                Toggle(labels.removeDelay, isOn: $options.removeDelay).padding(.top, 4)
+                Toggle(labels.removeDelay, isOn: $options.removeDelay).disabled(options.showGroupDelay).padding(.top, 4)
                 Text(labels.removeDelayHelp).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 // The value that is taken out, for each phase, and where it comes from.
                 ForEach(controller.phaseDelays, id: \.name) { d in
