@@ -77,7 +77,7 @@ struct ImpulseDetailWindow: View {
         var changed = impulse
         changed.offset = start
         // To the end of the file is a length of 0, as the configuration files say it.
-        changed.length = end >= total - 1 ? 0 : max(end - start, 1)
+        changed.length = ImpulseZone.length(start: start, end: end, total: total)
         model.edit(String(localized: "zone lue d'une RI")) { $0.replace(changed, at: target.index, of: target.pair) }
         self.zone = zoneOfImpulse
     }
@@ -85,8 +85,7 @@ struct ImpulseDetailWindow: View {
     /// A zone typed in the inspector, or set from the analysis: kept inside the file and at least one frame long.
     private func applyZone(start: Int, end: Int) {
         guard let total = data?.count, total > 1 else { return }
-        let s = min(max(start, 0), total - 2)
-        let e = min(max(end, s + 1), total - 1)
+        let (s, e) = ImpulseZone.clamped(start: start, end: end, total: total)
         zone = Double(s)...Double(e)
         commitZone()
     }
@@ -216,9 +215,20 @@ struct ImpulseDetailWindow: View {
     }
 
     private func regionEditor(total: Int) -> PlotRegionEditor {
-        PlotRegionEditor(range: $zone,
-                         style: PlotRegionStyle(color: accent, minLength: 1, bounds: 0...Double(max(total - 1, 1)), name: String(localized: "zone lue")),
-                         onCommit: { commitZone() })
+        let rate = data?.sampleRate ?? 0
+        // The bubbles of a drag: the sample number (what the configuration file says) and the time it makes.
+        let format: @Sendable (Double) -> String = { value in
+            let frames = Int(value.rounded())
+            guard rate > 0 else { return "\(frames)" }
+            return "\(frames) · " + (Double(frames) / rate * 1000).formatted(.number.precision(.fractionLength(1))) + " ms"
+        }
+        var preview: PlotRegionPart?
+        #if DEBUG
+        preview = ProcessInfo.processInfo.environment["JACKCONVOLVER_ZONE_DRAG"].flatMap { ["start": .start, "end": .end, "move": .move][$0] }
+        #endif
+        return PlotRegionEditor(range: $zone,
+                                style: PlotRegionStyle(color: accent, minLength: 1, bounds: 0...Double(max(total - 1, 1)), name: String(localized: "zone lue"), format: format),
+                                previewDragging: preview, onCommit: { commitZone() })
     }
 
     /// The page "Zone" of the inspector.

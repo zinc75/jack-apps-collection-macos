@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import AppearanceKit
+import JConvolverKit
 import PlotKit
 import SwiftUI
 
@@ -71,7 +72,7 @@ struct ZoneInspector: View {
                 .font(.callout)
             }
         }
-        .onAppear(perform: syncTexts)
+        .onAppear { syncTexts() }
         .onChange(of: zone) { _, _ in syncTexts() }
     }
 
@@ -98,16 +99,21 @@ struct ZoneInspector: View {
             .onChange(of: focus) { old, _ in if old == which { submit() } }
     }
 
-    /// The texts follow the zone, except the one that is being typed in.
-    private func syncTexts() {
-        if focus != .start { startText = "\(start)" }
-        if focus != .end { endText = "\(end)" }
+    /// The texts follow the zone, except the one that is being typed in (unless `force`).
+    private func syncTexts(force: Bool = false) {
+        if force || focus != .start { startText = "\(start)" }
+        if force || focus != .end { endText = "\(end)" }
     }
 
     private func commit(_ text: String, isStart: Bool) {
-        guard let value = Int(text.trimmingCharacters(in: .whitespaces)) else { syncTexts(); return }
-        if isStart { apply(value, end) } else { apply(start, value) }
-        startText = "\(start)"; endText = "\(end)"
+        guard let value = Int(text.trimmingCharacters(in: .whitespaces)) else { syncTexts(force: true); return }
+        let wantedStart = isStart ? value : start, wantedEnd = isStart ? end : value
+        // The fields show what is kept (a value outside the file is brought back), not what the zone was before: the zone of this view is
+        // only updated once the new one is known to the window, so it cannot be read here.
+        let kept = ImpulseZone.clamped(start: wantedStart, end: wantedEnd, total: total)
+        startText = "\(kept.start)"
+        endText = "\(kept.end)"
+        apply(wantedStart, wantedEnd)
     }
 }
 
