@@ -7,6 +7,7 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.openWindow) private var openWindow
 
     /// The sidebar and the page. The footer is not inside it (it would stop at the sidebar) but below it: it runs under both,
     /// over the whole width of the window, and the sidebar and the pages end where it begins.
@@ -90,7 +91,9 @@ struct ContentView: View {
             let env = ProcessInfo.processInfo.environment
             guard let path = env["JACKCONVOLVER_SNAPSHOT"] else { return }
             try? await Task.sleep(for: .seconds(env["JACKCONVOLVER_SNAPSHOT_DELAY"].flatMap(Double.init) ?? 5))
-            if let window = NSApp.windows.first(where: { $0.isVisible }) {
+            // The detail window of an impulse response, when that is what is asked for; otherwise the first window.
+            let wanted = env["JACKCONVOLVER_SHEET"] == "detail" ? NSApp.windows.first(where: { $0.isVisible && $0.title == String(localized: "Détail de la RI") }) : nil
+            if let window = wanted ?? NSApp.windows.first(where: { $0.isVisible }) {
                 let size = env["JACKCONVOLVER_WINDOW"]?.split(separator: "x").compactMap { Double($0) }
                 if let size, size.count == 2 { window.setContentSize(NSSize(width: size[0], height: size[1])); try? await Task.sleep(for: .milliseconds(800)) }
                 NSApp.activate()
@@ -129,7 +132,7 @@ struct ContentView: View {
         .sheet(isPresented: $model.showsGestures) { GesturesSheet() }
         .sheet(isPresented: $model.showsRender) { RenderSheet() }
         .sheet(isPresented: $model.showsConfigFile) { ConfigFileSheet() }
-        .sheet(item: $model.detail) { ImpulseDetailSheet(target: $0) }
+        .onChange(of: model.detailRequests) { _, _ in openWindow(id: "impulse-detail") }
         .sheet(isPresented: $model.showsProblems) { ProblemsSheet() }
         .alert(model.message ?? "", isPresented: Binding(get: { model.message != nil }, set: { if !$0 { model.message = nil } })) {
             Button("OK") { model.message = nil }

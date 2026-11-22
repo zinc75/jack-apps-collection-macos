@@ -132,7 +132,9 @@ final class AppModel {
     var showsResize = false
     var showsGestures = false
     /// The impulse response whose detail window is open.
-    var detail: DetailTarget?
+    var detail: DetailTarget? { didSet { if detail != nil { detailRequests += 1 } } }
+    /// Counts the requests to show the detail, so that asking again for the one that is shown brings its window to the front.
+    var detailRequests = 0
 
     let controller = EngineController()
     let jack = JackStatus()

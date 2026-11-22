@@ -68,6 +68,15 @@ struct JackConvolverApp: App {
         }
         .defaultSize(width: 1180, height: 940)
         .windowResizability(.contentMinSize)
+        // The detail of an impulse response: a window of its own, so that it has a toolbar.
+        Window("Détail de la RI", id: "impulse-detail") {
+            ImpulseDetailWindow()
+                .environment(model)
+                .environment(appearance)
+                .appAccent(appearance)
+                .frame(minWidth: 900, minHeight: 560)
+        }
+        .defaultSize(width: 1120, height: 760)
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("Nouvelle configuration…") { model.showsNewConfiguration = true }.keyboardShortcut("n", modifiers: .command)

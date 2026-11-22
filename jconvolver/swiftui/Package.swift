@@ -23,6 +23,8 @@ let package = Package(
         .package(path: "../../shared/WaveformKit"),
         .package(path: "../../shared/AppearanceKit"),
         .package(path: "../../shared/MatrixKit"),
+        // The plots of an impulse response (waveform, spectrum, phase), MIT, shared with the other tools.
+        .package(path: "../../shared/PlotKit"),
     ],
     targets: [
         // Runs a program in a pseudo-terminal (Swift cannot fork).
@@ -44,6 +46,7 @@ let package = Package(
                 .product(name: "WaveformKit", package: "WaveformKit"),
                 .product(name: "AppearanceKit", package: "AppearanceKit"),
                 .product(name: "MatrixKit", package: "MatrixKit"),
+                .product(name: "PlotKit", package: "PlotKit"),
             ],
             swiftSettings: [.unsafeFlags(["-Xfrontend", "-default-isolation", "-Xfrontend", "MainActor"] + headers)]
         ),
