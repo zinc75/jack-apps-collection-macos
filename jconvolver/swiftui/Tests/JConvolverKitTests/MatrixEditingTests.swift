@@ -165,16 +165,17 @@ final class MatrixEditingTests: XCTestCase {
         XCTAssertEqual(row.left, 4)
     }
 
-    func testPlacingReplacesWhatWasThere() {
+    func testPlacingAddsToWhatWasThere() {
         var d = ConvDocument(inputs: 2, outputs: 2)
         d.add(ConvImpulse(source: .dirac), at: p(0, 0))
         d.add(ConvImpulse(source: .dirac, delay: 5), at: p(0, 0))
         let plan = Placement.plan(channels(2), from: p(0, 0), mode: .row, inputs: 2, outputs: 2)
         let result = d.apply(plan, partition: 256)
         XCTAssertEqual(result.placed, 2)
-        XCTAssertEqual(result.replaced, 1)
-        XCTAssertEqual(d.impulses(at: p(0, 0)).count, 1)
-        XCTAssertEqual(d.impulses(at: p(0, 0)).first?.source, .file(path: "a.wav", channel: 1))
+        XCTAssertEqual(result.onOccupied, 1)
+        // The two pulses that were there stay, the new one is the third.
+        XCTAssertEqual(d.impulses(at: p(0, 0)).count, 3)
+        XCTAssertEqual(d.impulses(at: p(0, 0)).last?.source, .file(path: "a.wav", channel: 1))
         XCTAssertEqual(d.impulses(at: p(0, 1)).first?.source, .file(path: "a.wav", channel: 2))
     }
 

@@ -93,11 +93,19 @@ struct MatrixCanvas: View {
     /// While something is dragged from the list: where it would land.
     private func updateDrop(_ pointer: CGPoint?, n: Int, m: Int, cs: CGFloat) {
         model.dropBlocked = false
-        guard let pointer, model.matrixViewport.contains(pointer), !model.draggedItems.isEmpty else { model.dropPlan = nil; return }
-        let local = CGPoint(x: pointer.x - model.matrixContentFrame.minX, y: pointer.y - model.matrixContentFrame.minY)
-        guard let pair = pair(at: local, n: n, m: m, cs: cs) else { model.dropPlan = nil; return }
+        model.dropOnPanel = false
+        guard let pointer, !model.draggedItems.isEmpty else { model.dropPlan = nil; return }
         let flags = NSEvent.modifierFlags
         let mode: PlacementMode = flags.contains(.option) ? .column : flags.contains(.shift) ? .diagonal : .row
+        // Above the panel under the matrix: it goes to the chosen cells.
+        if model.selectionPanelFrame.contains(pointer), !model.matrixViewport.contains(pointer) {
+            model.dropOnPanel = true
+            model.dropPlan = model.panelDropPlan(mode: mode)
+            return
+        }
+        guard model.matrixViewport.contains(pointer) else { model.dropPlan = nil; return }
+        let local = CGPoint(x: pointer.x - model.matrixContentFrame.minX, y: pointer.y - model.matrixContentFrame.minY)
+        guard let pair = pair(at: local, n: n, m: m, cs: cs) else { model.dropPlan = nil; return }
         // Dropped on one of several chosen cells: one thing goes on all of them; several things cannot be dropped there.
         model.dropBlocked = false
         if model.selection.pairs.count > 1, model.selection.contains(pair) {
@@ -275,6 +283,11 @@ struct MatrixCanvas: View {
                 let cell = rect(item.pair, cs: cs).insetBy(dx: 1, dy: 1)
                 context.fill(Path(roundedRect: cell, cornerRadius: radius), with: .color(accent.opacity(0.38)))
                 context.stroke(Path(roundedRect: cell.insetBy(dx: 0.75, dy: 0.75), cornerRadius: radius), with: .color(accent), lineWidth: 1.5)
+                // A cell that has something already gets one more impulse response: a plus says so.
+                if !(model.document?.impulses(at: item.pair).isEmpty ?? true), cs >= 16 {
+                    context.draw(Text(verbatim: "+").font(.system(size: 13, weight: .heavy)).foregroundColor(.white),
+                                 at: CGPoint(x: cell.maxX - 7, y: cell.minY + 8), anchor: .center)
+                }
                 // The order in which they are placed, when there are several (it shows where a row ends and the next one goes on).
                 if plan.items.count > 1, cs >= 16 {
                     context.draw(Text(verbatim: "\(order + 1)").font(.system(size: min(13, cs * 0.5), weight: .semibold)).foregroundColor(.white),
@@ -323,7 +336,18 @@ struct MatrixCanvas: View {
             context.fill(Path(roundedRect: cell, cornerRadius: radius), with: .color(color))
         case .dirac:
             context.fill(Path(roundedRect: cell, cornerRadius: radius), with: .color(Color.primary.opacity(0.07)))
-            context.fill(Path(CGRect(x: cell.midX - 1, y: cell.minY + 3, width: 2, height: cell.height - 6)), with: .color(accent))
+            if cell.width >= 13 {
+                // The pulse is a delta.
+                context.draw(Text(verbatim: "δ").font(.system(size: cell.width * 0.62, weight: .semibold, design: .serif)).italic().foregroundColor(accent),
+                             at: CGPoint(x: cell.midX, y: cell.midY), anchor: .center)
+            } else {
+                context.fill(Path(CGRect(x: cell.midX - 1, y: cell.minY + 3, width: 2, height: cell.height - 6)), with: .color(accent))
+            }
+        case .hilbert where cell.width >= 13:
+            context.fill(Path(roundedRect: cell, cornerRadius: radius), with: .color(Color.primary.opacity(0.07)))
+            // The Hilbert transform is an H, as in the books.
+            context.draw(Text(verbatim: "H").font(.system(size: cell.width * 0.6, weight: .semibold, design: .serif)).italic().foregroundColor(accent),
+                         at: CGPoint(x: cell.midX, y: cell.midY), anchor: .center)
         case .hilbert:
             context.fill(Path(roundedRect: cell, cornerRadius: radius), with: .color(Color.primary.opacity(0.07)))
             context.drawLayer { layer in
@@ -341,7 +365,19 @@ struct MatrixCanvas: View {
             context.stroke(Path(roundedRect: cell.insetBy(dx: 0.75, dy: 0.75), cornerRadius: radius), with: .color(accent),
                            style: StrokeStyle(lineWidth: 1.3, dash: [3, 2]))
         }
-        if impulses.count > 1 {
+        // More than one impulse response on the cell: a counter, as on the badge of an application, kept inside the cell (a small dark
+        // disc with white figures, which reads on every shade of the cell).
+        if impulses.count > 1, cell.width >= 13 {
+            let d = min(max(cell.width * 0.4, 11), 15)
+            let text = impulses.count > 9 ? "9+" : "\(impulses.count)"
+            let width = text.count > 1 ? d * 1.35 : d
+            let badge = CGRect(x: cell.maxX - width - 2.5, y: cell.minY + 2.5, width: width, height: d)
+            let shape = Path(roundedRect: badge, cornerRadius: d / 2)
+            context.fill(shape, with: .color(Color.black.opacity(0.62)))
+            context.stroke(shape, with: .color(Color.white.opacity(0.35)), lineWidth: 0.75)
+            context.draw(Text(verbatim: text).font(.system(size: d * 0.66, weight: .bold)).foregroundColor(.white),
+                         at: CGPoint(x: badge.midX, y: badge.midY), anchor: .center)
+        } else if impulses.count > 1 {
             context.fill(Path(ellipseIn: CGRect(x: cell.maxX - 6, y: cell.minY + 1, width: 5, height: 5)), with: .color(.white.opacity(0.9)))
         }
     }

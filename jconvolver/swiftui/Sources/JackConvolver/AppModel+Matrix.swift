@@ -108,9 +108,22 @@ extension AppModel {
         draggedItems = orderedPicks()
     }
 
+    /// Where what is dragged would go when it is above the panel under the matrix: on the chosen cell as the place to start from, or, when
+    /// several cells are chosen, one thing on all of them. Several things cannot be dropped on several cells.
+    func panelDropPlan(mode: PlacementMode) -> PlacementPlan? {
+        dropBlocked = false
+        if selection.pairs.count > 1 {
+            if draggedItems.count == 1 { return Placement.distribute(draggedItems, over: selection.pairs) }
+            dropBlocked = true
+            return nil
+        }
+        let b = selection.bounds
+        return plan(draggedItems, from: ConvPair(input: b.firstInput, output: b.firstOutput), mode: mode)
+    }
+
     /// The end of the drag: what is above the matrix is placed there.
     func endItemDrag() {
-        defer { dragPointer = nil; dropPlan = nil; dropBlocked = false; draggedItems = [] }
+        defer { dragPointer = nil; dropPlan = nil; dropBlocked = false; dropOnPanel = false; draggedItems = [] }
         if let plan = dropPlan { apply(plan) }
     }
 
@@ -133,7 +146,7 @@ extension AppModel {
             return item
         }, left: plan.left)
         let partition = automaticHeader.partition
-        var summary = (placed: 0, replaced: 0)
+        var summary = (placed: 0, onOccupied: 0)
         edit(plan.items.count > 1 ? String(localized: "placement de \(plan.items.count) RI") : String(localized: "placement d'une RI")) {
             summary = $0.apply(stored, partition: partition)
         }

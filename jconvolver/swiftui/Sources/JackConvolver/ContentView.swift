@@ -58,6 +58,7 @@ struct ContentView: View {
                 model.beginItemDrag((1...max(1, file.info.channels)).map { .channel(path: file.path, channel: $0) })
                 let f = model.matrixContentFrame, cs = model.cellSize
                 model.dragPointer = CGPoint(x: f.minX + 76 + 2.5 * cs, y: f.minY + 64 + 2.5 * cs)
+                if fake == "panel" { let p = model.selectionPanelFrame; model.dragPointer = CGPoint(x: p.midX, y: p.midY) }
                 if fake == "drop" { try? await Task.sleep(for: .seconds(1)); model.endItemDrag() }
             }
             // JACKCONVOLVER_FAKEHOVER=<input>,<output>: the pointer is above that cell (numbers from 1).

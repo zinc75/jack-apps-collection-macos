@@ -71,15 +71,15 @@ extension ConvDocument {
     /// whole partition on top, so that nothing is cut by a latency compensation of one partition.
     public static let hilbertLength = 512
 
-    /// Places what the plan says. A pair takes one impulse response, so what was on it is replaced.
+    /// Places what the plan says. What is placed on a pair that already has something is added as one more impulse response of the
+    /// pair (they add up in the convolver): to keep only the new one, the old one is taken off afterwards.
     /// - Parameter partition: the partition of the convolver, for the delay of a Hilbert filter.
-    /// - Returns: how many were placed, and how many of them replaced something.
+    /// - Returns: how many were placed, and how many of them went on a pair that already had something.
     @discardableResult
-    public mutating func apply(_ plan: PlacementPlan, partition: Int) -> (placed: Int, replaced: Int) {
-        var replaced = 0
+    public mutating func apply(_ plan: PlacementPlan, partition: Int) -> (placed: Int, onOccupied: Int) {
+        var onOccupied = 0
         for item in plan.items {
-            if !impulses(at: item.pair).isEmpty { replaced += 1 }
-            clear(item.pair)
+            if !impulses(at: item.pair).isEmpty { onOccupied += 1 }
             switch item.what {
             case .channel(let path, let channel): add(ConvImpulse(source: .file(path: path, channel: channel)), at: item.pair)
             case .dirac: add(ConvImpulse(source: .dirac), at: item.pair)
@@ -87,7 +87,7 @@ extension ConvDocument {
                 add(ConvImpulse(source: .hilbert(length: Self.hilbertLength), delay: partition + Self.hilbertLength / 2), at: item.pair)
             }
         }
-        return (plan.items.count, replaced)
+        return (plan.items.count, onOccupied)
     }
 }
 

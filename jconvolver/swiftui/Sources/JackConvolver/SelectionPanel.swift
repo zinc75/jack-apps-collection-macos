@@ -9,6 +9,7 @@ import SwiftUI
 /// Under the matrix: what is selected, and the impulse responses on it, with their gain, delay, start and length to change.
 struct SelectionPanel: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.appAccentColor) private var accent
 
     private var entries: [(pair: ConvPair, index: Int, impulse: ConvImpulse)] {
         guard let document = model.document else { return [] }
@@ -59,7 +60,16 @@ struct SelectionPanel: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .topLeading)
+        .onGeometryChange(for: CGRect.self) { $0.frame(in: .named("matrixPage")) } action: { model.selectionPanelFrame = $0 }
         .blockBackground()
+        .overlay {
+            // Something dragged above the panel: it is a place to drop it, and the cells it would go to are lit in the matrix.
+            if model.dropOnPanel {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(model.dropBlocked ? Color.red : accent, style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
+                    .allowsHitTesting(false)
+            }
+        }
     }
 
     private var header: some View {

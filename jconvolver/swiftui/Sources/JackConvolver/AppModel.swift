@@ -72,6 +72,9 @@ final class AppModel {
     var dragPointer: CGPoint?
     /// What is dragged cannot be dropped where the pointer is (several things on several chosen cells).
     var dropBlocked = false
+    /// What is dragged is above the panel under the matrix: it would go to the cells that are chosen.
+    var dropOnPanel = false
+    var selectionPanelFrame: CGRect = .zero
     var matrixViewport: CGRect = .zero
     var matrixContentFrame: CGRect = .zero
     private(set) var history = DocumentHistory()
