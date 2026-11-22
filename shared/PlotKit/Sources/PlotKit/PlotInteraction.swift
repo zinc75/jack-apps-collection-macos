@@ -24,16 +24,34 @@ struct PlotPointerEvents {
 
 /// Receives the events of the pointer over the plot: the wheel and the trackpad, the pinch, the buttons, the movement.
 /// SwiftUI gestures cannot tell a wheel from a trackpad or read the modifier keys of a scroll, which a plot needs.
+/// A place of the plot where the pointer has a cursor of its own (the handles of a region).
+struct PlotCursorRect: Equatable {
+    enum Kind: Equatable { case resizeHorizontal, grab }
+    var rect: CGRect
+    var kind: Kind
+
+    /// The part of the rectangle that is in the plot, or nil when there is none (a handle that the zoom took out of the view, a value
+    /// that is not a number): AppKit raises an exception for a cursor rectangle that is empty or not finite.
+    func clipped(to plot: CGRect) -> CGRect? {
+        guard rect.origin.x.isFinite, rect.origin.y.isFinite, rect.width.isFinite, rect.height.isFinite else { return nil }
+        let r = rect.intersection(plot)
+        guard !r.isNull, !r.isEmpty, r.origin.x.isFinite, r.origin.y.isFinite, r.width.isFinite, r.height.isFinite else { return nil }
+        return r
+    }
+}
+
 struct PlotInteractionLayer: NSViewRepresentable {
     var layout: PlotLayout
     var mode: PlotMode
     var events: PlotPointerEvents
+    var cursors: [PlotCursorRect] = []
 
     func makeNSView(context: Context) -> PlotInteractionView { PlotInteractionView() }
 
     func updateNSView(_ view: PlotInteractionView, context: Context) {
         view.events = events
         view.mode = mode
+        view.cursors = cursors
         if view.layout != layout { view.layout = layout }
     }
 }
@@ -42,6 +60,7 @@ final class PlotInteractionView: NSView {
     var events = PlotPointerEvents()
     var mode: PlotMode = .zoomBox { didSet { if mode != oldValue { window?.invalidateCursorRects(for: self) } } }
     var layout = PlotLayout(size: .zero) { didSet { window?.invalidateCursorRects(for: self) } }
+    var cursors: [PlotCursorRect] = [] { didSet { if cursors != oldValue { window?.invalidateCursorRects(for: self) } } }
 
     private var dragStart: CGPoint?
     private var dragging = false
@@ -96,6 +115,10 @@ final class PlotInteractionView: NSView {
     override func resetCursorRects() {
         let plotCursor: NSCursor = mode == .pan ? .openHand : .crosshair
         addCursorRect(layout.plot, cursor: plotCursor)
+        for c in cursors {
+            guard let r = c.clipped(to: layout.plot) else { continue }
+            addCursorRect(r, cursor: c.kind == .resizeHorizontal ? .resizeLeftRight : .openHand)
+        }
         let x = layout.xAxis, y = layout.yAxis
         let ends = x.width * AxisPart.endShare, endsY = y.height * AxisPart.endShare
         addCursorRect(CGRect(x: x.minX, y: x.minY, width: ends, height: x.height), cursor: .resizeLeftRight)

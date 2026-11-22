@@ -35,11 +35,11 @@ struct PlotToolbar: View {
             }
             HStack(spacing: 2) {
                 action("arrow.up.and.down", labels.autoscale, autoscale)
-                action("arrow.counterclockwise", labels.reset, reset)
+                action("arrow.up.left.and.down.right.magnifyingglass", labels.reset, reset)
             }
             Spacer(minLength: 0)
             Button { showsHelp.toggle() } label: {
-                Image(systemName: "info.circle").font(.system(size: 14)).frame(width: 28, height: 24)
+                Image(systemName: "questionmark.circle").font(.system(size: 14)).frame(width: 28, height: 24)
                     .foregroundStyle(Color.primary.opacity(0.7)).contentShape(Rectangle())
             }
             .buttonStyle(.plain).help(labels.gesturesTitle)

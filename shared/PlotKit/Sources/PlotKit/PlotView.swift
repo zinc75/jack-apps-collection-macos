@@ -21,6 +21,7 @@ struct PlotView: View {
     var previewMeasure: PlotSegment?
     var previewBox: PlotMeasure?
     var annotations = PlotAnnotations()
+    var region: PlotRegionEditor?
 
     @State private var localMode: PlotMode = .zoomBox
     @State private var hover: CGPoint?
@@ -37,6 +38,8 @@ struct PlotView: View {
         case pan(last: CGPoint)
         case axis(isX: Bool, part: AxisPart, start: AxisState, from: CGPoint)
         case measure
+        /// A handle of the region, the range it had when the drag began and the abscissa that was under the pointer.
+        case region(PlotRegionPart, original: ClosedRange<Double>, startValue: Double)
     }
 
     private var mode: PlotMode { controller?.mode ?? localMode }
@@ -61,10 +64,11 @@ struct PlotView: View {
                     Canvas { context, size in
                         PlotDrawing(content: content, viewport: viewport, palette: PlotPalette(accent: accent, isDark: colorScheme == .dark),
                                     scale: displayScale, hover: hover ?? previewHover, box: boxMark ?? previewBox,
-                                    measure: mode == .measure ? (measure ?? previewMeasure) : nil, annotations: annotations)
+                                    measure: mode == .measure ? (measure ?? previewMeasure) : nil, annotations: annotations,
+                                    region: region.map { PlotRegionDraw(range: $0.range.wrappedValue, style: $0.style) })
                             .draw(&context, size: size, cache: cache)
                     }
-                    PlotInteractionLayer(layout: layout, mode: mode, events: events(layout))
+                    PlotInteractionLayer(layout: layout, mode: mode, events: events(layout), cursors: regionCursors(layout))
                 }
                 .onGeometryChange(for: CGSize.self, of: { $0.size }) { plotSize = $0 }
                 .onChange(of: mode) { _, new in if new != .measure { measure = nil } }
@@ -122,7 +126,32 @@ struct PlotView: View {
         }
     }
 
+    /// The part of the region under a point, if the plot has one that can be edited.
+    private func regionPart(at p: CGPoint, _ layout: PlotLayout) -> PlotRegionPart? {
+        guard let region else { return nil }
+        let t = transform(layout), range = region.range.wrappedValue
+        return PlotRegionMath.part(at: p, lo: t.x(range.lowerBound), hi: t.x(range.upperBound), plot: layout.plot)
+    }
+
+    /// The cursors over the handles and the bar of the region.
+    private func regionCursors(_ layout: PlotLayout) -> [PlotCursorRect] {
+        guard let region else { return [] }
+        let t = transform(layout), range = region.range.wrappedValue, plot = layout.plot, tol = PlotRegionMath.tolerance
+        let lo = t.x(range.lowerBound), hi = t.x(range.upperBound)
+        var out: [PlotCursorRect] = []
+        if hi - lo > 2 * tol {
+            out.append(PlotCursorRect(rect: CGRect(x: lo + tol, y: plot.minY, width: hi - lo - 2 * tol, height: PlotRegionMath.barHeight), kind: .grab))
+        }
+        for x in [lo, hi] { out.append(PlotCursorRect(rect: CGRect(x: x - tol, y: plot.minY, width: 2 * tol, height: plot.height), kind: .resizeHorizontal)) }
+        return out
+    }
+
     private func dragBegan(_ p: CGPoint, _ mods: PlotModifiers, _ layout: PlotLayout) {
+        // A handle of the region, or its bar, takes the drag whatever the mode is.
+        if let region, let part = regionPart(at: p, layout) {
+            drag = .region(part, original: region.range.wrappedValue, startValue: transform(layout).xValue(p.x))
+            return
+        }
         switch layout.region(at: p) {
         case .plot:
             if mods.shift || mode == .pan { drag = .pan(last: p) }
@@ -148,6 +177,11 @@ struct PlotView: View {
         case .pan(let last)?:
             viewport = PlotGestures.pan(viewport, byPixels: CGSize(width: p.x - last.x, height: p.y - last.y), in: transform(layout))
             drag = .pan(last: p)
+        case .region(let part, let original, let startValue)?:
+            if let region {
+                let delta = transform(layout).xValue(p.x) - startValue
+                region.range.wrappedValue = PlotRegionMath.dragged(part, from: original, by: delta, style: region.style)
+            }
         case .axis(let isX, let part, let start, let from)?:
             if isX {
                 viewport.x = PlotGestures.axisDrag(start, part: part, delta: Double(p.x - from.x), length: Double(layout.xAxis.width))
@@ -162,6 +196,7 @@ struct PlotView: View {
         if case .box(let b)? = drag {
             viewport = PlotGestures.zoomBox(viewport, from: b.a, to: clamp(p, layout.plot), in: transform(layout))
         }
+        if case .region? = drag { region?.onCommit() }
         // The measure stays (in the data) until the next measure or until the mode changes; the other drags end with the button.
         drag = nil
     }

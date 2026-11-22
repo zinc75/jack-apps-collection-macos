@@ -57,6 +57,7 @@ struct PlotDrawing {
     var box: PlotMeasure?
     var measure: PlotSegment?
     var annotations = PlotAnnotations()
+    var region: PlotRegionDraw?
 
     private func font(_ size: CGFloat = 10.5, weight: Font.Weight = .regular) -> Font { .system(size: size, weight: weight).monospacedDigit() }
 
@@ -102,6 +103,7 @@ struct PlotDrawing {
             }
             content.drawData(&layer, t, palette, scale, cache)
             if !annotations.isEmpty { drawAnnotations(&layer, t, plot, palette) }
+            drawRegion(&layer, t, plot, palette)
             if let box { drawBox(&layer, box) }
             if let measure { drawMeasure(&layer, measure, t) }
         }

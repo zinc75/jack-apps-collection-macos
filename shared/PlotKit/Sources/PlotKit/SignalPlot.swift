@@ -17,23 +17,25 @@ public struct SignalPlot: View {
     var previewMeasure: PlotSegment?
     var previewBox: PlotMeasure?
     var annotations: PlotAnnotations
+    var region: PlotRegionEditor?
 
     /// - Parameters:
     ///   - controller: that of a window that has a toolbar of its own (`PlotToolbarContent`); without one, the plot has a strip of its own.
     ///   - annotations: marks of the application over the data, and a range that stands out (in samples).
+    ///   - region: a range the person can change with handles (in samples); what is outside is dimmed.
     ///   - previewHover: a pointer position to draw the crosshair at without a pointer (for previews and tests).
     ///   - previewMeasure: a measure to show without a drag: two samples and their levels.
     ///   - previewBox: a box of a zoom to show without a drag: two points of the view.
     public init(signal: PlotSignal, viewport: Binding<PlotViewport>, sampleRate: Double? = nil, amplitude: AmplitudeScale = .linear,
-                accent: Color = .accentColor, labels: PlotLabels = PlotLabels(), controller: PlotController? = nil, annotations: PlotAnnotations = PlotAnnotations(), previewHover: CGPoint? = nil,
+                accent: Color = .accentColor, labels: PlotLabels = PlotLabels(), controller: PlotController? = nil, annotations: PlotAnnotations = PlotAnnotations(), region: PlotRegionEditor? = nil, previewHover: CGPoint? = nil,
                 previewMeasure: (x0: Double, y0: Double, x1: Double, y1: Double)? = nil, previewBox: (CGPoint, CGPoint)? = nil) {
         self.init(traces: [PlotTrace(name: "", signal: signal)], viewport: viewport, sampleRate: sampleRate, amplitude: amplitude, accent: accent,
-                  labels: labels, controller: controller, annotations: annotations, previewHover: previewHover, previewMeasure: previewMeasure, previewBox: previewBox)
+                  labels: labels, controller: controller, annotations: annotations, region: region, previewHover: previewHover, previewMeasure: previewMeasure, previewBox: previewBox)
     }
 
     /// Several signals over each other, the channels of a file for instance: each in its colour, named in the card of the crosshair.
     public init(traces: [PlotTrace], viewport: Binding<PlotViewport>, sampleRate: Double? = nil, amplitude: AmplitudeScale = .linear,
-                accent: Color = .accentColor, labels: PlotLabels = PlotLabels(), controller: PlotController? = nil, annotations: PlotAnnotations = PlotAnnotations(), previewHover: CGPoint? = nil,
+                accent: Color = .accentColor, labels: PlotLabels = PlotLabels(), controller: PlotController? = nil, annotations: PlotAnnotations = PlotAnnotations(), region: PlotRegionEditor? = nil, previewHover: CGPoint? = nil,
                 previewMeasure: (x0: Double, y0: Double, x1: Double, y1: Double)? = nil, previewBox: (CGPoint, CGPoint)? = nil) {
         self.traces = traces
         _viewport = viewport
@@ -43,6 +45,7 @@ public struct SignalPlot: View {
         self.labels = labels
         self.controller = controller
         self.annotations = annotations
+        self.region = region
         self.previewHover = previewHover
         self.previewBox = previewBox.map { PlotMeasure(a: $0.0, b: $0.1) }
         self.previewMeasure = previewMeasure.map { PlotSegment(x0: $0.x0, y0: $0.y0, x1: $0.x1, y1: $0.y1) }
@@ -53,9 +56,13 @@ public struct SignalPlot: View {
 
     public var body: some View {
         PlotView(content: SignalContent(traces: traces, sampleRate: sampleRate, amplitude: effectiveAmplitude, gradient: controller?.display.gradient ?? PlotGradient()), viewport: $viewport, accent: accent,
-                 labels: labels, controller: controller, previewHover: previewHover, previewMeasure: previewMeasure, previewBox: previewBox, annotations: annotations)
+                 labels: labels, controller: controller, previewHover: previewHover, previewMeasure: previewMeasure, previewBox: previewBox, annotations: annotations, region: region)
             .onAppear {
                 guard let controller else { return }
+                // The inspector shows what a signal has: no phase, no spectrum.
+                controller.hasPhase = false
+                controller.hasMagnitude = false
+                controller.phaseDelays = []
                 controller.scaleSupport = [.y]
                 controller.yScale = amplitude
             }
