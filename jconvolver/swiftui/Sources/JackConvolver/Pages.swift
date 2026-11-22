@@ -160,10 +160,8 @@ struct LaunchView: View {
         let running = model.controller.isRunning
         SettingsPage {
             Text("Options de lancement").font(.title2).fontWeight(.semibold)
-            Text(model.mode == .file ? "Passées à fconvolver au démarrage. Elles sont mémorisées avec cette configuration, pas dans le fichier de configuration."
-                                     : "Passées à jconvolver au démarrage. Elles sont mémorisées avec cette configuration, pas dans le fichier de configuration.")
+            Text("Passées à jconvolver au démarrage. Elles sont mémorisées avec cette configuration, pas dans le fichier de configuration.")
                 .foregroundStyle(.secondary)
-            if model.mode == .file { AudioFilesGroup() }
             SettingsGroup("Calcul") {
                 OptionRow("Mode vectoriel", "Traite quatre fréquences à la fois avec des instructions vectorielles.") {
                     Toggle("-V", isOn: $model.options.vectorMode).toggleStyle(.switch).labelsHidden().accentTint()

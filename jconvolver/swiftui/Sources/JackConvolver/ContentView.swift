@@ -44,6 +44,7 @@ struct ContentView: View {
             if let path = env["JACKCONVOLVER_OPEN"] { model.open(URL(fileURLWithPath: path)) }
             if let page = env["JACKCONVOLVER_PAGE"].flatMap(Page.init(rawValue:)) { model.page = page }
             if env["JACKCONVOLVER_VIEW"] == "table" { model.viewMode = .table }
+            if env["JACKCONVOLVER_SHEET"] == "render" { try? await Task.sleep(for: .milliseconds(800)); model.showsRender = true }
             if env["JACKCONVOLVER_SHEET"] == "gestures" { try? await Task.sleep(for: .milliseconds(800)); model.showsGestures = true }
             if env["JACKCONVOLVER_SHEET"] == "names" { try? await Task.sleep(for: .milliseconds(800)); model.showsPortNames = true }
             if env["JACKCONVOLVER_SHEET"] == "detail", let d = model.document,
@@ -71,9 +72,13 @@ struct ContentView: View {
                     model.hoverPoint = CGPoint(x: 76 + (CGFloat(n[1]) - 0.5) * cs, y: 64 + (CGFloat(n[0]) - 0.5) * cs)
                 }
             }
-            if env["JACKCONVOLVER_AUTORUN"] != nil {
+            // JACKCONVOLVER_MODE=file, JACKCONVOLVER_INPUT=<file>, JACKCONVOLVER_OUTPUT=<file>: the mode on sound files, with its files.
+            if env["JACKCONVOLVER_MODE"] == "file" { model.mode = .file }
+            if let path = env["JACKCONVOLVER_INPUT"], !path.isEmpty { model.inputFile = URL(fileURLWithPath: path) }
+            if let path = env["JACKCONVOLVER_OUTPUT"], !path.isEmpty { model.outputFile = URL(fileURLWithPath: path) }
+            if let run = env["JACKCONVOLVER_AUTORUN"], !run.isEmpty {
                 try? await Task.sleep(for: .seconds(2))
-                model.toggleRun()
+                if model.mode == .file { model.showsRender = true; model.startRun() } else { model.toggleRun() }
             }
             #endif
         }
@@ -121,6 +126,7 @@ struct ContentView: View {
         .sheet(isPresented: $model.showsPortNames) { PortNamesSheet() }
         .sheet(isPresented: $model.showsResize) { ResizeSheet() }
         .sheet(isPresented: $model.showsGestures) { GesturesSheet() }
+        .sheet(isPresented: $model.showsRender) { RenderSheet() }
         .sheet(item: $model.detail) { ImpulseDetailSheet(target: $0) }
         .sheet(isPresented: $model.showsProblems) { ProblemsSheet() }
         .alert(model.message ?? "", isPresented: Binding(get: { model.message != nil }, set: { if !$0 { model.message = nil } })) {

@@ -13,8 +13,8 @@ struct Sidebar: View {
         List {
             row("Accueil", "house", .home)
             row("Convolutions", "square.grid.3x3", .matrix).disabled(!model.isOpen)
-            row("Connexions", "arrow.left.arrow.right", .ports).disabled(!model.isOpen)
-            row("Lancement", "slider.horizontal.3", .launch).disabled(!model.isOpen)
+            if model.mode == .realTime { row("Connexions", "arrow.left.arrow.right", .ports).disabled(!model.isOpen) }
+            if model.mode == .realTime { row("Lancement", "slider.horizontal.3", .launch).disabled(!model.isOpen) }
             row("Journal", "doc.text", .log, badge: logBadge).disabled(!model.isOpen)
             row("Affichage", "circle.lefthalf.filled", .display)
         }

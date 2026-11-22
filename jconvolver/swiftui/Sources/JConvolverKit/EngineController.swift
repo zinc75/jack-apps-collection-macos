@@ -27,6 +27,12 @@ public final class EngineController {
     /// The audio cuts that JACK reported since the start of the run.
     public private(set) var xruns = 0
     public private(set) var startedAt: Date?
+    /// When the last run ended, and how long it ran (nil while it runs or before the first one).
+    public private(set) var endedAt: Date?
+    public var runSeconds: Double? {
+        guard case .ended = state, let startedAt, let endedAt else { return nil }
+        return endedAt.timeIntervalSince(startedAt)
+    }
 
     /// The seconds between two readings of the load.
     @ObservationIgnored public var sampleInterval: TimeInterval = 1
@@ -110,6 +116,7 @@ public final class EngineController {
             log.append(note: .ended(program: command?.program.rawValue ?? "", status: termination.status),
                        severity: termination.outcome == .finished || termination.outcome == .stoppedOnRequest ? .info : .error)
             process = nil
+            endedAt = Date()
             state = .ended(termination)
         }
     }

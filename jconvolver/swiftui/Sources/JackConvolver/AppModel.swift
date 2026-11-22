@@ -29,11 +29,31 @@ final class AppModel {
     var page = Page.home { didSet { if page == .log { markLogSeen() } } }
     /// The lines of the journal up to this number have been looked at.
     private(set) var logSeen = 0
-    var mode = RunMode.realTime { didSet { refreshProblems() } }
+    var mode = RunMode.realTime {
+        didSet {
+            refreshProblems()
+            // The pages of the launch and of the JACK connections are for the engine in real time: on sound files the processing has its
+            // window, and there is no JACK.
+            if mode == .file, page == .launch || page == .ports { page = .matrix }
+        }
+    }
+    /// The window of the processing of a sound file.
+    var showsRender = false
     var options = EngineCommand.Options()
     /// The files of the processing on sound files.
-    var inputFile: URL? { didSet { refreshProblems() } }
+    var inputFile: URL? {
+        didSet {
+            // A name for the result as soon as there is an input: next to it, with _conv after its name. The person can change it.
+            if let inputFile, outputFile == nil {
+                outputFile = inputFile.deletingLastPathComponent()
+                    .appendingPathComponent(inputFile.deletingPathExtension().lastPathComponent + "_conv.wav")
+            }
+            refreshProblems()
+        }
+    }
     var outputFile: URL?
+    /// The run that is going on or has just ended: how many have been started, when this one started, and how long it took.
+    private(set) var runCount = 0
 
     private(set) var document: ConvDocument?
     /// What is selected in the matrix, how big its cells are drawn, and what the pointer is over.
@@ -340,7 +360,17 @@ final class AppModel {
 
     /// A start while the engine is stopped, a stop while it runs.
     func toggleRun() {
+        // On sound files the round button opens the window of the processing, where everything is, and where the result is shown.
+        if mode == .file {
+            if isOpen { showsRender = true }
+            return
+        }
         if controller.isRunning { controller.stop(); return }
+        startRun()
+    }
+
+    /// Starts the program (what the button "Traiter" of the window does on sound files).
+    func startRun() {
         guard isOpen, !hasErrors else { showsProblems = hasErrors; return }
         do {
             let path = try runConfigPath()
@@ -350,6 +380,7 @@ final class AppModel {
                 return
             }
             controller.acknowledgeEnd()
+            runCount += 1
             try controller.start(command, executable: executable)
         } catch {
             message = String(localized: "Le moteur ne peut pas démarrer : \(error.localizedDescription)")
