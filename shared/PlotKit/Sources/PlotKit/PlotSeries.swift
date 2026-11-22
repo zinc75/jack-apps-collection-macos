@@ -65,12 +65,12 @@ public final class PlotSeriesSet {
     }
 
     /// The curves of the visible channels, in the colour of each; `curve` gives the data of a channel.
-    public func curves(_ curve: (Int) -> (x: [Double], y: [Double]), filled: Bool = true) -> [PlotCurve] {
+    public func curves(_ curve: (Int) -> (x: [Double], y: [Double]), filled: Bool = true, phase: PhaseUnit? = nil) -> [PlotCurve] {
         let shown = visible
         return shown.map { s in
             let data = curve(s.id)
             // Whether the area under a curve has a gradient is up to the plot: the display options and the number of curves decide.
-            return PlotCurve(name: s.name, x: data.x, y: data.y, color: s.color, filled: filled)
+            return PlotCurve(name: s.name, x: data.x, y: data.y, color: s.color, filled: filled, phase: phase)
         }
     }
 }

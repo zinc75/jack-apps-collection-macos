@@ -42,13 +42,17 @@ public struct CurvePlot: View {
         self.previewMeasure = previewMeasure.map { PlotSegment(x0: $0.x0, y0: $0.y0, x1: $0.x1, y1: $0.y1) }
     }
 
+    /// The curves as they are drawn: the phases unwrapped when the inspector says so.
+    private var shown: [PlotCurve] { (controller?.display.unwrapPhase ?? false) ? curves.map { $0.unwrapped() } : curves }
+
     private var effectiveYScale: AmplitudeScale { yScaleSwitchable ? (controller?.yScale ?? yScale) : yScale }
 
     public var body: some View {
-        PlotView(content: CurveContent(curves: curves, yScale: effectiveYScale, xUnitText: xUnit, yUnitText: yUnit, gradient: controller?.display.gradient ?? PlotGradient()), viewport: $viewport,
+        PlotView(content: CurveContent(curves: shown, yScale: effectiveYScale, xUnitText: xUnit, yUnitText: yUnit, gradient: controller?.display.gradient ?? PlotGradient()), viewport: $viewport,
                  accent: accent, labels: labels, controller: controller, previewHover: previewHover, previewMeasure: previewMeasure, previewBox: nil)
             .onAppear {
                 guard let controller else { return }
+                controller.hasPhase = curves.contains { $0.phase != nil }
                 controller.scaleSupport = yScaleSwitchable ? [.x, .y] : [.x]
                 controller.xScale = viewport.x.scale
                 if yScaleSwitchable { controller.yScale = yScale }
@@ -59,6 +63,10 @@ public struct CurvePlot: View {
                 let positive = curves.flatMap { $0.x.prefix($0.count) }.filter { $0 > 0 }.min() ?? 1e-3
                 let span = viewport.x.bounds.upperBound - viewport.x.bounds.lowerBound
                 viewport.x = viewport.x.switched(to: new, minSpan: new == .logarithmic ? 1.01 : span * 1e-4, positiveFloor: positive)
+            }
+            .onChange(of: controller?.display.unwrapPhase) { _, _ in
+                // Unwrapped, a phase runs over thousands of degrees: the vertical axis is fitted again.
+                viewport.y = PlotViewport.curves(shown, xScale: viewport.x.scale, yScale: effectiveYScale).y
             }
             .onChange(of: controller?.yScale) { _, new in
                 guard yScaleSwitchable, let new else { return }

@@ -15,13 +15,35 @@ public struct PlotCurve: Identifiable {
     public var color: Color?
     /// Whether the area under the curve has a gradient.
     public var filled: Bool
+    /// The unit, if the values are a phase: it can then be unwrapped (the inspector offers it).
+    public var phase: PhaseUnit?
 
-    public init(name: String, x: [Double], y: [Double], color: Color? = nil, filled: Bool = true) {
+    public init(name: String, x: [Double], y: [Double], color: Color? = nil, filled: Bool = true, phase: PhaseUnit? = nil) {
         self.name = name
         self.x = x
         self.y = y
         self.color = color
         self.filled = filled
+        self.phase = phase
+    }
+
+    /// The same curve with its phase unwrapped: each value is brought within half a period of the one before it, by adding whole
+    /// periods, so that the jumps from +180° to −180° become a continuous line. A value that is not finite is skipped, and the
+    /// unwrapping goes on after it. A curve that is not a phase is returned as it is.
+    public func unwrapped() -> PlotCurve {
+        guard let phase else { return self }
+        let period = phase.period
+        var out = y
+        var offset = 0.0
+        var previous: Double?
+        for i in 0..<min(y.count, x.count) where y[i].isFinite {
+            if let p = previous { offset -= period * ((y[i] - p) / period).rounded() }
+            out[i] = y[i] + offset
+            previous = y[i]
+        }
+        var copy = self
+        copy.y = out
+        return copy
     }
 
     var count: Int { min(x.count, y.count) }
@@ -44,6 +66,14 @@ public struct PlotCurve: Identifiable {
         if i >= count { return count - 1 }
         return abs(x[i] - v) < abs(x[i - 1] - v) ? i : i - 1
     }
+}
+
+/// The unit of a phase.
+public enum PhaseUnit: Sendable, Equatable {
+    case degrees, radians
+
+    /// One turn, in this unit.
+    public var period: Double { self == .degrees ? 360 : 2 * .pi }
 }
 
 extension PlotViewport {
@@ -214,7 +244,8 @@ struct CurveContent: PlotContent {
 
     private func yText(_ v: Double) -> String {
         if yScale.isDecibels { return TickLabels.number(v, decimals: 1) + " dB" }
-        let t = String(format: "%.4g", v)
+        // Four significant digits, but not in the scientific notation for a large value (an unwrapped phase runs to hundreds of thousands).
+        let t = abs(v) >= 1000 ? String(format: "%.0f", v) : String(format: "%.4g", v)
         return (t.hasPrefix("-") ? "−" + t.dropFirst() : t) + (yUnitText.isEmpty ? "" : " " + yUnitText)
     }
 

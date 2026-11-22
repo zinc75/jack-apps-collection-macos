@@ -21,6 +21,8 @@ public final class PlotController {
     /// and the channels are in it, not in a popover over the plot.
     public var hasInspector = false
     public var showsInspector = false
+    /// The plot shows a phase: the inspector then offers to unwrap it.
+    public var hasPhase = false
     /// How the plot looks: what the inspector sets, what the plots follow.
     public let display = PlotDisplayOptions()
 

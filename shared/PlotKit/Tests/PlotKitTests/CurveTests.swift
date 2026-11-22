@@ -105,3 +105,69 @@ final class VisibleRangeTests: XCTestCase {
         XCTAssertEqual(v.x.fitted().range, 6...24_000, "everything is one reset away")
     }
 }
+
+final class UnwrapTests: XCTestCase {
+    private func wrap(_ v: Double, _ period: Double) -> Double { v - period * ((v + period / 2) / period).rounded(.down) }
+
+    func testALinearPhaseComesBackFromItsWrappedValues() {
+        // A delay: a phase that falls in a straight line, seen between −180° and +180°.
+        let xs = (0..<200).map { Double($0) * 50 }
+        let truth = xs.map { -0.9 * $0 }
+        let wrapped = truth.map { wrap($0, 360) }
+        XCTAssertNotEqual(wrapped.min(), wrapped.max())
+        XCTAssertLessThanOrEqual(wrapped.max()!, 180); XCTAssertGreaterThanOrEqual(wrapped.min()!, -180)
+        let curve = PlotCurve(name: "p", x: xs, y: wrapped, phase: .degrees)
+        let un = curve.unwrapped().y
+        // The unwrapped phase is the true one up to a whole number of turns of its first value.
+        for (u, t) in zip(un, truth) { XCTAssertEqual(u - t, un[0] - truth[0], accuracy: 1e-9) }
+        XCTAssertLessThan(un.last!, -8000)
+    }
+
+    func testRadians() {
+        let truth = (0..<100).map { 0.5 * Double($0) }
+        let wrapped = truth.map { wrap($0, 2 * .pi) }
+        let un = PlotCurve(name: "p", x: Array(0..<100).map(Double.init), y: wrapped, phase: .radians).unwrapped().y
+        for (u, t) in zip(un, truth) { XCTAssertEqual(u, t, accuracy: 1e-9) }
+    }
+
+    func testACurveThatIsNotAPhaseIsLeftAlone() {
+        let c = PlotCurve(name: "m", x: [1, 2, 3], y: [170, -170, 170])
+        XCTAssertEqual(c.unwrapped().y, [170, -170, 170])
+    }
+
+    func testNonFiniteValuesAreSkippedAndTheUnwrappingGoesOn() {
+        let c = PlotCurve(name: "p", x: [1, 2, 3, 4, 5], y: [170, .nan, -170, -150, .infinity], phase: .degrees)
+        let u = c.unwrapped().y
+        XCTAssertEqual(u[0], 170)
+        XCTAssertTrue(u[1].isNaN)
+        XCTAssertEqual(u[2], 190, accuracy: 1e-9, "−170° after 170° is a step of +20°, not −340°")
+        XCTAssertEqual(u[3], 210, accuracy: 1e-9)
+        XCTAssertTrue(u[4].isInfinite)
+    }
+
+    func testUnwrappingKeepsTheSmallSteps() {
+        let y = [0.0, 100, 190, 280, 370, 460]   // steps of 90°, already continuous
+        let u = PlotCurve(name: "p", x: [0, 1, 2, 3, 4, 5], y: y, phase: .degrees).unwrapped().y
+        XCTAssertEqual(u, y)
+    }
+
+    func testTheViewportOfAnUnwrappedPhaseSpansItsTurns() {
+        let xs = (0..<100).map { Double($0) }
+        let wrapped = xs.map { wrap(-30 * $0, 360) }
+        let c = PlotCurve(name: "p", x: xs, y: wrapped, phase: .degrees)
+        XCTAssertLessThan(PlotViewport.curves([c]).y.range.upperBound - PlotViewport.curves([c]).y.range.lowerBound, 400)
+        let v = PlotViewport.curves([c.unwrapped()])
+        XCTAssertGreaterThan(v.y.range.upperBound - v.y.range.lowerBound, 2900)
+    }
+}
+
+final class LargeValueTextTests: XCTestCase {
+    func testALargeValueIsNotInScientificNotation() {
+        let content = CurveContent(curves: [], yScale: .linear, xUnitText: "Hz", yUnitText: "°")
+        let t = PlotTransform(viewport: PlotViewport(x: AxisState(bounds: 0...10), y: AxisState(bounds: -900_000...0)), rect: CGRect(x: 0, y: 0, width: 100, height: 100))
+        let probe = content.probe(at: CGPoint(x: 50, y: 50), t)   // no curve: a free crosshair
+        XCTAssertFalse(probe.yFlag.contains("e+"), probe.yFlag)
+        XCTAssertTrue(probe.yFlag.hasPrefix("−"), probe.yFlag)
+        XCTAssertTrue(probe.yFlag.hasSuffix(" °"), probe.yFlag)
+    }
+}

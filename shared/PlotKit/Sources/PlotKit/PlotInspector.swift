@@ -41,6 +41,8 @@ public struct PlotGradient: Equatable, Sendable {
 @Observable
 public final class PlotDisplayOptions {
     public var gradient = PlotGradient()
+    /// A phase is drawn unwrapped (continuous) instead of between −180° and +180°.
+    public var unwrapPhase = false
     public init() {}
 }
 
@@ -82,6 +84,11 @@ public struct PlotInspector: View {
                 .padding(.leading, 18)
                 .disabled(!options.gradient.enabled)
             Text(labels.gradientHelp).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            if controller.hasPhase {
+                Divider().padding(.vertical, 4)
+                Toggle(labels.unwrapPhase, isOn: $options.unwrapPhase)
+                Text(labels.unwrapPhaseHelp).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
         }
         .toggleStyle(.checkbox)
     }

@@ -71,6 +71,8 @@ public struct PlotLabels: Sendable {
     public var samples = "samples"
     public var inspector = "Inspector"
     public var display = "Display"
+    public var unwrapPhase = "Unwrap phase"
+    public var unwrapPhaseHelp = "Adds whole turns so that the phase is continuous, without the jumps between −180° and +180°."
     public var gradientUnderCurve = "Gradient fill"
     public var gradientWithSeveral = "Also with several curves"
     public var gradientHelp = "Off, the fill is flat. With several curves it is opaque by default: the one on top hides the ones under it, and gradients over each other compete."
