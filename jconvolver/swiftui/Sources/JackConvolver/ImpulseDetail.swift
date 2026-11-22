@@ -19,8 +19,11 @@ struct DetailTarget: Identifiable, Equatable {
 struct ImpulseDetailWindow: View {
     @Environment(AppModel.self) private var model
     @Environment(\.appAccentColor) private var accent
+    @Environment(\.dismissWindow) private var dismissWindow
 
     private enum Kind: String { case time, spectrum, phase }
+    /// The width of the inspector: fixed, as in Keynote.
+    private static let inspectorWidth: CGFloat = 280
 
     @State private var kind: Kind = .time
     @State private var data: CurveData?
@@ -29,6 +32,8 @@ struct ImpulseDetailWindow: View {
     @State private var failed = false
     @State private var analysis: ImpulseAnalysis?
     @State private var info: SoundFileInfo?
+    /// The zone the engine reads, in frames, as the handles show it: it follows the pointer, and the file when the drag ends.
+    @State private var zone: ClosedRange<Double> = 0...1
     @State private var controller = PlotController()
     @State private var series = PlotSeriesSet(count: 1)
     @State private var time = PlotViewport.signal(count: 2)
@@ -55,6 +60,37 @@ struct ImpulseDetailWindow: View {
         return start..<max(end, start)
     }
 
+    /// The zone of the impulse response, for the handles: from the first frame read to the last (the end of the file when it is read to
+    /// the end).
+    private var zoneOfImpulse: ClosedRange<Double> {
+        guard let used, let total = data?.count, total > 1 else { return 0...1 }
+        let last = Double(total - 1)
+        let low = min(Double(used.lowerBound), last - 1)
+        return low...max(min(Double(used.upperBound), last), low + 1)
+    }
+
+    /// Sets the zone of the impulse response from the handles (one change in the history of the matrix).
+    private func commitZone(_ z: ClosedRange<Double>? = nil) {
+        guard let target = model.detail, let impulse, let total = data?.count, total > 1 else { return }
+        let zone = z ?? self.zone
+        let start = max(0, Int(zone.lowerBound.rounded())), end = Int(zone.upperBound.rounded())
+        var changed = impulse
+        changed.offset = start
+        // To the end of the file is a length of 0, as the configuration files say it.
+        changed.length = end >= total - 1 ? 0 : max(end - start, 1)
+        model.edit(String(localized: "zone lue d'une RI")) { $0.replace(changed, at: target.index, of: target.pair) }
+        self.zone = zoneOfImpulse
+    }
+
+    /// A zone typed in the inspector, or set from the analysis: kept inside the file and at least one frame long.
+    private func applyZone(start: Int, end: Int) {
+        guard let total = data?.count, total > 1 else { return }
+        let s = min(max(start, 0), total - 2)
+        let e = min(max(end, s + 1), total - 1)
+        zone = Double(s)...Double(e)
+        commitZone()
+    }
+
     private var loadKey: String { "\(resolved?.path ?? "")#\(resolved?.channel ?? 0)" }
     private struct ResponseKey: Hashable { var load: String; var used: Range<Int>? }
 
@@ -72,21 +108,34 @@ struct ImpulseDetailWindow: View {
             }
         }
         .inspector(isPresented: Bindable(controller).showsInspector) {
-            PlotInspector(controller: controller, labels: .localized, accent: accent).inspectorColumnWidth(min: 230, ideal: 260, max: 340)
+            PlotInspector(controller: controller, labels: .localized, accent: accent, extraTabs: [zoneTab])
+                .inspectorColumnWidth(min: Self.inspectorWidth, ideal: Self.inspectorWidth, max: Self.inspectorWidth)
+                // The help and the button of the inspector belong to its side of the toolbar: they stay at its left edge, and push the tools that
+                // are before them.
+                .toolbar { PlotInspectorToolbarContent(controller: controller, labels: .localized) }
         }
         .navigationTitle(String(localized: "Détail de la RI"))
         .navigationSubtitle(resolved.map { ($0.path as NSString).lastPathComponent } ?? "")
-        .toolbar { PlotToolbarContent(controller: controller, labels: .localized, accent: accent) }
+        .toolbar { PlotToolbarContent(controller: controller, labels: .localized, accent: accent, includesInspectorControls: false) }
+        // The system lays the toolbar out once, and does not do it again when the inspector opens or closes: it is asked to, by a change of the
+        // size of the window that nobody sees.
+        .background(ToolbarRelayout(trigger: controller.showsInspector))
         .task(id: loadKey) { await load() }
         .task(id: ResponseKey(load: loadKey, used: used)) { await computeResponse() }
         .onChange(of: controller.yScale) { _, new in if kind != .phase { yScales[kind] = new } }
+        // The handles follow the impulse response: when it is loaded, and when the zone changes elsewhere (the history, a table).
+        .onChange(of: used) { _, _ in zone = zoneOfImpulse }
+        .onChange(of: data?.count) { _, _ in zone = zoneOfImpulse }
         .onAppear {
+            // A window with nothing to show (the system brought it back) closes at once.
+            if model.detail == nil { dismissWindow(id: "impulse-detail"); return }
             controller.hasInspector = true
             controller.series = series
             #if DEBUG
             let env = ProcessInfo.processInfo.environment
             if let v = env["JACKCONVOLVER_DETAIL"].flatMap(Kind.init(rawValue:)) { kind = v }
             if !(env["JACKCONVOLVER_INSPECTOR"] ?? "").isEmpty { controller.showsInspector = true }
+            if let tab = env["JACKCONVOLVER_INSPECTOR_TAB"], !tab.isEmpty { controller.inspectorTab = tab }
             if !(env["JACKCONVOLVER_GROUPDELAY"] ?? "").isEmpty { controller.display.showGroupDelay = true }
             if let d = Int(env["JACKCONVOLVER_SMOOTH"] ?? ""), let s = OctaveSmoothing(rawValue: d) { controller.display.smoothing = s }
             #endif
@@ -137,8 +186,11 @@ struct ImpulseDetailWindow: View {
         if let data, let pyramid {
             switch kind {
             case .time:
-                SignalPlot(signal: pyramid, viewport: $time, sampleRate: data.sampleRate, amplitude: yScales[.time] ?? .linear, accent: accent,
-                           labels: .localized, controller: controller, annotations: annotations)
+                VStack(spacing: 8) {
+                    SignalPlot(signal: pyramid, viewport: $time, sampleRate: data.sampleRate, amplitude: yScales[.time] ?? .linear, accent: accent,
+                               labels: .localized, controller: controller, annotations: annotations, region: regionEditor(total: data.count))
+                    PlotOverview(signal: pyramid, viewport: $time, region: zone, regionColor: accent, accent: accent)
+                }
             case .spectrum:
                 if response != nil {
                     CurvePlot(curves: magnitudeCurves, viewport: $spectrum, xUnit: "Hz", yScale: yScales[.spectrum] ?? .decibels(floor: -120),
@@ -153,15 +205,28 @@ struct ImpulseDetailWindow: View {
         }
     }
 
-    /// The part the engine reads stands out, and the attack and the end of the tail are marked.
+    /// The attack and the end of the tail are marked (the zone the engine reads has its own handles).
     private var annotations: PlotAnnotations {
         var a = PlotAnnotations()
-        if let used, used.upperBound > used.lowerBound { a.highlighted = Double(used.lowerBound)...Double(used.upperBound) }
         if let analysis {
             a.markers = [PlotMarker(id: "attack", x: Double(analysis.attackFrame), name: String(localized: "attaque"), color: .green),
                          PlotMarker(id: "tail", x: Double(analysis.tailFrame), name: String(localized: "fin utile"), color: .orange)]
         }
         return a
+    }
+
+    private func regionEditor(total: Int) -> PlotRegionEditor {
+        PlotRegionEditor(range: $zone,
+                         style: PlotRegionStyle(color: accent, minLength: 1, bounds: 0...Double(max(total - 1, 1)), name: String(localized: "zone lue")),
+                         onCommit: { commitZone() })
+    }
+
+    /// The page "Zone" of the inspector.
+    private var zoneTab: PlotInspectorTab {
+        PlotInspectorTab(id: "zone", title: String(localized: "Zone")) {
+            ZoneInspector(zone: zone, total: data?.count ?? 0, sampleRate: data?.sampleRate ?? 0,
+                          attack: analysis?.attackFrame, tail: analysis?.tailFrame, apply: { applyZone(start: $0, end: $1) })
+        }
     }
 
     private var magnitudeCurves: [PlotCurve] {
@@ -183,11 +248,12 @@ struct ImpulseDetailWindow: View {
             guard rate > 0 else { return "" }
             return "\(frames) (" + (Double(frames) / rate * 1000).formatted(.number.precision(.fractionLength(1))) + " ms)"
         }
-        return HStack(alignment: .top, spacing: 40) {
+        let columns = Group {
             Grid(alignment: .leading, horizontalSpacing: 18, verticalSpacing: 4) {
                 if let info { row("Durée", time(Int(info.frames))) }
                 row("Zone lue par le moteur", impulse.length > 0 ? "\(time(impulse.offset)) → +\(time(impulse.length))" : "\(time(impulse.offset)) → " + String(localized: "fin du fichier"))
             }
+            .fixedSize(horizontal: true, vertical: false)
             Grid(alignment: .leading, horizontalSpacing: 18, verticalSpacing: 4) {
                 if let analysis {
                     row("Crête", (analysis.peakDB.isFinite ? analysis.peakDB.formatted(.number.precision(.fractionLength(1))) : "−∞") + " dB")
@@ -195,13 +261,18 @@ struct ImpulseDetailWindow: View {
                     row("Fin utile (−90 dB)", time(analysis.tailFrame), legend: .orange)
                 }
             }
+            .fixedSize(horizontal: true, vertical: false)
             Grid(alignment: .leading, horizontalSpacing: 18, verticalSpacing: 4) {
                 if let analysis {
                     row("Silence au début", time(analysis.leadingFrames))
                     row("Silence à la fin", time(analysis.trailingFrames))
                 }
             }
-            Spacer(minLength: 0)
+            .fixedSize(horizontal: true, vertical: false)
+        }
+        return ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: 28) { columns; Spacer(minLength: 0) }
+            VStack(alignment: .leading, spacing: 8) { columns }
         }
         .font(.callout)
     }
@@ -210,7 +281,7 @@ struct ImpulseDetailWindow: View {
         GridRow {
             HStack(spacing: 6) {
                 if let legend { Rectangle().fill(legend).frame(width: 3, height: 12) }
-                Text(title).foregroundStyle(.secondary)
+                Text(title).foregroundStyle(.secondary).fixedSize(horizontal: true, vertical: false)
             }
             Text(verbatim: value).monospacedDigit().textSelection(.enabled)
         }
@@ -231,6 +302,12 @@ struct ImpulseDetailWindow: View {
         pyramid = loaded?.1
         failed = loaded == nil
         if let count = loaded?.0.count { time = PlotViewport.signal(count: count, amplitude: yScales[.time] ?? .linear) }
+        #if DEBUG
+        // JACKCONVOLVER_ZOOM=<first>,<last> shows that part of the waveform (to look at the minimap).
+        if let z = ProcessInfo.processInfo.environment["JACKCONVOLVER_ZOOM"]?.split(separator: ",").compactMap({ Double($0) }), z.count == 2 {
+            time.x = time.x.showing(z[0]...z[1])
+        }
+        #endif
         let all = await Task.detached(priority: .utility) { catalog.analysis(at: path) }.value
         analysis = all.flatMap { $0.indices.contains(channel - 1) ? $0[channel - 1] : nil }
     }
@@ -253,5 +330,33 @@ struct ImpulseDetailWindow: View {
         // The vertical axis fits what is drawn: the group delay, in milliseconds, when that is what the inspector asks for.
         let drawn = controller.display.showGroupDelay ? phaseCurves.map { $0.groupDelay() } : phaseCurves
         phase = PlotViewport.curves(drawn, xScale: scale, visibleX: scale == .logarithmic ? 20...20_000 : nil)
+    }
+}
+
+/// Makes the window lay its toolbar out again: macOS does it when the window is resized, so the window is resized by a point and back at once
+/// (the window is not redrawn in between). `trigger` is the state whose change needs a new layout.
+struct ToolbarRelayout: NSViewRepresentable {
+    var trigger: Bool
+
+    func makeNSView(context: Context) -> NSView { NSView() }
+
+    func updateNSView(_ view: NSView, context: Context) {
+        // After the change has been laid out; also once, shortly after the window appears.
+        DispatchQueue.main.async { Self.nudge(view.window) }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { Self.nudge(view.window) }
+    }
+
+    @MainActor static func nudge(_ window: NSWindow?) {
+        guard let window, window.isVisible, !window.styleMask.contains(.fullScreen) else { return }
+        let frame = window.frame
+        var larger = frame
+        larger.size.width += 2
+        window.setFrame(larger, display: true)
+        // In two turns of the run loop: the system joins two changes made in one.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            var back = window.frame
+            back.size.width -= 2
+            window.setFrame(back, display: true)
+        }
     }
 }
