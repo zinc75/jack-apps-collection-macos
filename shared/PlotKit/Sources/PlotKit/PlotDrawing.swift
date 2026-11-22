@@ -56,6 +56,7 @@ struct PlotDrawing {
     var hover: CGPoint?
     var box: PlotMeasure?
     var measure: PlotSegment?
+    var annotations = PlotAnnotations()
 
     private func font(_ size: CGFloat = 10.5, weight: Font.Weight = .regular) -> Font { .system(size: size, weight: weight).monospacedDigit() }
 
@@ -100,6 +101,7 @@ struct PlotDrawing {
                 layer.stroke(z, with: .color(palette.zero), lineWidth: line)
             }
             content.drawData(&layer, t, palette, scale, cache)
+            if !annotations.isEmpty { drawAnnotations(&layer, t, plot, palette) }
             if let box { drawBox(&layer, box) }
             if let measure { drawMeasure(&layer, measure, t) }
         }

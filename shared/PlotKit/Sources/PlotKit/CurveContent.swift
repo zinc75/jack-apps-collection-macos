@@ -26,6 +26,9 @@ public struct PlotCurve: Identifiable {
     public var isReference = false
     /// The values are a group delay (in milliseconds): they can be smoothed in fractions of an octave too, as plain means.
     public var isGroupDelay = false
+    /// The group delay of this phase in milliseconds, one value per abscissa, when the application has it exactly (from the impulse
+    /// response: the transform of n·h[n] over that of h[n], which needs no unwrapping). The plot uses it instead of the slope of the phase.
+    public var exactGroupDelay: [Double]?
 
     public init(name: String, x: [Double], y: [Double], color: Color? = nil, filled: Bool = true, phase: PhaseUnit? = nil, delay: Double? = nil,
                 isMagnitude: Bool = false) {
@@ -44,6 +47,10 @@ public struct PlotCurve: Identifiable {
     /// not a phase is returned as it is.
     public func groupDelay() -> PlotCurve {
         guard let phase else { return self }
+        if let exact = exactGroupDelay, exact.count >= min(x.count, y.count) {
+            var copy = self; copy.y = Array(exact.prefix(x.count)); copy.phase = nil; copy.delay = nil; copy.isGroupDelay = true
+            return copy
+        }
         let u = unwrapped()
         let n = min(u.x.count, u.y.count)
         var out = [Double](repeating: .nan, count: n)

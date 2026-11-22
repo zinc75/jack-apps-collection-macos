@@ -20,6 +20,7 @@ struct PlotView: View {
     var previewHover: CGPoint?
     var previewMeasure: PlotSegment?
     var previewBox: PlotMeasure?
+    var annotations = PlotAnnotations()
 
     @State private var localMode: PlotMode = .zoomBox
     @State private var hover: CGPoint?
@@ -60,7 +61,7 @@ struct PlotView: View {
                     Canvas { context, size in
                         PlotDrawing(content: content, viewport: viewport, palette: PlotPalette(accent: accent, isDark: colorScheme == .dark),
                                     scale: displayScale, hover: hover ?? previewHover, box: boxMark ?? previewBox,
-                                    measure: mode == .measure ? (measure ?? previewMeasure) : nil)
+                                    measure: mode == .measure ? (measure ?? previewMeasure) : nil, annotations: annotations)
                             .draw(&context, size: size, cache: cache)
                     }
                     PlotInteractionLayer(layout: layout, mode: mode, events: events(layout))

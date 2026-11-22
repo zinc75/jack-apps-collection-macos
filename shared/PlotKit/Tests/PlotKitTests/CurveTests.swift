@@ -301,3 +301,19 @@ final class GroupDelayTests: XCTestCase {
         return xs.filter { $0 >= xs[i] / half && $0 <= xs[i] * half }.count
     }
 }
+
+final class ExactGroupDelayTests: XCTestCase {
+    /// A curve that carries its exact group delay gives it, whatever the phase says; without it, the slope of the phase is used.
+    func testExactGroupDelayIsUsed() {
+        let x = (1...100).map { Double($0) * 10 }
+        var curve = PlotCurve(name: "p", x: x, y: x.map { _ in 0 }, phase: .degrees)
+        curve.exactGroupDelay = x.map { _ in 2.5 }
+        let g = curve.groupDelay()
+        XCTAssertTrue(g.isGroupDelay)
+        XCTAssertNil(g.phase)
+        XCTAssertEqual(g.y.count, x.count)
+        for v in g.y { XCTAssertEqual(v, 2.5, accuracy: 1e-12) }
+        curve.exactGroupDelay = nil
+        for v in curve.groupDelay().y.dropFirst().dropLast() { XCTAssertEqual(v, 0, accuracy: 1e-9) }
+    }
+}
