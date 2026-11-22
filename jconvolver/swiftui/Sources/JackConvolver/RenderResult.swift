@@ -202,13 +202,13 @@ struct RenderSheet: View {
                     RenderResultCard()
                     AudioFilesGroup().disabled(running)
                     SettingsGroup("Options") {
-                        OptionRow("Mode vectoriel", "Traite quatre fréquences à la fois avec des instructions vectorielles.") {
+                        OptionRow("Mode vectoriel", "Calcul vectoriel de quatre fréquences à la fois.", info: "Traite quatre fréquences à la fois avec des instructions vectorielles.") {
                             Toggle("-V", isOn: $model.options.vectorMode).toggleStyle(.switch).labelsHidden().accentTint()
                         }
-                        OptionRow("Optimiser les transformées", "FFTW teste plusieurs algorithmes au démarrage, ce qui ajoute environ 15 ms.") {
+                        OptionRow("Optimiser les transformées", "FFTW cherche l'algorithme le plus rapide.", info: "FFTW teste plusieurs algorithmes au démarrage, ce qui ajoute environ 15 ms.") {
                             Toggle("-M", isOn: $model.options.measure).toggleStyle(.switch).labelsHidden().accentTint()
                         }
-                        OptionRow("Couper à la longueur de l'entrée", "Sans cette option, la sortie garde la queue de la réverbération et dure plus longtemps que l'entrée.") {
+                        OptionRow("Couper à la longueur de l'entrée", "La sortie dure autant que l'entrée.", info: "Sans cette option, la sortie garde la queue de la réverbération et dure plus longtemps que l'entrée.") {
                             Toggle("-T", isOn: $model.options.truncate).toggleStyle(.switch).labelsHidden().accentTint()
                         }
                     }

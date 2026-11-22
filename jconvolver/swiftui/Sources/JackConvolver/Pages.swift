@@ -163,10 +163,10 @@ struct LaunchView: View {
             Text("Passées à jconvolver au démarrage. Elles sont mémorisées avec cette configuration, pas dans le fichier de configuration.")
                 .foregroundStyle(.secondary)
             SettingsGroup("Calcul") {
-                OptionRow("Mode vectoriel", "Traite quatre fréquences à la fois avec des instructions vectorielles.") {
+                OptionRow("Mode vectoriel", "Calcul vectoriel de quatre fréquences à la fois.", info: "Traite quatre fréquences à la fois avec des instructions vectorielles.") {
                     Toggle("-V", isOn: $model.options.vectorMode).toggleStyle(.switch).labelsHidden().accentTint()
                 }
-                OptionRow("Optimiser les transformées", "FFTW teste plusieurs algorithmes au démarrage, ce qui ajoute environ 15 ms.") {
+                OptionRow("Optimiser les transformées", "FFTW cherche l'algorithme le plus rapide.", info: "FFTW teste plusieurs algorithmes au démarrage, ce qui ajoute environ 15 ms.") {
                     Toggle("-M", isOn: $model.options.measure).toggleStyle(.switch).labelsHidden().accentTint()
                 }
                 if model.mode == .realTime {
@@ -177,14 +177,14 @@ struct LaunchView: View {
             }
             if model.mode == .realTime {
                 SettingsGroup("Latence") {
-                    OptionRow("Compenser une latence", "Avance chaque RI de ce nombre d'échantillons, pour compenser un retard introduit ailleurs dans la chaîne. Une RI qui n'a pas assez de retard est raccourcie au début, ou supprimée si c'est une impulsion ou un filtre de Hilbert.") {
+                    OptionRow("Compenser une latence", "Avance chaque RI de ce nombre d'échantillons.", info: "Pour compenser un retard introduit ailleurs dans la chaîne. Une RI qui n'a pas assez de retard est raccourcie au début, ou supprimée si c'est une impulsion ou un filtre de Hilbert.") {
                         NumberField(label: "Latence à compenser", value: $model.options.latencyCompensation, range: 0...1_000_000)
                         Text("échantillons").font(.caption).foregroundStyle(.secondary)
                     }
                 }
             } else {
                 SettingsGroup("Sortie") {
-                    OptionRow("Couper à la longueur de l'entrée", "Sans cette option, la sortie garde la queue de la réverbération et dure plus longtemps que l'entrée.") {
+                    OptionRow("Couper à la longueur de l'entrée", "La sortie dure autant que l'entrée.", info: "Sans cette option, la sortie garde la queue de la réverbération et dure plus longtemps que l'entrée.") {
                         Toggle("-T", isOn: $model.options.truncate).toggleStyle(.switch).labelsHidden().accentTint()
                     }
                 }
@@ -202,11 +202,11 @@ struct AudioFilesGroup: View {
 
     var body: some View {
         SettingsGroup("Fichiers audio") {
-            OptionRow("Fichier d'entrée", "fconvolver lit ce fichier : il doit avoir autant de voies que la matrice a d'entrées.") {
+            OptionRow("Fichier d'entrée", "Le fichier que fconvolver lit.", info: "Il doit avoir autant de voies que la matrice a d'entrées.") {
                 Text(model.inputFile?.lastPathComponent ?? "—").foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                 Button("Choisir…") { chooseInput() }
             }
-            OptionRow("Fichier de sortie", "Écrit en WAV à virgule flottante, avec autant de voies que la matrice a de sorties.") {
+            OptionRow("Fichier de sortie", "Le fichier que fconvolver écrit.", info: "Écrit en WAV à virgule flottante, avec autant de voies que la matrice a de sorties.") {
                 Text(model.outputFile?.lastPathComponent ?? "—").foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                 Button("Choisir…") { chooseOutput() }
             }
@@ -243,7 +243,7 @@ struct DisplayView: View {
                 OptionRow("Couleur d'accent") { AccentSwatches(settings: appearance) }
             }
             SettingsGroup("Matrice") {
-                OptionRow("Carte d'aperçu au survol", "Quand le pointeur est sur une case, une petite carte montre ce qu'elle contient : fichier et voie, gain, retard, début et longueur.") {
+                OptionRow("Carte d'aperçu au survol", "Une petite carte montre le contenu de la case sous le pointeur.", info: "Fichier et voie, gain, retard, début et longueur. Elle disparaît pendant une sélection ou quand ⌘ ou ⇧ est enfoncé.") {
                     Toggle("Carte d'aperçu au survol", isOn: $model.showsHoverCard).toggleStyle(.switch).labelsHidden().accentTint()
                 }
             }

@@ -39,6 +39,8 @@ final class AppModel {
     }
     /// The window of the processing of a sound file.
     var showsRender = false
+    /// The window of the configuration file (the name of the file in the footer opens it).
+    var showsConfigFile = false
     var options = EngineCommand.Options()
     /// The files of the processing on sound files.
     var inputFile: URL? {

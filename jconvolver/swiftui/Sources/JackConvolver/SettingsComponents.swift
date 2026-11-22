@@ -12,11 +12,14 @@ struct OptionRow<Control: View>: View {
     let title: LocalizedStringKey
     var systemImage: String?
     var subtitle: LocalizedStringKey?
+    /// The detail, in a popover behind an "i" next to the title: the line under the title stays short.
+    var info: LocalizedStringKey?
     @ViewBuilder var control: Control
 
-    init(_ title: LocalizedStringKey, _ subtitle: LocalizedStringKey? = nil, systemImage: String? = nil, @ViewBuilder control: () -> Control) {
+    init(_ title: LocalizedStringKey, _ subtitle: LocalizedStringKey? = nil, info: LocalizedStringKey? = nil, systemImage: String? = nil, @ViewBuilder control: () -> Control) {
         self.title = title
         self.subtitle = subtitle
+        self.info = info
         self.systemImage = systemImage
         self.control = control()
     }
@@ -24,7 +27,10 @@ struct OptionRow<Control: View>: View {
     var body: some View {
         HStack(alignment: .center, spacing: 16) {
             VStack(alignment: .leading, spacing: 2) {
-                if let systemImage { Label(title, systemImage: systemImage) } else { Text(title) }
+                HStack(spacing: 6) {
+                    if let systemImage { Label(title, systemImage: systemImage) } else { Text(title) }
+                    if let info { InfoButton(text: info) }
+                }
                 if let subtitle {
                     Text(subtitle).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
@@ -33,6 +39,21 @@ struct OptionRow<Control: View>: View {
             HStack(spacing: 8) { control }
         }
         .padding(.horizontal, 14).padding(.vertical, 10)
+    }
+}
+
+/// A small "i": the detail of a setting, in a popover.
+struct InfoButton: View {
+    let text: LocalizedStringKey
+    @State private var shown = false
+
+    var body: some View {
+        Button { shown.toggle() } label: { Image(systemName: "info.circle").foregroundStyle(.secondary) }
+            .buttonStyle(.plain)
+            .help("Plus de détails")
+            .popover(isPresented: $shown, arrowEdge: .bottom) {
+                Text(text).font(.callout).fixedSize(horizontal: false, vertical: true).frame(width: 320, alignment: .leading).padding(14)
+            }
     }
 }
 

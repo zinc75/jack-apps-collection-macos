@@ -118,12 +118,12 @@ struct ConfigurationName: View {
     var body: some View {
         HStack(spacing: 6) {
             // In the normal text colour, so that it reads on the dark footer; it is underlined under the pointer, as a link.
-            Button { model.page = .matrix } label: {
+            Button { model.showsConfigFile = true } label: {
                 Text(model.name).underline(hovered).lineLimit(1).truncationMode(.middle)
             }
             .buttonStyle(.plain)
             .onHover { hovered = $0 }
-            .help("Voir la configuration")
+            .help("Voir et régler le fichier de configuration")
             if model.isEdited { Circle().fill(Color.orange).frame(width: 7, height: 7).help("Modifié, pas encore enregistré (⌘S)") }
             if let d = model.document {
                 Text(verbatim: "· \(d.inputCount) × \(d.outputCount) · \(d.placedPairs) RI").foregroundStyle(.secondary).fixedSize()
