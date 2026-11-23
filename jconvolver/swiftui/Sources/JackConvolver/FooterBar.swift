@@ -29,9 +29,10 @@ struct StatusColumn: View {
         HStack(spacing: 8) {
             StatusPill()
             ModeChip()
-            if model.controller.isRunning { LoadGauges().padding(.leading, 6) }
+            if model.controller.isRunning { LoadGauges().padding(.leading, 6).fixedSize().layoutPriority(1) }
         }
-        .frame(height: 28)
+        // The chips are 28 points high; the three gauges one under the other are a little taller, and the whole fits in the 98 points of the footer.
+        .frame(minHeight: 28)
     }
 }
 
@@ -92,39 +93,47 @@ struct StatusPill: View {
     }
 }
 
-/// The load of the engine over the whole machine, and the audio cuts. A click on the cuts opens the journal.
+/// The load of JACK, the load of the engine over the whole machine, and the audio cuts, one under the other so that the bars line up. A click on the
+/// cuts opens the journal.
 struct LoadGauges: View {
     @Environment(AppModel.self) private var model
     @Environment(\.appAccentColor) private var accent
 
+    private static let barWidth: CGFloat = 56
+    private static let valueWidth: CGFloat = 36
+
     var body: some View {
         let controller = model.controller
-        HStack(spacing: 12) {
+        Grid(alignment: .leading, horizontalSpacing: 6, verticalSpacing: 2) {
             // The audio load of the server, which is what tells that the engine is too heavy for the period: only in real time, and when JACK says it.
             if model.mode == .realTime, let load = model.jack.cpuLoad {
                 let tint: Color = load >= 90 ? .red : load >= 70 ? .orange : accent
-                HStack(spacing: 5) {
-                    Text("JACK").foregroundStyle(.secondary)
-                    ProgressView(value: min(1, load / 100)).progressViewStyle(.linear).frame(width: 46).tint(tint)
+                GridRow {
+                    Text("JACK").foregroundStyle(.secondary).lineLimit(1).fixedSize(horizontal: true, vertical: false)
+                    ProgressView(value: min(1, load / 100)).progressViewStyle(.linear).frame(width: Self.barWidth).tint(tint)
                     Text(verbatim: "\(Int(load.rounded())) %").monospacedDigit().foregroundStyle(load >= 90 ? Color.red : Color.primary)
+                        .frame(width: Self.valueWidth, alignment: .trailing)
                 }
                 .help("Charge audio de JACK : la part du temps d'une période que le traitement prend. Orange à partir de 70 %, rouge à partir de 90 % : au-delà, les coupures (xruns) arrivent.")
             }
             let share = controller.machineShare ?? 0
-            HStack(spacing: 5) {
-                Text("Moteur").foregroundStyle(.secondary)
-                ProgressView(value: min(1, share)).progressViewStyle(.linear).frame(width: 46).tint(accent)
+            GridRow {
+                Text("Moteur").foregroundStyle(.secondary).lineLimit(1).fixedSize(horizontal: true, vertical: false)
+                ProgressView(value: min(1, share)).progressViewStyle(.linear).frame(width: Self.barWidth).tint(accent)
                 Text(verbatim: share < 0.01 ? "< 1 %" : "\(Int((share * 100).rounded())) %").monospacedDigit()
+                    .frame(width: Self.valueWidth, alignment: .trailing)
             }
             .help(helpText(controller))
-            Button { model.page = .log } label: {
-                HStack(spacing: 5) {
-                    Text("xruns").foregroundStyle(.secondary)
+            GridRow {
+                Text("xruns").foregroundStyle(.secondary).lineLimit(1).fixedSize(horizontal: true, vertical: false)
+                Color.clear.frame(width: Self.barWidth, height: 1)
+                Button { model.page = .log } label: {
                     Text(verbatim: "\(controller.xruns)").monospacedDigit().foregroundStyle(controller.xruns > 0 ? Color.red : Color.primary)
+                        .frame(width: Self.valueWidth, alignment: .trailing)
                 }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
-            .help("Coupures audio depuis le lancement. Cliquer pour voir le journal.")
+            .help("Coupures audio depuis le lancement. Cliquer sur le nombre pour voir le journal.")
         }
         .font(.caption)
     }
