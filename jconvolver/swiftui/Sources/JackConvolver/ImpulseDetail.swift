@@ -54,6 +54,10 @@ struct ImpulseDetailPage: View {
     @State private var others: [String: LoadedTrace] = [:]
     /// The files already read, by path and channel, so that a trace whose zone changes is not read again.
     @State private var fileCache: [String: (CurveData, PeakPyramid)] = [:]
+    /// Whether the traces are drawn as the engine reads them (zone, gain and delay applied) instead of as the files are, and those traces.
+    @State private var engineView = false
+    @State private var engineTraces: [String: LoadedTrace] = [:]
+    @State private var engineEntries: [String: EngineEntry] = [:]
     @State private var time = PlotViewport.signal(count: 2)
     @State private var spectrum = PlotViewport.signal(count: 2)
     @State private var phase = PlotViewport.signal(count: 2)
@@ -67,6 +71,11 @@ struct ImpulseDetailPage: View {
         var pyramid: PeakPyramid
         var response: FrequencyResponse?
     }
+
+    /// What an engine trace is made of: the file, and the zone, gain and delay of the place of the matrix.
+    struct EngineEntry: Hashable { var id: String; var path: String; var channel: Int; var offset: Int; var length: Int; var gain: Double; var delay: Int }
+
+    private struct EngineTaskKey: Hashable { var entries: [EngineEntry]; var cached: [String] }
 
     /// What decides whether a trace other than the edited one has to be loaded again: the file and the zone.
     struct OtherKey: Hashable { var id: String; var path: String; var channel: Int; var offset: Int; var length: Int }
@@ -181,6 +190,7 @@ struct ImpulseDetailPage: View {
         }
         .task(id: loadKey) { await load() }
         .task(id: othersKey) { await loadOthers() }
+        .task(id: EngineTaskKey(entries: engineView ? engineEntriesNow : [], cached: engineView ? fileCache.keys.sorted() : [])) { await computeEngine() }
         // The time axis follows the longest trace that is shown.
         .task(id: TimeFit(length: timeLength, load: loadKey)) { fitTime() }
         .onChange(of: model.traces) { _, _ in syncSeries() }
@@ -251,27 +261,26 @@ struct ImpulseDetailPage: View {
 
     /// The three views are tabs over the plot, in a container, in the accent of the application (the tab view of the system keeps
     /// its own accent): the toolbar keeps the tools of the plot only.
-    /// The three views, as tabs of equal width over the whole width of the container, drawn as the tabs of the inspector are (the segmented
-    /// control of the system keeps its natural width).
+    /// The three views, as tabs of equal width over the whole width of the container: a cell of glass each, the one that is open in the accent
+    /// (the segmented control of the system keeps its natural width and leaves the other tabs without a shape).
     private var kindStrip: some View {
         let views: [(Kind, LocalizedStringKey)] = [(.time, "Temps"), (.spectrum, "Fréquence"), (.phase, "Phase")]
-        return HStack(spacing: 2) {
+        return HStack(spacing: 8) {
             ForEach(views, id: \.0) { view, title in
                 let selected = kind == view
                 Button { kind = view } label: {
                     Text(title)
-                        .font(.system(size: 12.5, weight: .medium))
-                        .frame(maxWidth: .infinity, minHeight: 26)
-                        .foregroundStyle(selected ? Color.white : Color.primary.opacity(0.75))
-                        .background(selected ? accent : Color.clear, in: RoundedRectangle(cornerRadius: 7))
-                        .contentShape(Rectangle())
+                        .font(.system(size: 12.5, weight: .semibold))
+                        .frame(maxWidth: .infinity, minHeight: 30)
+                        .foregroundStyle(selected ? Color.white : Color.primary.opacity(0.8))
+                        .glassTab(selected: selected, tint: accent)
+                        .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
                 .accessibilityAddTraits(selected ? [.isSelected] : [])
             }
         }
-        .padding(3)
-        .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 10))
+        .glassGroup(spacing: 8)
     }
 
     private func tabs(_ impulse: ConvImpulse) -> some View {
@@ -296,28 +305,31 @@ struct ImpulseDetailPage: View {
             switch kind {
             case .time:
                 VStack(spacing: 8) {
+                    // As the engine reads them, the zone is not drawn on the file: no handles, no markers of the file.
                     SignalPlot(traces: timeTraces, viewport: $time, sampleRate: data.sampleRate, amplitude: yScales[.time] ?? .linear, accent: accent,
-                               labels: .localized, controller: controller, annotations: annotations, region: regionEditor(total: data.count))
-                        .trackPlotBottom(below: PlotLayout.bottom + PlotLayout.regionRail, in: Self.pageSpace) { plotBottom = $0 }
-                    PlotOverview(signal: pyramid, viewport: $time, region: zone, regionColor: colorScheme == .dark ? Self.zoneColor : Self.zoneColorLight, accent: editedColor)
+                               labels: .localized, controller: controller, annotations: engineView ? PlotAnnotations() : annotations,
+                               region: engineView ? nil : regionEditor(total: data.count))
+                        .trackPlotBottom(below: PlotLayout.bottom + (engineView ? 0 : PlotLayout.regionRail), in: Self.pageSpace) { plotBottom = $0 }
+                    PlotOverview(signal: engineView ? (editedEngine?.pyramid ?? pyramid) : pyramid, viewport: $time, region: engineView ? nil : zone,
+                                 regionColor: colorScheme == .dark ? Self.zoneColor : Self.zoneColorLight, accent: editedColor)
                 }
             case .spectrum:
-                if response != nil {
+                if hasResponse {
                     VStack(spacing: 8) {
                         CurvePlot(curves: magnitudeCurves, viewport: $spectrum, xUnit: "Hz", yScale: yScales[.spectrum] ?? .decibels(floor: -120),
                                   accent: accent, labels: .localized, controller: controller)
                             .trackPlotBottom(below: PlotLayout.bottom, in: Self.pageSpace) { plotBottom = $0 }
                         // The zone the spectrum is computed on: it changes with the ends, and the spectrum follows.
-                        PlotZoneBar(signal: pyramid, zone: regionEditor(total: data.count), accent: editedColor)
+                        if !engineView { PlotZoneBar(signal: pyramid, zone: regionEditor(total: data.count), accent: editedColor) }
                     }
                 } else { ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity) }
             case .phase:
-                if response != nil {
+                if hasResponse {
                     VStack(spacing: 8) {
                         CurvePlot(curves: phaseCurves, viewport: $phase, xUnit: "Hz", yUnit: "°", accent: accent, labels: .localized,
                                   controller: controller, yScaleSwitchable: false)
                             .trackPlotBottom(below: PlotLayout.bottom, in: Self.pageSpace) { plotBottom = $0 }
-                        PlotZoneBar(signal: pyramid, zone: regionEditor(total: data.count), accent: editedColor)
+                        if !engineView { PlotZoneBar(signal: pyramid, zone: regionEditor(total: data.count), accent: editedColor) }
                     }
                 } else { ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity) }
             }
@@ -382,6 +394,7 @@ struct ImpulseDetailPage: View {
     private func loadedTrace(_ id: Int) -> (data: CurveData, pyramid: PeakPyramid, response: FrequencyResponse?)? {
         guard model.traces.indices.contains(id) else { return nil }
         let trace = model.traces[id]
+        if engineView { return engineTraces[trace.id].map { ($0.data, $0.pyramid, $0.response) } }
         if trace == model.detail {
             guard let data, let pyramid else { return nil }
             return (data, pyramid, response)
@@ -415,6 +428,43 @@ struct ImpulseDetailPage: View {
         }
     }
 
+    /// The edited trace as the engine reads it.
+    private var editedEngine: LoadedTrace? { model.detail.flatMap { engineTraces[$0.id] } }
+
+    /// Whether what the spectrum and the phase need is there: the response of the edited file, or of the traces as the engine reads them.
+    private var hasResponse: Bool { engineView ? (editedEngine?.response != nil) : response != nil }
+
+    private var engineEntriesNow: [EngineEntry] {
+        model.traces.compactMap { trace in
+            guard let impulse = model.impulse(of: trace), case .file(let file, let channel) = impulse.source else { return nil }
+            return EngineEntry(id: trace.id, path: ConvConfig.path(of: file, directory: impulse.directory, configDirectory: model.configDirectory),
+                               channel: channel, offset: impulse.offset, length: impulse.length, gain: impulse.gain, delay: impulse.delay)
+        }
+    }
+
+    /// Makes the traces as the engine reads them: the zone of the file, the gain, the delay, then their peaks and their frequency response.
+    private func computeEngine() async {
+        guard engineView else { return }
+        let entries = engineEntriesNow
+        var next: [String: LoadedTrace] = [:]
+        var made: [String: EngineEntry] = [:]
+        for entry in entries {
+            if let known = engineTraces[entry.id], engineEntries[entry.id] == entry { next[entry.id] = known; made[entry.id] = entry; continue }
+            guard let raw = fileCache["\(entry.path)#\(entry.channel)"]?.0 else { continue }
+            let built = await Task.detached(priority: .userInitiated) { () -> (CurveData, PeakPyramid, FrequencyResponse?) in
+                let samples = EngineSamples.make(raw.samples, offset: entry.offset, length: entry.length, gain: entry.gain, delay: entry.delay)
+                let response = samples.count >= 2 ? FrequencyResponse(samples: samples, range: 0..<samples.count, sampleRate: raw.sampleRate) : nil
+                return (CurveData(samples: samples, sampleRate: raw.sampleRate), PeakPyramid(samples: samples.isEmpty ? [0] : samples), response)
+            }.value
+            guard !Task.isCancelled else { return }
+            next[entry.id] = LoadedTrace(key: OtherKey(id: entry.id, path: entry.path, channel: entry.channel, offset: entry.offset, length: entry.length),
+                                         data: built.0, pyramid: built.1, response: built.2)
+            made[entry.id] = entry
+        }
+        engineTraces = next
+        engineEntries = made
+    }
+
     /// The rows of the list of traces in the inspector.
     private var traceRows: [TraceRow] {
         let rate = data?.sampleRate
@@ -429,7 +479,7 @@ struct ImpulseDetailPage: View {
 
     /// The page "Tracés" of the inspector.
     private var tracesTab: PlotInspectorTab {
-        PlotInspectorTab(id: "traces", title: String(localized: "Tracés")) { TracesInspector(series: series, rows: traceRows) }
+        PlotInspectorTab(id: "traces", title: String(localized: "Tracés")) { TracesInspector(series: series, rows: traceRows, engineView: $engineView) }
     }
 
     /// Makes the channels of the plots follow the traces: one each, with the colour and the visibility it had.

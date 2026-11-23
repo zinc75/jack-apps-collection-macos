@@ -115,6 +115,7 @@ struct TracesInspector: View {
     @Environment(\.appAccentColor) private var accent
     @Bindable var series: PlotSeriesSet
     let rows: [TraceRow]
+    @Binding var engineView: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -134,6 +135,15 @@ struct TracesInspector: View {
                         Spacer()
                     }
                     .padding(.top, 4)
+                }
+            }
+            PlotInspectorSection(id: "engineView", title: String(localized: "Représentation"),
+                                 info: String(localized: "Tel que le moteur le lit : chaque trace est la partie du fichier que le moteur lit (début et longueur du fichier .conf), multipliée par son gain, après son retard. La forme d'onde, le spectre et la phase sont ceux de la réponse en service. Les poignées de troncature et les repères du fichier sont masqués dans cette vue ; la page Troncature de l'inspecteur reste active.")) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Toggle("Tel que le moteur le lit", isOn: $engineView).toggleStyle(.checkbox).accentTint().font(.callout)
+                    if engineView {
+                        Text("Poignées et repères du fichier masqués.").font(.caption).foregroundStyle(.secondary)
+                    }
                 }
             }
             PlotInspectorSection(id: "inspectChoice", title: String(localized: "Quand j'inspecte une réponse")) {

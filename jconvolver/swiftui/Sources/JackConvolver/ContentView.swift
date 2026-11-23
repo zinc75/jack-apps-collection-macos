@@ -45,6 +45,13 @@ struct ContentView: View {
         }
     }
 
+    /// The name of the window says which configuration it holds, so that windows of several configurations can be told apart in the Window menu.
+    private var windowTitle: String {
+        guard model.isOpen else { return "Jack Convolver" }
+        let name = model.fileURL?.lastPathComponent ?? String(localized: "Sans titre")
+        return "Jack Convolver · " + name + (model.isEdited ? " •" : "")
+    }
+
     var body: some View {
         @Bindable var model = model
         VStack(spacing: 0) {
@@ -120,7 +127,7 @@ struct ContentView: View {
         }
         #endif
         .onChange(of: model.jack.sampleRate) { _, _ in model.refreshProblems() }
-        .navigationTitle("Jack Convolver")
+        .navigationTitle(windowTitle)
         .navigationSubtitle("Jack Apps Collection for macOS")
         .toolbar {
             // The tools of the page come first, the state of JACK always last: it is not part of them.

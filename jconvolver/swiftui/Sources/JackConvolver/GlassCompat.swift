@@ -34,6 +34,29 @@ extension View {
     }
 }
 
+extension View {
+    /// A tab that is a cell of glass of its own: neutral Liquid Glass on macOS 26, the accent shining through when it is the one that is open (a
+    /// glass tint reads grey with this colour, so the accent is under the glass); a bordered cell on a material before.
+    @ViewBuilder
+    func glassTab(selected: Bool, tint: Color) -> some View {
+        if #available(macOS 26, *), GlassSupport.enabled {
+            self.background {
+                if selected { Capsule().fill(LinearGradient(colors: [tint.opacity(0.6), tint.opacity(0.85)], startPoint: .top, endPoint: .bottom)) }
+            }
+            .glassEffect(.regular.interactive(), in: Capsule())
+        } else {
+            self.background(selected ? tint.opacity(0.9) : Color.primary.opacity(0.07), in: Capsule())
+                .overlay(Capsule().strokeBorder(Color.primary.opacity(selected ? 0 : 0.14), lineWidth: 0.75))
+        }
+    }
+
+    /// Lets the glass cells of its content be seen as one family: they share the lighting and may merge when they touch.
+    @ViewBuilder
+    func glassGroup(spacing: CGFloat) -> some View {
+        if #available(macOS 26, *), GlassSupport.enabled { GlassEffectContainer(spacing: spacing) { self } } else { self }
+    }
+}
+
 /// A rounded panel, as the grouped sections of System Settings but for free-form content.
 struct Card<Content: View>: View {
     @ViewBuilder var content: Content
