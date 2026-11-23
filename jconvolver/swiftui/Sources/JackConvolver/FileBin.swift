@@ -105,12 +105,19 @@ struct FileBin: View {
                     .buttonStyle(GlyphButtonStyle())
                     .help("Ajouter des fichiers audio ou un dossier…")
                     .accessibilityLabel("Ajouter des fichiers audio ou un dossier")
+                Button { model.removeFromBin(pickedPaths) } label: { Self.footerSymbol("minus.circle") }
+                    .buttonStyle(GlyphButtonStyle())
+                    .disabled(model.removableFromBin(pickedPaths).isEmpty)
+                    .help("Retirer de la liste les fichiers choisis (ils restent sur le disque ; ceux que la matrice utilise restent dans la liste)")
+                    .accessibilityLabel("Retirer de la liste les fichiers choisis")
                 Spacer()
                 Menu {
                     Button("Ajouter des fichiers…") { model.chooseFilesForBin() }
                     Button("Ajouter un dossier…") { model.chooseFolderForBin() }
                     Divider()
-                    Button("Relire le dossier de la configuration") { model.loadBin() }
+                    Button("Retirer de la liste") { model.removeFromBin(pickedPaths) }
+                        .disabled(model.removableFromBin(pickedPaths).isEmpty)
+                    Button("Relire le dossier de la configuration") { model.reloadBin() }
                         .disabled(model.fileURL == nil)
                     Button("Afficher dans le Finder") { NSWorkspace.shared.activateFileViewerSelecting(pickedFiles) }
                         .disabled(pickedFiles.isEmpty)
@@ -130,11 +137,13 @@ struct FileBin: View {
         Image(systemName: name).resizable().scaledToFit().frame(width: 16, height: 16)
     }
 
-    /// The files of what is chosen in the list.
-    private var pickedFiles: [URL] {
-        Set(model.picked.compactMap { item -> String? in if case .channel(let path, _) = item { path } else { nil } })
-            .sorted().map { URL(fileURLWithPath: $0) }
+    /// The paths of the files of what is chosen in the list.
+    private var pickedPaths: [String] {
+        Set(model.picked.compactMap { item -> String? in if case .channel(let path, _) = item { path } else { nil } }).sorted()
     }
+
+    /// The files of what is chosen in the list.
+    private var pickedFiles: [URL] { pickedPaths.map { URL(fileURLWithPath: $0) } }
 
     /// Opens the plots of the file of a row, from its channel when the row is one (all the channels when it is the file).
     private func openPreview(_ row: Row) {
@@ -176,8 +185,10 @@ struct FileBin: View {
         .contentShape(Rectangle())
         .onTapGesture { click(row, index: index, all: all) }
         .contextMenu {
-            if case .channel? = row.items.first {
+            if case .channel(let path, _)? = row.items.first {
                 Button("Inspecter la réponse impulsionnelle…") { openPreview(row) }
+                Button("Retirer de la liste") { model.removeFromBin(model.picked.contains(row.items[0]) ? pickedPaths : [path]) }
+                    .disabled(model.removableFromBin(model.picked.contains(row.items[0]) ? pickedPaths : [path]).isEmpty)
             }
         }
         .popover(isPresented: Binding(get: { preview?.rowID == row.id }, set: { if !$0, preview?.rowID == row.id { preview = nil } }), arrowEdge: .trailing) {

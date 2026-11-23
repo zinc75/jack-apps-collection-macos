@@ -112,6 +112,9 @@ final class AppModel {
     var bulkShifts = false
     /// The list of sound files beside the matrix: what is chosen in it, what is open, what is searched for.
     private(set) var binFiles: [BinFile] = []
+    /// The files the person took out of the list: they stay out until the folder is read again or another configuration is opened (a file the
+    /// matrix uses cannot be taken out).
+    var binExcluded: Set<String> = []
     var picked: Set<Placeable> = []
     var binExpanded: Set<String> = []
     var binFilter = ""
@@ -255,6 +258,7 @@ final class AppModel {
         picked = []
         binExpanded = []
         binFilter = ""
+        binExcluded = []
         loadBin()
     }
 

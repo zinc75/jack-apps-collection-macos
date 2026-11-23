@@ -27,6 +27,7 @@ extension AppModel {
         if fileURL != nil, let names = try? FileManager.default.contentsOfDirectory(atPath: configDirectory) {
             paths = names.filter { Self.audioExtensions.contains(($0 as NSString).pathExtension.lowercased()) && !$0.hasPrefix(".") }
                 .map { (configDirectory as NSString).appendingPathComponent($0) }
+                .filter { !binExcluded.contains($0) }
         }
         if let document {
             for impulses in document.content.impulses.values {
@@ -41,7 +42,30 @@ extension AppModel {
     }
 
     func addToBin(_ urls: [URL]) {
+        // A file that was taken out of the list comes back when it is added.
+        binExcluded.subtract(urls.map(\.path))
         setBin(Set(binFiles.map(\.path)).union(urls.map(\.path)).map { $0 })
+    }
+
+    /// Reads the folder again, and brings back the files that were taken out of the list.
+    func reloadBin() {
+        binExcluded = []
+        loadBin()
+    }
+
+    /// The files among these that can be taken out of the list: those the matrix does not use.
+    func removableFromBin(_ paths: [String]) -> [String] {
+        let known = Dictionary(uniqueKeysWithValues: binFiles.map { ($0.path, $0) })
+        return Set(paths).filter { path in known[path].map { uses(of: $0) == 0 } ?? false }.sorted()
+    }
+
+    /// Takes files out of the list (they stay on the disk): not the ones the matrix uses.
+    func removeFromBin(_ paths: [String]) {
+        let removable = Set(removableFromBin(paths))
+        guard !removable.isEmpty else { return }
+        binExcluded.formUnion(removable)
+        setBinFiles(binFiles.filter { !removable.contains($0.path) })
+        picked = picked.filter { if case .channel(let path, _) = $0 { !removable.contains(path) } else { true } }
     }
 
     private func setBin(_ paths: [String]) {
