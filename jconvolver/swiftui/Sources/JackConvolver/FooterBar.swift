@@ -100,6 +100,16 @@ struct LoadGauges: View {
     var body: some View {
         let controller = model.controller
         HStack(spacing: 12) {
+            // The audio load of the server, which is what tells that the engine is too heavy for the period: only in real time, and when JACK says it.
+            if model.mode == .realTime, let load = model.jack.cpuLoad {
+                let tint: Color = load >= 90 ? .red : load >= 70 ? .orange : accent
+                HStack(spacing: 5) {
+                    Text("JACK").foregroundStyle(.secondary)
+                    ProgressView(value: min(1, load / 100)).progressViewStyle(.linear).frame(width: 46).tint(tint)
+                    Text(verbatim: "\(Int(load.rounded())) %").monospacedDigit().foregroundStyle(load >= 90 ? Color.red : Color.primary)
+                }
+                .help("Charge audio de JACK : la part du temps d'une période que le traitement prend. Orange à partir de 70 %, rouge à partir de 90 % : au-delà, les coupures (xruns) arrivent.")
+            }
             let share = controller.machineShare ?? 0
             HStack(spacing: 5) {
                 Text("Moteur").foregroundStyle(.secondary)

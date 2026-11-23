@@ -16,6 +16,8 @@ public final class JackStatus {
     public private(set) var bufferSize: Int?
     /// The xruns since the application connected.
     public private(set) var xrunCount = 0
+    /// The audio load of the server, in percent of the time of a period; nil while the server does not say.
+    public private(set) var cpuLoad: Double?
 
     /// Clients with audio output ports: what can feed an input of jconvolver.
     public private(set) var sources: [JackPortClient] = []
@@ -62,6 +64,7 @@ public final class JackStatus {
         isConnected = false
         sampleRate = nil
         bufferSize = nil
+        cpuLoad = nil
     }
 
     private func tryOpen() {
@@ -83,6 +86,7 @@ public final class JackStatus {
         sources = []; destinations = []
         sampleRate = nil
         bufferSize = nil
+        cpuLoad = nil
     }
 
     private func poll() {
@@ -90,6 +94,7 @@ public final class JackStatus {
         sampleRate = Int(bridge.sampleRate)
         let frames = Int(bridge.bufferSize)
         bufferSize = frames > 0 ? frames : nil
+        cpuLoad = bridge.cpuLoad.map { Double($0) }
         let count = bridge.xrunCount
         if count > lastXruns {
             let new = Int(count - lastXruns)
