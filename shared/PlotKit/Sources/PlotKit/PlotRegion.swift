@@ -140,10 +140,6 @@ extension PlotDrawing {
             var line = Path(); line.move(to: CGPoint(x: x, y: plot.minY)); line.addLine(to: CGPoint(x: x, y: plot.maxY))
             ctx.stroke(line, with: .color(color), style: StrokeStyle(lineWidth: 1.4, dash: [3, 3]))
         }
-        if !region.style.name.isEmpty, hi - lo > 80 {
-            ctx.draw(ctx.resolve(Text(verbatim: region.style.name).font(.system(size: 10, weight: .semibold)).foregroundColor(color)),
-                     at: CGPoint(x: max(lo, plot.minX) + 8, y: plot.minY + 6), anchor: .topLeading)
-        }
     }
 
     /// Under the plot: the rail, the part of it that is the region, the two knobs, and the bubbles of a drag.

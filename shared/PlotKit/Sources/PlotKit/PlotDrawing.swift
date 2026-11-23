@@ -104,6 +104,7 @@ struct PlotDrawing {
             content.drawData(&layer, t, palette, scale, cache)
             if !annotations.isEmpty { drawAnnotations(&layer, t, plot, palette) }
             drawRegion(&layer, t, plot, palette)
+            drawNames(&layer, t, plot, palette)
             if let box { drawBox(&layer, box) }
             if let measure { drawMeasure(&layer, measure, t) }
         }
