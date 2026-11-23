@@ -103,6 +103,8 @@ struct ImpulseRowFields: View {
     let index: Int
     let impulse: ConvImpulse
     var showsPair = false
+    /// The block that asks whether to add the response to the ones that are drawn, or to draw it alone.
+    @State private var asking = false
 
     private var isFile: Bool { if case .file = impulse.source { return true } else { return false } }
     private var isCopy: Bool { if case .copy = impulse.source { return true } else { return false } }
@@ -125,9 +127,12 @@ struct ImpulseRowFields: View {
             ValueField(text: "\(impulse.delay)", enabled: !isCopy) { commit(delay: $0) }
             ValueField(text: "\(impulse.offset)", enabled: isFile) { commit(offset: $0) }
             ValueField(text: "\(impulse.length)", enabled: isFile) { commit(length: $0) }
-            Button { model.detail = DetailTarget(pair: pair, index: index) } label: {
+            Button {
+                if !model.inspectDirectly(DetailTarget(pair: pair, index: index)) { asking = true }
+            } label: {
                 InspectSymbol()
             }
+                .popover(isPresented: $asking, arrowEdge: .bottom) { InspectChoiceView(target: DetailTarget(pair: pair, index: index)) }
                 .buttonStyle(GlyphButtonStyle()).opacity(isFile ? 1 : 0.25).disabled(!isFile)
                 .help("Inspecter la réponse impulsionnelle : forme d'onde, spectre et analyse")
             Button { model.edit(String(localized: "RI retirée")) { $0.remove(at: index, of: pair) } } label: { Image(systemName: "xmark.circle.fill") }

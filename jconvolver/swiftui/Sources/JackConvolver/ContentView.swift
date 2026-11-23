@@ -30,7 +30,7 @@ struct ContentView: View {
                 }
                 // The page of an impulse response is kept (hidden) once it has been opened: its view, its zoom and its inspector are still there
                 // when one comes back from the matrix.
-                if model.detail != nil {
+                if model.detail != nil || model.page == .impulse {
                     // It has no size while it is hidden, so that nothing of it can take what is meant for the page that is shown.
                     let shown = model.page == .impulse
                     ImpulseDetailPage()
@@ -68,7 +68,7 @@ struct ContentView: View {
             if env["JACKCONVOLVER_SHEET"] == "detail", let d = model.document,
                let first = d.content.impulses.keys.sorted().first(where: { pair in d.impulses(at: pair).contains { if case .file = $0.source { true } else { false } } }),
                let i = d.impulses(at: first).firstIndex(where: { if case .file = $0.source { true } else { false } }) {
-                try? await Task.sleep(for: .milliseconds(800)); model.detail = DetailTarget(pair: first, index: i)
+                try? await Task.sleep(for: .milliseconds(800)); model.inspect(DetailTarget(pair: first, index: i))
             }
             // JACKCONVOLVER_FAKEDRAG=over|drop: drags the first file of the list over the cell of the third input and third output
             // (what the pointer does), and for "drop" lets go of it.

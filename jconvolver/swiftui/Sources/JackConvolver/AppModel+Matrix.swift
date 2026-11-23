@@ -329,3 +329,93 @@ extension AppModel {
 extension Array {
     subscript(safe index: Int) -> Element? { indices.contains(index) ? self[index] : nil }
 }
+
+// MARK: The traces of the page of the analysis
+
+extension AppModel {
+    /// The impulse response at a place of the matrix.
+    func impulse(of target: DetailTarget) -> ConvImpulse? {
+        guard let list = document?.impulses(at: target.pair), list.indices.contains(target.index) else { return nil }
+        return list[target.index]
+    }
+
+    /// Whether the place holds an impulse response that comes from a file: the only ones that can be drawn.
+    private func isFileImpulse(_ target: DetailTarget) -> Bool {
+        if let impulse = impulse(of: target), case .file = impulse.source { return true }
+        return false
+    }
+
+    /// Draws a response on the page of the analysis and edits it: alone, or with the ones that are already drawn.
+    func inspect(_ target: DetailTarget, adding: Bool = false) {
+        if !adding || traces.isEmpty { traces = [target] } else if !traces.contains(target) { traces.append(target) }
+        detail = target
+        page = .impulse
+    }
+
+    /// What an inspect button does now: when nothing else is drawn, or when the choice is made, it does it; otherwise it asks (`false`).
+    func inspectDirectly(_ target: DetailTarget) -> Bool {
+        if traces.isEmpty || traces == [target] { inspect(target); return true }
+        switch inspectChoice {
+        case .add: inspect(target, adding: true); return true
+        case .replace: inspect(target); return true
+        case .ask: return false
+        }
+    }
+
+    /// Draws several responses at once (all the ones the configuration uses, say), the edited one staying as it is.
+    func addTraces(_ targets: [DetailTarget]) {
+        for target in targets where !traces.contains(target) { traces.append(target) }
+        if detail == nil { detail = traces.first }
+        page = .impulse
+    }
+
+    func removeTrace(_ target: DetailTarget) {
+        traces.removeAll { $0 == target }
+        if detail == target { detail = traces.first }
+    }
+
+    /// The traces whose response is no longer in the matrix (removed, or no longer from a file) are taken away.
+    func pruneTraces() {
+        guard !traces.isEmpty else { if detail != nil { detail = nil }; return }
+        let valid = traces.filter { isFileImpulse($0) }
+        if valid != traces { traces = valid }
+        if let d = detail, !valid.contains(d) { detail = valid.first }
+    }
+
+    /// The responses from a file that are not drawn yet, in the order of the matrix.
+    func traceCandidates(in pairs: [ConvPair]? = nil) -> [DetailTarget] {
+        guard let document else { return [] }
+        let all = pairs ?? document.content.impulses.keys.sorted()
+        return all.flatMap { pair in
+            document.impulses(at: pair).enumerated().compactMap { index, impulse -> DetailTarget? in
+                guard case .file = impulse.source else { return nil }
+                let target = DetailTarget(pair: pair, index: index)
+                return traces.contains(target) ? nil : target
+            }
+        }
+    }
+
+    /// The name of a trace, short for the legend and the plots: the numbers of its input and output (and its rank when the cell holds several).
+    func traceName(_ target: DetailTarget) -> String {
+        var name = "\(target.pair.input + 1) → \(target.pair.output + 1)"
+        if let count = document?.impulses(at: target.pair).count, count > 1 { name += " · \(target.index + 1)" }
+        return name
+    }
+
+    /// The same with the names of the input and of the output, for the menus.
+    func traceFullName(_ target: DetailTarget) -> String {
+        "\(inputLabel(target.pair.input)) → \(outputLabel(target.pair.output))"
+    }
+
+    /// What tells apart two traces of the same file: its file and channel, and what is set on it.
+    func traceDetail(_ target: DetailTarget) -> String {
+        guard let impulse = impulse(of: target) else { return "" }
+        var out = label(of: impulse)
+        if case .file = impulse.source {
+            let zone = impulse.length > 0 ? "\(impulse.offset) + \(impulse.length)" : (impulse.offset > 0 ? "\(impulse.offset) →" : "")
+            if !zone.isEmpty { out += " · " + zone }
+            if impulse.gainDB.isFinite, abs(impulse.gainDB) > 0.05 { out += " · " + impulse.gainDB.formatted(.number.precision(.fractionLength(1))) + " dB" }
+        }
+        return out
+    }
+}

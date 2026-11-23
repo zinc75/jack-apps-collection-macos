@@ -141,14 +141,24 @@ struct MatrixCanvas: View {
                     Button(model.label(of: item.impulse)) { inspect(item.index) }
                 }
             }
+            if !model.traces.isEmpty {
+                Menu("Ajouter aux tracés") {
+                    ForEach(items, id: \.index) { item in
+                        Button(model.label(of: item.impulse)) { inspect(item.index, adding: true) }
+                    }
+                }
+            }
         } else {
             Button("Inspecter la réponse impulsionnelle…") { if let item = items.first { inspect(item.index) } }
                 .disabled(items.isEmpty)
+            if !model.traces.isEmpty, let item = items.first {
+                Button("Ajouter au tracé") { inspect(item.index, adding: true) }
+            }
         }
     }
 
-    private func inspect(_ index: Int) {
-        if let pair = model.hoverPair { model.detail = DetailTarget(pair: pair, index: index) }
+    private func inspect(_ index: Int, adding: Bool = false) {
+        if let pair = model.hoverPair { model.inspect(DetailTarget(pair: pair, index: index), adding: adding) }
     }
 
     @ViewBuilder

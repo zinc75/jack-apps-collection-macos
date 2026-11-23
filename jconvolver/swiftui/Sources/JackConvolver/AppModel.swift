@@ -19,6 +19,11 @@ enum RunMode: String {
     case realTime, file
 }
 
+/// What an inspect button does when responses are already drawn: ask, add the new one to them, or draw it alone.
+enum InspectChoice: String, CaseIterable {
+    case ask, add, replace
+}
+
 /// The impulse responses as a matrix, or as a table.
 enum ViewMode: String {
     case matrix, table
@@ -59,7 +64,7 @@ final class AppModel {
     /// The run that is going on or has just ended: how many have been started, when this one started, and how long it took.
     private(set) var runCount = 0
 
-    private(set) var document: ConvDocument?
+    private(set) var document: ConvDocument? { didSet { pruneTraces() } }
     /// What is selected in the matrix, how big its cells are drawn, and what the pointer is over.
     var selection = MatrixSelection()
     var cellSize: CGFloat = 26
@@ -135,8 +140,14 @@ final class AppModel {
     @ObservationIgnored var appliedLinks: Set<JackLink> = []
     var showsResize = false
     var showsGestures = false
-    /// The impulse response that its page shows: choosing one (the inspect button of a row, of a cell, of the list) brings the page.
-    var detail: DetailTarget? { didSet { if detail != nil { page = .impulse } } }
+    /// The impulse responses drawn on the page of the analysis, in the order they were added, and the one of them that is edited (its zone, its
+    /// markers, the inspector). A trace is a place of the matrix, not a file: one file can be placed twice, with other settings.
+    var traces: [DetailTarget] = []
+    var detail: DetailTarget?
+    /// What a click on an inspect button does when other responses are already drawn.
+    var inspectChoice = InspectChoice(rawValue: UserDefaults.standard.string(forKey: "inspectChoice") ?? "") ?? .ask {
+        didSet { UserDefaults.standard.set(inspectChoice.rawValue, forKey: "inspectChoice") }
+    }
     /// The state of the plots of that page, which its tools in the toolbar of the window and its inspector share.
     let plotController = PlotController()
 
@@ -250,6 +261,7 @@ final class AppModel {
     }
 
     private func resetEditing() {
+        traces = []
         detail = nil
         history.clear()
         zoomIsManual = false

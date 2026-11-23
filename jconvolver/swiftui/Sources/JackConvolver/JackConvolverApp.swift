@@ -103,7 +103,7 @@ struct JackConvolverApp: App {
                 Button("Accueil") { model.page = .home }.keyboardShortcut("1", modifiers: .command)
                 Divider()
                 Button("Convolutions") { model.page = .matrix }.keyboardShortcut("2", modifiers: .command).disabled(!model.isOpen)
-                Button("Réponse impulsionnelle") { model.page = .impulse }.keyboardShortcut("3", modifiers: .command).disabled(!model.isOpen || model.detail == nil)
+                Button("Analyse") { model.page = .impulse }.keyboardShortcut("3", modifiers: .command).disabled(!model.isOpen)
                 Button("Connexions") { model.page = .ports }.keyboardShortcut("4", modifiers: .command).disabled(!model.isOpen || model.mode == .file)
                 Button("Lancement") { model.page = .launch }.keyboardShortcut("5", modifiers: .command).disabled(!model.isOpen || model.mode == .file)
                 Button("Journal") { model.page = .log }.keyboardShortcut("6", modifiers: .command).disabled(!model.isOpen)
