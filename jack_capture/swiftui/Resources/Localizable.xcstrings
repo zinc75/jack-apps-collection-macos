@@ -1,6 +1,34 @@
 {
   "sourceLanguage" : "fr",
   "strings" : {
+    "révision" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revision"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "revision"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "revisión"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "revisione"
+          }
+        }
+      }
+    },
     "%@ n'est pas un dossier. Choisir un autre dossier." : {
       "localizations" : {
         "de" : {
