@@ -30,28 +30,28 @@ Tools are built for Apple Silicon and Intel, and get a SwiftUI application where
 
 <div align="center">
   <a href="jack_capture/"><img src="jack_capture/screenshots/recording.png" width="640" alt="Jack Capture recording"></a>
-  <br><em>Jack Capture</em>
+  <br><em>Jack Capture: recording, with the level of each channel</em>
 </div>
 
 ---
 
 <div align="center">
   <a href="klick/"><img src="klick/screenshots/live.png" width="640" alt="Klick driven by the JACK transport"></a>
-  <br><em>Klick</em>
+  <br><em>Klick: the simplified view of the metronome while it runs</em>
 </div>
 
 ---
 
 <div align="center">
   <a href="jack_play/"><img src="jack_play/screenshots/play.png" width="640" alt="Jack Play playing an 8 channel file"></a>
-  <br><em>Jack Play</em>
+  <br><em>Jack Play: playing an 8 channel file, with its waveforms</em>
 </div>
 
 ---
 
 <div align="center">
   <a href="zita-njbridge/"><img src="zita-njbridge/screenshots/link-wide.png" width="640" alt="Zita Network Bridge, a link that sends and receives"></a>
-  <br><em>Zita Network Bridge</em>
+  <br><em>Zita Network Bridge: receiving from another Mac, with the buffer margin</em>
 </div>
 
 ## Version numbers
