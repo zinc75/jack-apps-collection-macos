@@ -125,7 +125,6 @@ final class AppModel {
     var binFilter = ""
     private(set) var fileURL: URL?
     private(set) var problems: [ConvProblem] = []
-    private(set) var recents: [URL] = []
     /// What the application says in an alert.
     var message: String?
     var showsCommand = false
@@ -169,43 +168,34 @@ final class AppModel {
     /// A conversion that is being looked at against its original: it can be kept or refused.
     var pendingConversion: PendingConversion?
     var detail: DetailTarget?
-    /// What a click on an inspect button does when other responses are already drawn.
-    var inspectChoice = InspectChoice(rawValue: UserDefaults.standard.string(forKey: "inspectChoice") ?? "") ?? .ask {
-        didSet { UserDefaults.standard.set(inspectChoice.rawValue, forKey: "inspectChoice") }
-    }
     /// The state of the plots of that page, which its tools in the toolbar of the window and its inspector share.
     let plotController = PlotController()
 
     let controller = EngineController()
-    let jack = JackStatus()
-    @ObservationIgnored let catalog = SoundFileCatalog()
-    @ObservationIgnored private let defaults: UserDefaults
+    /// What the windows share: JACK, the sound files that are known, the recent files and the settings.
+    let hub: AppHub
 
-    /// Whether the card with what is on a cell shows above the matrix, under the pointer. Kept between launches.
-    var showsHoverCard = true {
-        didSet { defaults.set(showsHoverCard, forKey: "showsHoverCard") }
+    var jack: JackStatus { hub.jack }
+    @ObservationIgnored var catalog: SoundFileCatalog { hub.catalog }
+    var recents: [URL] { hub.recents }
+    var showsHoverCard: Bool {
+        get { hub.showsHoverCard }
+        set { hub.showsHoverCard = newValue }
+    }
+    /// What a click on an inspect button does when other responses are already drawn.
+    var inspectChoice: InspectChoice {
+        get { hub.inspectChoice }
+        set { hub.inspectChoice = newValue }
     }
 
-    /// - Parameter defaults: where the settings are kept; nil for a throw-away store (the debug aids use it: they must not touch
-    ///   what the person has set up).
-    init(defaults: UserDefaults?) {
-        self.defaults = defaults ?? UserDefaults(suiteName: "jackconvolver.debug.\(UUID().uuidString)") ?? .standard
-        showsHoverCard = self.defaults.object(forKey: "showsHoverCard") as? Bool ?? true
-        recents = (self.defaults.stringArray(forKey: "recentFiles") ?? []).map { URL(fileURLWithPath: $0) }
-            .filter { FileManager.default.fileExists(atPath: $0.path) }
+    init(hub: AppHub) {
+        self.hub = hub
     }
 
-    func start() {
-        jack.onXruns = { [weak self] count in
-            for _ in 0..<count { self?.controller.recordXrun() }
-        }
-        jack.start()
-    }
+    func start() { hub.start() }
 
-    func shutdown() {
-        controller.stop()
-        jack.stop()
-    }
+    /// Stops the engine of this session.
+    func shutdown() { controller.stop() }
 
     func markLogSeen() { logSeen = (controller.log.entries.last?.id ?? -1) + 1 }
 
@@ -385,23 +375,9 @@ final class AppModel {
         return true
     }
 
-    /// Takes a file off the list of recent ones (the file itself is left alone).
-    func forgetRecent(_ url: URL) {
-        recents.removeAll { $0 == url }
-        defaults.set(recents.map(\.path), forKey: "recentFiles")
-    }
-
-    func clearRecents() {
-        recents = []
-        defaults.set([String](), forKey: "recentFiles")
-    }
-
-    func remember(_ url: URL) {
-        recents.removeAll { $0 == url }
-        recents.insert(url, at: 0)
-        recents = Array(recents.prefix(8))
-        defaults.set(recents.map(\.path), forKey: "recentFiles")
-    }
+    func forgetRecent(_ url: URL) { hub.forgetRecent(url) }
+    func clearRecents() { hub.clearRecents() }
+    func remember(_ url: URL) { hub.remember(url) }
 
     // MARK: What is wrong
 

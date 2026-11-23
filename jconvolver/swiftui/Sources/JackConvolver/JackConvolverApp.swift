@@ -23,16 +23,20 @@ func undoCommand(redo: Bool, _ onConfiguration: () -> Void) {
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    static var model: AppModel?
+    static var hub: AppHub?
     static var appearance: AppearanceSettings?
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
     func applicationDidFinishLaunching(_ notification: Notification) { Self.appearance?.applyAppearance() }
-    func applicationWillTerminate(_ notification: Notification) { Self.model?.shutdown() }
+    func applicationWillTerminate(_ notification: Notification) { Self.hub?.shutdown() }
     /// Quitting asks about the changes that are not saved, and about the engine that runs (unless closing the window already did).
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        guard let model = Self.model, !model.leavingConfirmed else { return .terminateNow }
-        return model.confirmLeaving(.quit) ? .terminateNow : .terminateCancel
+        guard let hub = Self.hub else { return .terminateNow }
+        // Every session is asked (the changes that are not saved, the engine that runs); one that says no keeps the application open.
+        for session in hub.sessions where !session.leavingConfirmed {
+            if !session.confirmLeaving(.quit) { return .terminateCancel }
+        }
+        return .terminateNow
     }
 }
 
@@ -50,9 +54,10 @@ struct JackConvolverApp: App {
         // Debug aids (JACKCONVOLVER_*) must not touch what the person has set up.
         keeps = !env.keys.contains { $0.hasPrefix("JACKCONVOLVER_") }
         #endif
-        let model = AppModel(defaults: keeps ? .standard : nil)
+        let hub = AppHub(defaults: keeps ? .standard : nil)
+        let model = hub.makeSession()
         _model = State(initialValue: model)
-        AppDelegate.model = model
+        AppDelegate.hub = hub
 
         var defaults = UserDefaults.standard
         #if DEBUG
