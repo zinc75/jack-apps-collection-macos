@@ -25,7 +25,7 @@ Klick is an unofficial interface. It is part of Jack Apps Collection for macOS. 
 
 ## Install
 
-Download `Klick-0.13.0-macOS.pkg` from the [Releases](https://github.com/zinc75/jack-apps-collection-macos/releases) page and open it. The package is signed and notarized by Apple, so it opens without any Gatekeeper warning. It installs the application in `/Applications/Jack Apps Collection/` and the `klick` program in `/usr/local/bin`.
+Download `Klick-0.13.0-macOS.pkg` from the [Releases](https://github.com/zinc75/jack-apps-collection-macos/releases?q=Klick) page and open it. The package is signed and notarized by Apple, so it opens without any Gatekeeper warning. It installs the application in `/Applications/Jack Apps Collection/` and the `klick` program in `/usr/local/bin`.
 
 It needs macOS 15 or later, and [JACK](https://jackaudio.org/downloads/) installed to use the JACK engine. To build from source instead, see [`swift/README.md`](swift/README.md).
 

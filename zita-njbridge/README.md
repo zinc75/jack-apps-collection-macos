@@ -21,7 +21,7 @@ Zita Network Bridge is an unofficial interface. It is part of Jack Apps Collecti
 
 ## Install
 
-Download `ZitaNetworkBridge-0.4.8-macOS-3.pkg` from the [Releases](https://github.com/zinc75/jack-apps-collection-macos/releases) page and open it. It installs the application in `/Applications/Jack Apps Collection/`, and `zita-j2n` and `zita-n2j` in `/usr/local/bin`, with their manual pages.
+Download `ZitaNetworkBridge-0.4.8-macOS-3.pkg` from the [Releases](https://github.com/zinc75/jack-apps-collection-macos/releases?q=Zita+Network+Bridge) page and open it. It installs the application in `/Applications/Jack Apps Collection/`, and `zita-j2n` and `zita-n2j` in `/usr/local/bin`, with their manual pages.
 
 It needs macOS 15 or later, and [JACK](https://jackaudio.org/downloads/) installed. To build from source instead, see [`swiftui/README.md`](swiftui/README.md).
 

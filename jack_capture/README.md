@@ -25,7 +25,7 @@ Jack Capture is an unofficial interface. It is part of Jack Apps Collection for 
 
 ## Install
 
-Download `JackCapture-0.9.73-macOS.pkg` from the [Releases](https://github.com/zinc75/jack-apps-collection-macos/releases) page and open it. The package is signed and notarized by Apple, so it opens without any Gatekeeper warning. It installs the application in `/Applications/Jack Apps Collection/` and the `jack_capture` program in `/usr/local/bin`.
+Download `JackCapture-0.9.73-macOS.pkg` from the [Releases](https://github.com/zinc75/jack-apps-collection-macos/releases?q=Jack+Capture) page and open it. The package is signed and notarized by Apple, so it opens without any Gatekeeper warning. It installs the application in `/Applications/Jack Apps Collection/` and the `jack_capture` program in `/usr/local/bin`.
 
 It needs macOS 15 or later, and [JACK](https://jackaudio.org/downloads/) installed.
 

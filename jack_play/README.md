@@ -21,7 +21,7 @@ Jack Play is an unofficial interface. It is part of Jack Apps Collection for mac
 
 ## Install
 
-Download `JackPlay-0.19-macOS.pkg` from the [Releases](https://github.com/zinc75/jack-apps-collection-macos/releases) page and open it. It installs the application in `/Applications/Jack Apps Collection/` and the `jack_play` program in `/usr/local/bin`.
+Download `JackPlay-0.19-macOS.pkg` from the [Releases](https://github.com/zinc75/jack-apps-collection-macos/releases?q=Jack+Play) page and open it. It installs the application in `/Applications/Jack Apps Collection/` and the `jack_play` program in `/usr/local/bin`.
 
 It needs macOS 15 or later, and [JACK](https://jackaudio.org/downloads/) installed.
 
