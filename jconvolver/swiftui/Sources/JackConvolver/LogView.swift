@@ -46,7 +46,7 @@ struct LogView: View {
         let c = model.controller
         let program = model.mode == .file ? "fconvolver" : "jconvolver"
         let state: String = switch c.state {
-        case .running, .stopping: String(localized: "en marche")
+        case .running, .stopping: String(localized: "en cours d'exécution")
         case .ended where c.endedOnAProblem: String(localized: "arrêté sur une erreur")
         default: String(localized: "arrêté")
         }

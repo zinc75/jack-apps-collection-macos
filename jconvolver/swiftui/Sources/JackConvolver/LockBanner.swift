@@ -8,7 +8,7 @@ struct LockBanner: View {
 
     var body: some View {
         if model.isLocked {
-            Label("Moteur en marche : la configuration est en lecture seule. Arrêtez-le pour la modifier.", systemImage: "lock.fill")
+            Label("Moteur en cours d'exécution : la configuration est en lecture seule. Arrêtez-le pour la modifier.", systemImage: "lock.fill")
                 .font(.callout).foregroundStyle(.secondary)
                 .padding(.horizontal, 12).padding(.vertical, 7)
                 .frame(maxWidth: .infinity, alignment: .leading)

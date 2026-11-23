@@ -124,6 +124,10 @@ final class AppModel {
     var binExpanded: Set<String> = []
     var binFilter = ""
     private(set) var fileURL: URL?
+    /// The name the engine was given as a JACK client for its last run (the one of the configuration unless another engine had it).
+    private(set) var runClientName: String?
+    /// The clients that JACK had when the engine was started: one that is not among them, while the name of the engine is not known yet, is the engine.
+    @ObservationIgnored private var clientsBeforeStart: Set<String> = []
     private(set) var problems: [ConvProblem] = []
     /// What the application says in an alert.
     var message: String?
@@ -174,6 +178,16 @@ final class AppModel {
     let controller = EngineController()
     /// What the windows share: JACK, the sound files that are known, the recent files and the settings.
     let hub: AppHub
+    /// What tells this session from the others: the window that shows it is opened for it.
+    let id: UUID
+    /// The window that shows this session, to bring it forward.
+    @ObservationIgnored weak var window: NSWindow?
+    /// A configuration opened as a copy of a file that is open in another window: it has no file of its own until it is saved, and reads the files it names
+    /// from the folder of the original.
+    private(set) var originFolder: URL?
+    private var copyName: String?
+    /// The name of the file this one is a copy of, when it is one.
+    private(set) var copyOf: String?
 
     var jack: JackStatus { hub.jack }
     @ObservationIgnored var catalog: SoundFileCatalog { hub.catalog }
@@ -188,8 +202,15 @@ final class AppModel {
         set { hub.inspectChoice = newValue }
     }
 
-    init(hub: AppHub) {
+    init(hub: AppHub, id: UUID = UUID()) {
         self.hub = hub
+        self.id = id
+    }
+
+    /// Brings the window of this session in front of the others.
+    func showWindow() {
+        window?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     func start() { hub.start() }
@@ -216,11 +237,15 @@ final class AppModel {
     /// The name of a configuration that has not been saved: shown in the footer and proposed when it is saved. No space in it.
     var defaultFileName: String { String(localized: "sans_titre") + ".conf" }
     var name: String { fileURL?.lastPathComponent ?? defaultFileName }
+    /// Whether this session is a copy of a file that another window has open: it has no file of its own until it is saved.
+    var isCopy: Bool { fileURL == nil && copyOf != nil }
+    /// The name shown for the configuration: its file, the name it will be saved under if it is a copy, else "Sans titre".
+    var displayName: String { fileURL?.lastPathComponent ?? copyName ?? String(localized: "Sans titre") }
     /// The file of the configuration, changed by a rename (the file itself is renamed on the disk).
     func setFileURL(_ url: URL) { fileURL = url }
     /// A configuration that was never saved has no file to save to: it is saved under a name.
     var savesAsNew: Bool { fileURL == nil }
-    var configDirectory: String { fileURL?.deletingLastPathComponent().path ?? NSHomeDirectory() }
+    var configDirectory: String { fileURL?.deletingLastPathComponent().path ?? originFolder?.path ?? NSHomeDirectory() }
 
     func openPanel() {
         let panel = NSOpenPanel()
@@ -231,7 +256,11 @@ final class AppModel {
         if panel.runModal() == .OK, let url = panel.url { open(url) }
     }
 
-    func open(_ url: URL) {
+    /// Opens a configuration: here when the window has none, else where the person says (a new session, or in place of the one that is open).
+    func open(_ url: URL) { hub.open(url, from: self) }
+
+    /// Reads the configuration in this session. `asCopy`: the file is open in another window, this one is a copy with no file of its own.
+    func load(_ url: URL, asCopy: Bool = false) {
         guard !isLocked else { message = String(localized: "Arrêtez le moteur avant d'ouvrir une autre configuration."); return }
         guard confirmLeaving(.open) else { return }
         guard let data = try? Data(contentsOf: url) else {
@@ -247,18 +276,27 @@ final class AppModel {
         }
         let imported = ConvDocument.make(from: config)
         document = imported.document
-        fileURL = url
-        remember(url)
+        fileURL = asCopy ? nil : url
+        originFolder = asCopy ? url.deletingLastPathComponent() : nil
+        copyName = asCopy ? url.deletingPathExtension().lastPathComponent + "_copie.conf" : nil
+        copyOf = asCopy ? url.lastPathComponent : nil
+        if !asCopy { remember(url) }
         resetEditing()
         refreshProblems()
         page = .matrix
     }
 
-    func newConfiguration(inputs: Int, outputs: Int) {
+    /// A new configuration: here when the window has none, else where the person says.
+    func newConfiguration(inputs: Int, outputs: Int) { hub.newConfiguration(inputs: inputs, outputs: outputs, from: self) }
+
+    func create(inputs: Int, outputs: Int) {
         guard !isLocked else { message = String(localized: "Arrêtez le moteur avant de créer une autre configuration."); return }
         guard confirmLeaving(.new) else { return }
         document = ConvDocument(inputs: inputs, outputs: outputs)
         fileURL = nil
+        originFolder = nil
+        copyName = nil
+        copyOf = nil
         resetEditing()
         refreshProblems()
         page = .matrix
@@ -288,6 +326,9 @@ final class AppModel {
         guard confirmLeaving(.open) else { return }
         document = nil
         fileURL = nil
+        originFolder = nil
+        copyName = nil
+        copyOf = nil
         resetEditing()
         // The state of a start: no configuration, the launch options and the way to look at the responses as they are at first, the home page.
         // The mode (real time, or on sound files) is a choice of the person and stays.
@@ -354,7 +395,7 @@ final class AppModel {
         if asNew || target == nil {
             let panel = NSSavePanel()
             panel.allowedContentTypes = [UTType(filenameExtension: "conf") ?? .plainText]
-            panel.nameFieldStringValue = fileURL?.lastPathComponent ?? defaultFileName
+            panel.nameFieldStringValue = fileURL?.lastPathComponent ?? copyName ?? defaultFileName
             panel.canCreateDirectories = true
             guard panel.runModal() == .OK, let url = panel.url else { return false }
             target = url
@@ -437,14 +478,75 @@ final class AppModel {
         return makeCommand(configPath: fileURL?.path ?? name)
     }
 
-    private func makeCommand(configPath: String) -> EngineCommand {
+    private func makeCommand(configPath: String, clientName: String? = nil) -> EngineCommand {
         switch mode {
         case .realTime:
-            return EngineCommand(program: .jconvolver, options: options, configPath: configPath)
+            return EngineCommand(program: .jconvolver, options: options, configPath: configPath, clientName: clientName)
         case .file:
             return EngineCommand(program: .fconvolver, options: options, configPath: configPath,
                                  inputFile: inputFile?.path ?? "", outputFile: outputFile?.path ?? "")
         }
+    }
+
+    /// The name to ask JACK for, and the one the client will have when it is known beforehand. The name of the configuration when no client has it; when one
+    /// has it, JACK adds a suffix (nothing asked, nothing known: the client is looked up by its process), unless the name is long, which gets a number in
+    /// front, asked with `-N` (it prevails over the line of the file).
+    func clientNamePlan(base: String) -> (asked: String?, known: String?) {
+        var taken = Set(hub.sessions.filter { $0 !== self && $0.controller.isRunning }.compactMap(\.runClientName))
+        taken.formUnion(jack.sources.map(\.name))
+        taken.formUnion(jack.destinations.map(\.name))
+        guard taken.contains(base) else { return (nil, base) }
+        guard base.count > 20 else { return (nil, nil) }
+        var n = 2
+        while taken.contains("\(n) - \(base)") { n += 1 }
+        return ("\(n) - \(base)", "\(n) - \(base)")
+    }
+
+    /// The program is running: its JACK client is the one it says it has ("client NAME", patch 0005 of jconvolver). JACK cannot say which process a
+    /// client belongs to with the library that is installed (`jack_get_client_pid` is not implemented), so for a program that does not say it, it is the
+    /// client that appears in the graph after the start, once it is the only new one (or the one that has the name of the file among several).
+    /// The connections are made once its ports are all there (their number stops changing); if nothing can tell, nothing is connected.
+    func confirmClientName() async {
+        let base = document?.content.client ?? "jconvolver"
+        var lastCount = -1
+        for _ in 0..<80 {
+            try? await Task.sleep(for: .milliseconds(100))
+            guard controller.isRunning, mode == .realTime else { return }
+            jack.refresh()
+            let clients = (jack.sources + jack.destinations).filter { !$0.isSystem }
+            let name: String
+            if let told = controller.clientName {
+                // The program said which name JACK gave it (patch 0005 of jconvolver): no guessing.
+                if runClientName != told { runClientName = told }
+                name = told
+            } else {
+                // An engine that does not say it (the one of an installation from before the patch): the client that appeared since the start.
+                let others = Set(hub.sessions.filter { $0 !== self }.compactMap(\.runClientName))
+                var appeared = Set(clients.map(\.name)).subtracting(clientsBeforeStart).subtracting(others)
+                if appeared.count > 1 {
+                    let named = appeared.filter { $0.hasPrefix(base) || $0.hasSuffix(base) }
+                    if named.count == 1 { appeared = named }
+                }
+                guard appeared.count == 1, let only = appeared.first else { lastCount = -1; continue }
+                name = only
+            }
+            let count = clients.filter { $0.name == name }.reduce(0) { $0 + $1.ports.count }
+            if count > 0, count == lastCount { found(name); return }
+            lastCount = count
+        }
+    }
+
+    private func found(_ name: String) {
+        runClientName = name
+        appliedLinks = []
+        syncConnections()
+    }
+
+    /// Whether a client of the graph is this session's engine: by its name when it is known, else (just after the start) any client that was not there before.
+    func isOwnClient(_ name: String) -> Bool {
+        guard controller.isRunning, mode == .realTime else { return false }
+        if let runClientName { return name == runClientName }
+        return !clientsBeforeStart.contains(name)
     }
 
     /// A start while the engine is stopped, a stop while it runs.
@@ -463,16 +565,25 @@ final class AppModel {
         guard isOpen, !hasErrors else { showsProblems = hasErrors; return }
         do {
             let path = try runConfigPath()
-            let command = makeCommand(configPath: path)
+            // Two engines with the same name: JACK adds a suffix to the second ("jconvolver-01"), and that is the name it keeps. It is looked up by the
+            // process once the engine has started (`confirmClientName`), and nothing is connected before. A long name is not left to JACK: the
+            // semaphore of a client is named after it and cut at 31 characters on macOS, so a suffix at the end would not tell two apart.
+            let base = document?.content.client ?? "jconvolver"
+            let plan = mode == .realTime ? clientNamePlan(base: base) : (asked: nil, known: base)
+            let command = makeCommand(configPath: path, clientName: plan.asked)
             guard let executable = EngineHelper.executableURL(for: command.program) else {
                 message = String(localized: "Le programme \(command.program.rawValue) est introuvable.")
                 return
             }
             controller.acknowledgeEnd()
             runCount += 1
+            runClientName = plan.known
+            clientsBeforeStart = Set((jack.sources + jack.destinations).map(\.name))
             try controller.start(command, executable: executable)
             liveWiring = mode == .realTime ? document : nil
-            appliedLinks = mode == .realTime ? wantedLinks : []
+            // The connections are made once the client is found (its ports exist then, and its name is known).
+            appliedLinks = []
+            if mode == .realTime { Task { await confirmClientName() } }
         } catch {
             message = String(localized: "Le moteur ne peut pas démarrer : \(error.localizedDescription)")
         }

@@ -16,8 +16,11 @@ struct FileCard: View {
                 // The card itself does nothing under the pointer (the name scrolls there): what opens the file is the magnifier.
                 // No picture on the left: the text has the whole width, and is less often cut.
                 VStack(alignment: .leading, spacing: 1) {
-                    HoverScrollText(text: model.fileURL?.lastPathComponent ?? String(localized: "Sans titre"))
+                    HoverScrollText(text: model.displayName)
                         .font(.system(size: 13, weight: .bold))
+                    if model.isCopy, let origin = model.copyOf {
+                        Text("Copie de \(origin)").font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+                    }
                     if model.isEdited {
                         Text("Modifié").font(.system(size: 11)).foregroundStyle(.orange)
                     }

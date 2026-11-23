@@ -6,7 +6,16 @@ import SwiftUI
 
 extension AppModel {
     /// The name of the JACK client of jconvolver: the one of the file, or the program's own.
-    var ownClientName: String { document?.content.client ?? "jconvolver" }
+    var ownClientName: String {
+        if controller.isRunning, mode == .realTime, let runClientName { return runClientName }
+        return document?.content.client ?? "jconvolver"
+    }
+
+    /// The name of the JACK client of this session's engine while it runs, nil otherwise: an engine that is not running has no client, and a client that has
+    /// the name of the file is then another engine's.
+    var runningClientName: String? {
+        controller.isRunning && mode == .realTime ? runClientName : nil
+    }
 
     /// The full name of a port of jconvolver.
     func ownPort(_ side: PortSide, _ index: Int) -> String {
@@ -82,6 +91,8 @@ extension AppModel {
     /// longer wanted are taken away, the new ones are made.
     func syncConnections() {
         guard mode == .realTime, controller.isRunning else { appliedLinks = []; return }
+        // Nothing is connected while the name of the client is not known: it could be the name of another engine.
+        guard runClientName != nil else { return }
         let wanted = wantedLinks
         for link in appliedLinks.subtracting(wanted) { jack.disconnect(from: link.output, to: link.input) }
         for link in wanted.subtracting(appliedLinks) { jack.connect(from: link.output, to: link.input) }

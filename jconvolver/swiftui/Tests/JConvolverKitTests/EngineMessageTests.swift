@@ -16,6 +16,15 @@ final class EngineMessageTests: XCTestCase {
         XCTAssertEqual(EngineMessage.classify("CPU overload, exiting.").severity, .error)
     }
 
+    func testTheNameJackGaveTheClient() {
+        XCTAssertEqual(kind("client jconvolver"), .clientName("jconvolver"))
+        XCTAssertEqual(kind("client jconvolver-01"), .clientName("jconvolver-01"))
+        // What follows is the name, spaces included.
+        XCTAssertEqual(kind("client 2 - mic decoder"), .clientName("2 - mic decoder"))
+        XCTAssertEqual(EngineMessage.classify("client jconvolver").severity, .info)
+        XCTAssertEqual(kind("clients"), .other)
+    }
+
     func testLateComputationThreads() {
         XCTAssertEqual(kind("Computation threads are late (0001)."), .threadsLate(flags: 1))
         XCTAssertEqual(kind("Computation threads are late (0a00)."), .threadsLate(flags: 0xa00))

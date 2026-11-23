@@ -178,7 +178,8 @@ final class EngineProcessIntegrationTests: XCTestCase {
             Thread.sleep(forTimeInterval: 0.3)
             load = sampler.sample()
         }
-        XCTAssertTrue(messages(events).isEmpty, "\(messages(events).map(\.text))")
+        // It says which name JACK gave its client (patch 0005), and nothing else.
+        XCTAssertEqual(messages(events).map(\.kind), [.clientName("jconvtest")], "\(messages(events).map(\.text))")
         let end = try termination(events)
         XCTAssertEqual(end.outcome, .stoppedOnRequest)
         XCTAssertEqual(end.status, 0)

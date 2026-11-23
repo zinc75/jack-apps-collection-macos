@@ -37,7 +37,7 @@ struct ConnectionsView: View {
             }
             if model.isLocked, model.mode == .realTime {
                 // The only thing that is changed while the engine runs: made in JACK at once, the file is not touched.
-                Label("Moteur en marche : les branchements s'appliquent tout de suite à JACK, sans modifier le fichier de configuration. À l'arrêt, vous pourrez les y reporter.",
+                Label("Moteur en cours d'exécution : les branchements s'appliquent tout de suite à JACK, sans modifier le fichier de configuration. À l'arrêt, vous pourrez les y reporter.",
                       systemImage: "arrow.left.arrow.right")
                     .font(.callout).foregroundStyle(.secondary)
                     .padding(.horizontal, 12).padding(.vertical, 7)
@@ -57,8 +57,7 @@ struct ConnectionsView: View {
         }
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .onAppear { model.jack.excludedClients = [model.ownClientName]; model.jack.refresh() }
-        .onChange(of: model.ownClientName) { _, name in model.jack.excludedClients = [name] }
+        .onAppear { model.jack.refresh() }
     }
 
     /// One way: what it is, the menu to start again, the matrix and what it says.
@@ -86,7 +85,11 @@ struct ConnectionsView: View {
 
     private var channels: [Int] { Array(0..<((side == .input ? model.wiringSource?.inputCount : model.wiringSource?.outputCount) ?? 0)) }
 
-    private var clients: [JackPortClient] { side == .input ? model.jack.sources : model.jack.destinations }
+    /// The clients of the other side, except this engine itself, and only while it runs (before that it has no client: one that has the name of the file
+    /// belongs to another engine, which is one to connect to: a chain of convolutions is a thing to do).
+    private var clients: [JackPortClient] {
+        (side == .input ? model.jack.sources : model.jack.destinations).filter { !model.isOwnClient($0.name) }
+    }
 
     /// Ports the file connects to that are not in the graph (the other application is not running, or JACK is not).
     private var absentPorts: [String] {

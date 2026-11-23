@@ -18,7 +18,7 @@ extension AppModel {
         if isEdited {
             alert.messageText = String(localized: "Enregistrer les modifications de « \(name) » ?")
             alert.informativeText = stops
-                ? String(localized: "Si vous ne les enregistrez pas, elles seront perdues. Le moteur en marche sera arrêté.")
+                ? String(localized: "Si vous ne les enregistrez pas, elles seront perdues. Le moteur en cours d'exécution sera arrêté.")
                 : String(localized: "Si vous ne les enregistrez pas, elles seront perdues.")
             let saveButton = alert.addButton(withTitle: savesAsNew ? String(localized: "Enregistrer sous…") : String(localized: "Enregistrer"))
             saveButton.keyEquivalent = "\r"
@@ -36,10 +36,11 @@ extension AppModel {
                 break
             }
         } else {
-            alert.messageText = String(localized: "Le moteur tourne.")
+            let program = mode == .file ? "fconvolver" : "jconvolver"
+            alert.messageText = String(localized: "Le moteur \(program) est en cours d'exécution.")
             alert.informativeText = reason == .quit
                 ? String(localized: "Quitter l'application l'arrête.")
-                : String(localized: "Fermer la fenêtre l'arrête et quitte l'application.")
+                : String(localized: "Fermer la fenêtre l'arrête.")
             alert.addButton(withTitle: reason == .quit ? String(localized: "Arrêter et quitter") : String(localized: "Arrêter et fermer"))
             alert.addButton(withTitle: String(localized: "Annuler")).keyEquivalent = "\u{1b}"
             guard alert.runModal() == .alertFirstButtonReturn else { return false }
@@ -64,8 +65,12 @@ struct LeavingGuard: NSViewRepresentable {
     @MainActor final class Proxy: NSObject, NSWindowDelegate {
         weak var original: NSWindowDelegate?
         let shouldClose: @MainActor () -> Bool
+        let didClose: @MainActor () -> Void
 
-        init(shouldClose: @escaping @MainActor () -> Bool) { self.shouldClose = shouldClose }
+        init(shouldClose: @escaping @MainActor () -> Bool, didClose: @escaping @MainActor () -> Void) {
+            self.shouldClose = shouldClose
+            self.didClose = didClose
+        }
 
         override func responds(to selector: Selector!) -> Bool { super.responds(to: selector) || (original?.responds(to: selector) ?? false) }
         override func forwardingTarget(for selector: Selector!) -> Any? {
@@ -76,6 +81,12 @@ struct LeavingGuard: NSViewRepresentable {
         func windowShouldClose(_ sender: NSWindow) -> Bool {
             guard shouldClose() else { return false }
             return original?.windowShouldClose?(sender) ?? true
+        }
+
+        /// The window is gone: so is its session, and its engine is stopped.
+        func windowWillClose(_ notification: Notification) {
+            didClose()
+            original?.windowWillClose?(notification)
         }
     }
 
@@ -95,7 +106,8 @@ struct LeavingGuard: NSViewRepresentable {
             super.viewDidMoveToWindow()
             guard let window, coordinator.proxy == nil else { return }
             let model = model
-            let proxy = Proxy { model.confirmLeaving(.close) }
+            model.window = window
+            let proxy = Proxy(shouldClose: { model.confirmLeaving(.close) }, didClose: { model.hub.close(model) })
             proxy.original = window.delegate
             coordinator.proxy = proxy
             window.delegate = proxy

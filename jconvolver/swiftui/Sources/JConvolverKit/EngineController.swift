@@ -26,6 +26,8 @@ public final class EngineController {
     public private(set) var cores: Double?
     /// The audio cuts that JACK reported since the start of the run.
     public private(set) var xruns = 0
+    /// The name JACK gave the client of the program in this run, when the program said it (nil before, and with a program that does not).
+    public private(set) var clientName: String?
     public private(set) var startedAt: Date?
     /// When the last run ended, and how long it ran (nil while it runs or before the first one).
     public private(set) var endedAt: Date?
@@ -67,6 +69,7 @@ public final class EngineController {
         process.onEvent = { [weak self] event in self?.handle(event) }
         self.command = command
         xruns = 0
+        clientName = nil
         cores = nil
         log.append(note: .launch(commandLine: command.displayString), startsRun: true)
         do {
@@ -80,6 +83,12 @@ public final class EngineController {
         state = .running
         sampler = process.processIdentifier.map { EngineLoadSampler(pid: $0) }
         startSampling()
+    }
+
+    /// The process of the program while it runs.
+    public var processID: pid_t? {
+        guard state == .running, let id = process?.processIdentifier, id > 0 else { return nil }
+        return id
     }
 
     /// Asks the program to end.
@@ -109,6 +118,7 @@ public final class EngineController {
     private func handle(_ event: EngineEvent) {
         switch event {
         case .message(let message):
+            if case .clientName(let name) = message.kind { clientName = name }
             log.append(message)
         case .ended(let termination):
             stopSampling()

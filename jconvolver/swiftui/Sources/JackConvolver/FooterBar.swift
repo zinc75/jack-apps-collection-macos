@@ -60,7 +60,7 @@ struct StatusPill: View {
     private var content: (kind: Kind, symbol: String, text: LocalizedStringKey) {
         let c = model.controller
         switch c.state {
-        case .running: return (.running, "checkmark.circle.fill", model.mode == .file ? "Traitement…" : "En marche")
+        case .running: return (.running, "checkmark.circle.fill", model.mode == .file ? "Traitement…" : "En cours d'exécution")
         case .stopping: return (.running, "checkmark.circle.fill", "Arrêt…")
         case .ended where c.endedOnAProblem: return (.error, "exclamationmark.circle.fill", "Le moteur s'est arrêté")
         default: break

@@ -23,7 +23,7 @@ struct HomeView: View {
                 Text("Mode").font(.headline)
                 HStack(alignment: .top, spacing: 14) {
                     ModeTile(mode: .realTime, symbol: "dot.radiowaves.left.and.right", title: "Temps réel",
-                             text: "Le moteur tourne dans JACK jusqu'à ce que vous l'arrêtiez : ses entrées et ses sorties sont des ports JACK.",
+                             text: "Le moteur reste en cours d'exécution dans JACK jusqu'à ce que vous l'arrêtiez : ses entrées et ses sorties sont des ports JACK.",
                              program: "jconvolver")
                     ModeTile(mode: .file, symbol: "waveform.path", title: "Sur fichier audio",
                              text: "Sans JACK : un fichier audio entre, un fichier convolué sort, en quelques secondes.",

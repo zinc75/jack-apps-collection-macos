@@ -49,7 +49,7 @@ struct ContentView: View {
     /// The title of the window, as the system draws it: the application, the configuration that is open, and "Modifié" while it has changes that are not saved.
     private var windowTitle: String {
         guard model.isOpen else { return "Jack Convolver" }
-        let name = model.fileURL?.lastPathComponent ?? String(localized: "Sans titre")
+        let name = model.displayName + (model.isCopy ? " (" + String(localized: "copie") + ")" : "")
         return "Jack Convolver · " + name + (model.isEdited ? " — " + String(localized: "Modifié") : "")
     }
 
@@ -66,7 +66,8 @@ struct ContentView: View {
             #if DEBUG
             // Debug aids: JACKCONVOLVER_OPEN=<file.conf> opens a configuration, JACKCONVOLVER_PAGE=<home|matrix|ports|launch|log|display>
             // shows a page, JACKCONVOLVER_AUTORUN starts the engine.
-            let env = ProcessInfo.processInfo.environment
+            // Only the first window: another one, opened by hand, must not do it all again.
+            let env = model.hub.sessions.first === model ? ProcessInfo.processInfo.environment : [:]
             if let path = env["JACKCONVOLVER_OPEN"] { model.open(URL(fileURLWithPath: path)) }
             if let page = env["JACKCONVOLVER_PAGE"].flatMap(Page.init(rawValue:)) { model.page = page }
             if env["JACKCONVOLVER_VIEW"] == "table" { model.viewMode = .table }
@@ -134,7 +135,7 @@ struct ContentView: View {
             Button("Appliquer") { model.applyPendingWiring() }
             Button("Ne pas appliquer", role: .cancel) { model.discardPendingWiring() }
         } message: {
-            Text("Les branchements faits pendant que le moteur tournait ne sont pas ceux du fichier de configuration utilisé.")
+            Text("Les branchements faits pendant que le moteur était en cours d'exécution ne sont pas ceux du fichier de configuration utilisé.")
         }
         .navigationTitle(windowTitle)
         .navigationSubtitle("Jack Apps Collection for macOS")

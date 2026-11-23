@@ -40,6 +40,8 @@ public struct EngineMessage: Equatable, Sendable {
         case configError(line: Int, text: String)
         /// "Computation threads are late (0001)." A cycle of JACK that the computation did not finish in time.
         case threadsLate(flags: Int)
+        /// "client NAME": the name JACK gave the client of jconvolver (written by the 0005 patch). A name with a suffix means that another client had the one asked.
+        case clientName(String)
         /// The program ends on its own.
         case stopped(StopReason)
         /// The program cannot start: no JACK server, a configuration file that is not there, a file that does not match...
@@ -60,7 +62,7 @@ public struct EngineMessage: Equatable, Sendable {
         switch kind {
         case .latencyCompensated, .impulseRemoved, .sampleRateMismatch, .dataTruncated, .partitionAdjusted, .threadsLate: return .warning
         case .fileUnreadable, .configError, .stopped, .cannotStart: return .error
-        case .other: return .info
+        case .clientName, .other: return .info
         }
     }
 
@@ -101,6 +103,8 @@ public struct EngineMessage: Equatable, Sendable {
             if let k = match(#"^Unable to open '(.*)'\.$"#, body) { return .fileUnreadable(line: line, path: k[1]) }
             return .configError(line: line, text: body)
         }
+        // What follows "client " is the name, spaces included.
+        if let m = match(#"^client (.+)$"#, text) { return .clientName(m[1]) }
         let startupFailures = [
             "Can't connect to JACK", "Can't activate JACK.", "Fragment size is too small", "Fragment size is too large",
             "Zita-convolver does not match compile-time version.", "Can't initialise convolution engine.",
