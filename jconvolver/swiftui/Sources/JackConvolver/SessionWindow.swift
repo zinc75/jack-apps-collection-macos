@@ -25,6 +25,10 @@ struct SessionWindow: View {
             .appAccent(appearance)
             .focusedSceneValue(\.session, session)
             .frame(minWidth: 1070, minHeight: 830)
-            .onAppear { hub.openWindowAction = { openWindow(value: $0) } }
+            .onAppear {
+                hub.openWindowAction = { openWindow(value: $0) }
+                hub.openSessionsAction = { openWindow(id: "sessions") }
+                hub.watchWindows()
+            }
     }
 }

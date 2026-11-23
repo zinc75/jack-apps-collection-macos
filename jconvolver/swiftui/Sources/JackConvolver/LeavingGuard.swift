@@ -11,8 +11,30 @@ extension AppModel {
     /// engine that runs and that closing the window or quitting stops. Returns whether to go on.
     @MainActor
     func confirmLeaving(_ reason: LeaveReason) -> Bool {
+        keepsRunning = false
+        // The engine in real time can go on without the window: it stays in the menu bar, where it is stopped or the window comes back. What is not
+        // saved stays in the session, so nothing is asked about it then. (The processing of a sound file ends by itself: closing stops it.)
+        var stopAsked = false
+        if reason == .close, controller.isRunning, mode == .realTime {
+            let ask = NSAlert()
+            ask.alertStyle = .informational
+            ask.messageText = String(localized: "Le moteur jconvolver est en cours d'exécution.")
+            ask.informativeText = String(localized: "Vous pouvez fermer la fenêtre et laisser le moteur s'exécuter : il reste dans la barre des menus, d'où vous pourrez rouvrir la fenêtre ou l'arrêter.")
+            ask.addButton(withTitle: String(localized: "Fermer la fenêtre"))
+            ask.addButton(withTitle: String(localized: "Arrêter et fermer"))
+            ask.addButton(withTitle: String(localized: "Annuler")).keyEquivalent = "\u{1b}"
+            switch ask.runModal() {
+            case .alertFirstButtonReturn:
+                keepsRunning = true
+                return true
+            case .alertSecondButtonReturn:
+                stopAsked = true
+            default:
+                return false
+            }
+        }
         let stops = controller.isRunning && (reason == .close || reason == .quit)
-        guard isEdited || stops else { if reason == .close { leavingConfirmed = true }; return true }
+        guard isEdited || (stops && !stopAsked) else { return true }
         let alert = NSAlert()
         alert.alertStyle = .warning
         if isEdited {
@@ -37,7 +59,10 @@ extension AppModel {
             }
         } else {
             let program = mode == .file ? "fconvolver" : "jconvolver"
-            alert.messageText = String(localized: "Le moteur \(program) est en cours d'exécution.")
+            // Quitting can concern an engine whose window is closed: it is named.
+            alert.messageText = reason == .quit && window == nil
+                ? String(localized: "Le moteur \(program) de « \(displayName) » est en cours d'exécution.")
+                : String(localized: "Le moteur \(program) est en cours d'exécution.")
             alert.informativeText = reason == .quit
                 ? String(localized: "Quitter l'application l'arrête.")
                 : String(localized: "Fermer la fenêtre l'arrête.")
@@ -45,8 +70,6 @@ extension AppModel {
             alert.addButton(withTitle: String(localized: "Annuler")).keyEquivalent = "\u{1b}"
             guard alert.runModal() == .alertFirstButtonReturn else { return false }
         }
-        // Closing the window quits the application: it must not ask again.
-        if reason == .close { leavingConfirmed = true }
         return true
     }
 }
@@ -107,6 +130,7 @@ struct LeavingGuard: NSViewRepresentable {
             guard let window, coordinator.proxy == nil else { return }
             let model = model
             model.window = window
+            model.hub.presenceChanged()
             let proxy = Proxy(shouldClose: { model.confirmLeaving(.close) }, didClose: { model.hub.close(model) })
             proxy.original = window.delegate
             coordinator.proxy = proxy

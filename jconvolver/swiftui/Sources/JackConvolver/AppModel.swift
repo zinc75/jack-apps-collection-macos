@@ -156,8 +156,10 @@ final class AppModel {
     /// What the connections were when the engine stopped, if they differ from the file: the person is asked whether to write them there.
     var pendingWiring: ConvDocument?
     var showsApplyWiring = false
-    /// Set once the person said to leave (closing the window): quitting that follows must not ask again.
-    @ObservationIgnored var leavingConfirmed = false
+    /// Set when the person closed the window and said that the engine goes on: the session stays, without a window.
+    @ObservationIgnored var keepsRunning = false
+    /// Whether a window has shown this session (a session that is being opened has none yet, and is not a hidden one).
+    @ObservationIgnored private(set) var shownOnce = false
     /// The name of the file that is being brought to the expected rate (nil when no conversion runs).
     var conversionName: String?
     var showsResize = false
@@ -180,8 +182,17 @@ final class AppModel {
     let hub: AppHub
     /// What tells this session from the others: the window that shows it is opened for it.
     let id: UUID
+    @ObservationIgnored let created = Date()
     /// The window that shows this session, to bring it forward.
-    @ObservationIgnored weak var window: NSWindow?
+    @ObservationIgnored weak var window: NSWindow? {
+        didSet { if window != nil { shownOnce = true } }
+    }
+    /// Whether the window of this session is not there to be seen: closed (the engine goes on), minimized or hidden.
+    var isWindowHidden: Bool {
+        guard shownOnce else { return false }
+        guard let window else { return true }
+        return window.isMiniaturized || !window.isVisible
+    }
     /// A configuration opened as a copy of a file that is open in another window: it has no file of its own until it is saved, and reads the files it names
     /// from the folder of the original.
     private(set) var originFolder: URL?

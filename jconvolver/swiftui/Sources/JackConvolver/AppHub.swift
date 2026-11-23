@@ -5,6 +5,7 @@ import Foundation
 import JConvolverKit
 import Observation
 import SoundFileKit
+import UniformTypeIdentifiers
 
 /// What the whole application shares, whatever the number of windows: the state of JACK (one client for all of them), what is known of the sound files, the
 /// recent files and the settings that are kept between launches. Each window has a session (`AppModel`): its configuration, its engine, its page.
@@ -40,6 +41,20 @@ final class AppHub {
 
     /// Opens a window on a session (set by the first window: the scene knows how).
     @ObservationIgnored var openWindowAction: ((UUID) -> Void)?
+    /// Opens the window that lists the sessions.
+    @ObservationIgnored var openSessionsAction: (() -> Void)?
+
+    /// The title of the window that lists the sessions (it is how it is found among the windows).
+    static let sessionsWindowTitle = "Jack Convolver · Sessions"
+
+    private var sessionsWindow: NSWindow? { NSApp.windows.first { $0.title == Self.sessionsWindowTitle } }
+
+    /// Shows the window that lists the sessions: what the click on the icon of the Dock leads to when several engines have no window.
+    func showSessionsWindow() {
+        NSApp.setActivationPolicy(.regular)
+        if let window = sessionsWindow, window.isVisible { window.makeKeyAndOrderFront(nil) } else { openSessionsAction?() }
+        NSApp.activate(ignoringOtherApps: true)
+    }
 
     /// A session that no window shows: what the commands of the menus act on while no window has the focus, so that they do nothing.
     @ObservationIgnored lazy var idleSession = AppModel(hub: self)
@@ -51,15 +66,109 @@ final class AppHub {
         return session
     }
 
+    /// The number that the next window gets when it is opened without one. SwiftUI asks for it more than once for a single window: it is the same until a
+    /// session is made with it (otherwise every question would make a session that no window shows).
+    @ObservationIgnored private var unclaimedID = UUID()
+
+    func defaultWindowID() -> UUID { unclaimedID }
+
     /// The session of a window: the one that has this number, made when there is none (a window that comes back at the launch).
     func session(for id: UUID) -> AppModel {
-        sessions.first { $0.id == id } ?? makeSession(id: id)
+        if let known = sessions.first(where: { $0.id == id }) { return known }
+        if id == unclaimedID { unclaimedID = UUID() }
+        return makeSession(id: id)
     }
 
-    /// Takes a session away when its window is closed: its engine is stopped.
+    /// The sessions that a window has shown: a session that is only being opened, or was made for nothing, is not one to list.
+    var shownSessions: [AppModel] { sessions.filter(\.shownOnce) }
+
+    /// The window of a session is closed. The session goes with it and its engine is stopped, unless the person said that the engine goes on: the session
+    /// then stays, without a window, and the menu bar is where it is reached.
     func close(_ session: AppModel) {
+        session.window = nil
+        if session.keepsRunning, session.controller.isRunning {
+            session.keepsRunning = false
+        } else {
+            session.controller.stop()
+            sessions.removeAll { $0 === session }
+        }
+        presenceChanged()
+    }
+
+    /// Takes a session away without a window (its engine is stopped, after what is not saved has been asked about).
+    func discard(_ session: AppModel) {
+        guard session.confirmLeaving(.open) else { return }
         session.controller.stop()
         sessions.removeAll { $0 === session }
+        presenceChanged()
+    }
+
+    // MARK: Windows and the menu bar
+
+    /// Counts the changes of what is seen of the windows (they are not observable): the menu bar reads it.
+    private(set) var presence = 0
+
+    @ObservationIgnored private var presenceObservers: [NSObjectProtocol] = []
+
+    /// Follows the engines: the Dock is kept while one runs, and let go of when the last one ends with no window to show.
+    private func trackRunning() {
+        withObservationTracking {
+            _ = anyRunning
+        } onChange: { [weak self] in
+            Task { @MainActor in
+                self?.presenceChanged()
+                self?.trackRunning()
+            }
+        }
+    }
+
+    /// Starts listening to what changes the windows: one that is minimized or comes back, the application that is hidden.
+    func watchWindows() {
+        guard presenceObservers.isEmpty else { return }
+        trackRunning()
+        let center = NotificationCenter.default
+        for name in [NSWindow.didMiniaturizeNotification, NSWindow.didDeminiaturizeNotification, NSApplication.didHideNotification, NSApplication.didUnhideNotification] {
+            presenceObservers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.presenceChanged() }
+            })
+        }
+    }
+
+    /// A window came, went or changed: the application shows in the Dock while a window is seen, and only in the menu bar otherwise.
+    func presenceChanged() {
+        presence += 1
+        // A session that no window ever showed and that does nothing is dropped (it was made for a window that did not come).
+        sessions.removeAll { !$0.shownOnce && !$0.controller.isRunning && Date().timeIntervalSince($0.created) > 5 }
+        // The window that lists the sessions counts as a window that is seen: the application stays in the Dock while it is there.
+        let seen = sessions.contains { $0.shownOnce && !$0.isWindowHidden } || (sessionsWindow?.isVisible ?? false)
+        // The Dock stays while an engine runs, even with no window: an icon of the menu bar can be hidden (by the notch, by the menus of another
+        // application), and a running engine, which takes the processor or the disk, must not be left without a sign that cannot be missed.
+        NSApp.setActivationPolicy(seen || sessions.isEmpty || anyRunning ? .regular : .accessory)
+    }
+
+    /// Whether an engine runs.
+    var anyRunning: Bool { sessions.contains { $0.controller.isRunning } }
+
+    /// The icon of the menu bar is there while something is to be reached from it: an engine that runs, a window that is not seen, or several sessions.
+    var showsMenuBarIcon: Bool {
+        _ = presence
+        return anyRunning || shownSessions.contains { $0.isWindowHidden } || shownSessions.count >= 2
+    }
+
+    /// Brings the window of a session back, or opens one for it (a session whose window was closed while its engine went on).
+    func showWindow(of session: AppModel) {
+        NSApp.setActivationPolicy(.regular)
+        // The window that lists the sessions has done its job.
+        sessionsWindow?.close()
+        if let window = session.window {
+            if window.isMiniaturized { window.deminiaturize(nil) }
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            presenceChanged()
+            return
+        }
+        openWindowAction?(session.id)
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     // MARK: Opening
@@ -135,8 +244,44 @@ final class AppHub {
         show(fresh)
     }
 
+    /// Brings back every window (and opens the ones that were closed while their engine went on), then the list of sessions has done its job.
+    func showAllWindows() {
+        NSApp.setActivationPolicy(.regular)
+        sessionsWindow?.close()
+        for session in shownSessions {
+            if let window = session.window {
+                if window.isMiniaturized { window.deminiaturize(nil) }
+                window.orderFront(nil)
+            } else {
+                openWindowAction?(session.id)
+            }
+        }
+        NSApp.activate(ignoringOtherApps: true)
+        presenceChanged()
+    }
+
+    /// Opens a configuration chosen in a panel, in a session of its own (the window that lists the sessions has none to open it in).
+    func openInNewSession() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [UTType(filenameExtension: "conf") ?? .plainText]
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.message = String(localized: "Choisissez un fichier de configuration de jconvolver.")
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        let fresh = makeSession()
+        open(url, from: fresh)
+        if fresh.isOpen { show(fresh) } else { remove(fresh) }
+    }
+
+    /// A new session in a window of its own, on the home page (from the menu bar, where no window may be open).
+    func newSession() {
+        let fresh = makeSession()
+        show(fresh)
+    }
+
     private func show(_ session: AppModel) {
         guard let openWindowAction else { remove(session); return }
+        NSApp.setActivationPolicy(.regular)
         openWindowAction(session.id)
     }
 
