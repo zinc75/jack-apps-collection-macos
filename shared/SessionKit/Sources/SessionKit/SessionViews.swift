@@ -343,7 +343,7 @@ public struct SessionMenuPanel<S: HostedSession>: View {
             .padding(.horizontal, 10).padding(.vertical, 5)
         }
         .padding(8)
-        .frame(width: 340)
+        .frame(width: 380)
     }
 
     private func panelButton(_ title: LocalizedStringKey, symbol: String, _ action: @escaping () -> Void) -> some View {
@@ -372,7 +372,12 @@ private struct SessionRowView<S: HostedSession>: View {
             Circle().fill(running ? Color.green : card.state == .failed ? Color.red : Color.secondary.opacity(0.4)).frame(width: 8, height: 8)
             VStack(alignment: .leading, spacing: 1) {
                 Text(verbatim: card.title).lineLimit(1).truncationMode(.middle)
-                Text(verbatim: line(card)).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                Text(verbatim: card.stateText).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                // What runs says more (the client, the time, the room left): on a line of its own, which may take two.
+                if card.state == .active, !card.badges.isEmpty {
+                    Text(verbatim: card.badges.map(\.text).joined(separator: " · ")).font(.caption).foregroundStyle(.secondary)
+                        .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                }
             }
             Spacer(minLength: 6)
             glyph("macwindow", help: String(localized: "Afficher la fenêtre")) { hub.showWindow(of: session) }
@@ -386,12 +391,6 @@ private struct SessionRowView<S: HostedSession>: View {
         .padding(.horizontal, 10).padding(.vertical, 6)
         .background(Color.primary.opacity(hovered ? 0.08 : 0.04), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .onHover { hovered = $0 }
-    }
-
-    /// What the session is doing: its state, and while it runs its badges (the JACK client, the time of a recording).
-    private func line(_ card: SessionCard) -> String {
-        guard card.state == .active, !card.badges.isEmpty else { return card.stateText }
-        return ([card.stateText] + card.badges.map(\.text)).joined(separator: " · ")
     }
 
     private func glyph(_ name: String, help: String, enabled: Bool = true, _ action: @escaping () -> Void) -> some View {
