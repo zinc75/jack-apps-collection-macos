@@ -23,28 +23,34 @@ struct ConfigFilePage: View {
                 Text("Le contenu de \(model.name) tel que \(model.mode == .file ? "fconvolver" : "jconvolver") le lit. Les réponses impulsionnelles se règlent dans la page Convolutions.")
                     .font(.callout).foregroundStyle(.secondary)
             }
-            Picker("Partie", selection: $tab) {
-                ForEach(tabs, id: \.self) { t in
-                    switch t {
-                    case .header: Text("En-tête").tag(t)
-                    case .ports: Text("Ports et connexions (\(model.document?.inputCount ?? 0) + \(model.document?.outputCount ?? 0))").tag(t)
-                    case .text: Text("Fichier .conf complet").tag(t)
-                    }
+            GlassTabs(selection: $tab, items: tabs.map { t in
+                switch t {
+                case .header: (t, String(localized: "En-tête"))
+                case .ports: (t, String(localized: "Ports et connexions (\(model.document?.inputCount ?? 0) + \(model.document?.outputCount ?? 0))"))
+                case .text: (t, String(localized: "Fichier .conf complet"))
                 }
-            }
-            .pickerStyle(.segmented).labelsHidden().fixedSize().accentTint()
-            ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
+            })
+            if tab == .text {
+                // The text takes the height there is, and its buttons stay in view: there is nothing to scroll to reach them.
+                VStack(alignment: .leading, spacing: 10) {
                     LockBanner()
-                    // The engine read the file once: while it runs, it is only looked at.
-                    Group {
-                        switch tab {
-                        case .header: HeaderTab()
-                        case .ports: PortsTab()
-                        case .text: TextTab()
+                    TextTab()
+                }
+                .frame(maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 12) {
+                        LockBanner()
+                        // The engine read the file once: while it runs, it is only looked at.
+                        Group {
+                            switch tab {
+                            case .header: HeaderTab()
+                            case .ports: PortsTab()
+                            case .text: EmptyView()
+                            }
                         }
+                        .disabled(model.isLocked)
                     }
-                    .disabled(model.isLocked)
                 }
             }
             HStack {
@@ -242,34 +248,94 @@ private struct PortsTab: View {
 
 private struct TextTab: View {
     @Environment(AppModel.self) private var model
+    @State private var draft = ""
+    @State private var problems: [ConfLineProblem] = []
+    @State private var jump: Int?
     @State private var copied = false
+    @State private var showsProblems = false
+
+    private var text: String { model.configText }
+    private var isDirty: Bool { draft != text }
 
     var body: some View {
-        let text = model.configText
-        let lines = text.components(separatedBy: "\n")
-        let cap = 1500
         VStack(alignment: .leading, spacing: 10) {
-            Text("Le texte qui sera écrit dans le fichier à l'enregistrement. Un fichier qui n'a pas été modifié est écrit tel qu'il a été lu.")
-                .font(.callout).foregroundStyle(.secondary)
-            // The text is shown as in a terminal, dark in both appearances.
-            Text(ConfHighlighter.attributed(lines.prefix(cap).joined(separator: "\n")))
-                .font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
-                .padding(12).frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color(white: 0.11), in: RoundedRectangle(cornerRadius: 8))
+            Text(model.isLocked
+                 ? "Le texte tel que jconvolver l'a lu. Arrêtez le moteur pour le modifier."
+                 : "Collez-y une configuration reçue ou modifiez-la à la main, puis appliquez-la. Un fichier qui n'a pas été modifié est écrit tel qu'il a été lu.")
+                .font(.callout).foregroundStyle(.secondary).lineLimit(2)
+            // The editor takes the height that is left; the buttons under it never move out of the window.
+            ConfTextEditor(text: $draft, problems: problems, isEditable: !model.isLocked, jump: $jump)
+                .frame(minHeight: 120, maxHeight: .infinity)
                 .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.primary.opacity(0.12), lineWidth: 0.5))
-            if lines.count > cap {
-                Text("… et \(lines.count - cap) lignes de plus, toutes de la même forme.").font(.caption).foregroundStyle(.secondary)
-            }
-            HStack {
+            HStack(spacing: 10) {
                 Button(copied ? "Copié" : "Copier") {
                     NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(text, forType: .string)
+                    NSPasteboard.general.setString(draft, forType: .string)
                     copied = true
                 }
+                if !problems.isEmpty { problemsPill }
                 Spacer()
+                Button("Revenir au texte du fichier") { draft = text }.disabled(!isDirty)
+                Button("Appliquer") { if model.applyConfigText(draft) { draft = model.configText } }
+                    .buttonStyle(.borderedProminent).accentTint()
+                    .disabled(!isDirty || model.isLocked)
+                    .help("Remplace la configuration par ce texte (annulable)")
             }
         }
-        .padding(.vertical, 4)
+        .onAppear { draft = text; analyse() }
+        // The text of the file changed elsewhere (the matrix, a step back): the text follows unless it is being edited.
+        .onChange(of: text) { old, new in if draft == old { draft = new } }
+        .task(id: draft) {
+            try? await Task.sleep(for: .milliseconds(250))
+            guard !Task.isCancelled else { return }
+            analyse()
+        }
+    }
+
+    private func analyse() { problems = model.confTextProblems(draft) }
+
+    /// However many lines have a problem, one pill: it opens the list, and a line of the list takes the cursor there.
+    private var problemsPill: some View {
+        let hasError = problems.contains { $0.isError }
+        let color: Color = hasError ? .red : .orange
+        return Button { showsProblems.toggle() } label: {
+            HStack(spacing: 6) {
+                Image(systemName: hasError ? "exclamationmark.circle.fill" : "exclamationmark.triangle.fill").foregroundStyle(color)
+                // The numbers of the lines when there are a few, their count when there are many.
+                let lines = Array(Set(problems.map(\.line))).sorted()
+                if lines.count <= 4 {
+                    Text(verbatim: (lines.count == 1 ? String(localized: "Ligne") : String(localized: "Lignes")) + " " + lines.map(String.init).joined(separator: ", "))
+                } else {
+                    Text("\(lines.count) lignes à regarder")
+                }
+            }
+            .font(.callout)
+            .padding(.horizontal, 12).frame(height: 28)
+            .background(color.opacity(0.16), in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .help("Voir les lignes qui posent un problème")
+        .popover(isPresented: $showsProblems, arrowEdge: .top) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(problems.prefix(200)) { problem in
+                        Button { jump = problem.line; showsProblems = false } label: {
+                            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                Image(systemName: problem.isError ? "exclamationmark.circle.fill" : "exclamationmark.triangle.fill")
+                                    .foregroundStyle(problem.isError ? Color.red : Color.orange)
+                                Text(verbatim: "\(String(localized: "Ligne")) \(problem.line)").monospacedDigit().foregroundStyle(.secondary)
+                                Text(verbatim: problem.message).frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .font(.callout).contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    if problems.count > 200 { Text("… et \(problems.count - 200) de plus.").font(.caption).foregroundStyle(.secondary) }
+                }
+                .padding(12)
+            }
+            .frame(width: 480).frame(maxHeight: 320)
+        }
     }
 }
 

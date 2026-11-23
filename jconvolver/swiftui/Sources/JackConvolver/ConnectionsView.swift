@@ -47,12 +47,8 @@ struct ConnectionsView: View {
             // The two ways are two tabs laid out as the system does (the tabs centred over a box), but drawn here: the tab view of
             // macOS keeps the accent of the system and ignores the one of the application.
             VStack(spacing: 0) {
-                Picker("Sens", selection: $model.connectionSide) {
-                    Text("Entrées").tag(PortSide.input)
-                    Text("Sorties").tag(PortSide.output)
-                }
-                .pickerStyle(.segmented).labelsHidden().fixedSize().accentTint()
-                .padding(.top, 12)
+                GlassTabs(selection: $model.connectionSide, items: [(.input, String(localized: "Entrées")), (.output, String(localized: "Sorties"))])
+                    .padding(.top, 12).padding(.horizontal, 12)
                 tab(side)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)

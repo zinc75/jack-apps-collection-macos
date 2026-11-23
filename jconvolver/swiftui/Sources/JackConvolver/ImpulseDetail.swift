@@ -261,26 +261,9 @@ struct ImpulseDetailPage: View {
 
     /// The three views are tabs over the plot, in a container, in the accent of the application (the tab view of the system keeps
     /// its own accent): the toolbar keeps the tools of the plot only.
-    /// The three views, as tabs of equal width over the whole width of the container: a cell of glass each, the one that is open in the accent
-    /// (the segmented control of the system keeps its natural width and leaves the other tabs without a shape).
+    /// The three views, as tabs of equal width over the whole width of the container, a cell of glass each.
     private var kindStrip: some View {
-        let views: [(Kind, LocalizedStringKey)] = [(.time, "Temps"), (.spectrum, "Fréquence"), (.phase, "Phase")]
-        return HStack(spacing: 8) {
-            ForEach(views, id: \.0) { view, title in
-                let selected = kind == view
-                Button { kind = view } label: {
-                    Text(title)
-                        .font(.system(size: 12.5, weight: .semibold))
-                        .frame(maxWidth: .infinity, minHeight: 30)
-                        .foregroundStyle(selected ? Color.white : Color.primary.opacity(0.8))
-                        .glassTab(selected: selected, tint: accent)
-                        .contentShape(Capsule())
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(selected ? [.isSelected] : [])
-            }
-        }
-        .glassGroup(spacing: 8)
+        GlassTabs(selection: $kind, items: [(.time, String(localized: "Temps")), (.spectrum, String(localized: "Fréquence")), (.phase, String(localized: "Phase"))])
     }
 
     private func tabs(_ impulse: ConvImpulse) -> some View {

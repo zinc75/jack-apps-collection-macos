@@ -57,6 +57,34 @@ extension View {
     }
 }
 
+/// Tabs of equal width over the whole width of their container, a cell of glass each (see `glassTab`): the one that is open has the accent. The
+/// segmented control of the system keeps its natural width and leaves the other tabs without a shape.
+struct GlassTabs<Tag: Hashable>: View {
+    @Binding var selection: Tag
+    let items: [(tag: Tag, title: String)]
+    @Environment(\.appAccentColor) private var accent
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ForEach(items, id: \.tag) { item in
+                let selected = selection == item.tag
+                Button { selection = item.tag } label: {
+                    Text(verbatim: item.title)
+                        .font(.system(size: 12.5, weight: .semibold))
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, minHeight: 30)
+                        .foregroundStyle(selected ? Color.white : Color.primary.opacity(0.8))
+                        .glassTab(selected: selected, tint: accent)
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(selected ? [.isSelected] : [])
+            }
+        }
+        .glassGroup(spacing: 8)
+    }
+}
+
 /// A rounded panel, as the grouped sections of System Settings but for free-form content.
 struct Card<Content: View>: View {
     @ViewBuilder var content: Content

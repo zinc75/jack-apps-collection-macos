@@ -119,6 +119,23 @@ final class MatrixEditingTests: XCTestCase {
         XCTAssertFalse(h.canRedo)
     }
 
+    func testAChangeIsUndoneOnlyFromWhereItWasMade() {
+        var h = DocumentHistory()
+        h.record("matrix", before: document(1), scope: "matrix")
+        h.record("config", before: document(2), scope: "config")
+        // The last change was made in the configuration: the matrix cannot undo it, nor the change before it.
+        XCTAssertFalse(h.canUndo(in: "matrix"))
+        XCTAssertNil(h.undo(current: document(3), in: "matrix"))
+        XCTAssertEqual(h.undoSteps.count, 2)
+        XCTAssertTrue(h.canUndo(in: "config"))
+        let back = h.undo(current: document(3), in: "config")
+        XCTAssertEqual(back?.label, "config")
+        // The redo is for the same place, and the matrix can now undo its own change.
+        XCTAssertFalse(h.canRedo(in: "matrix"))
+        XCTAssertTrue(h.canRedo(in: "config"))
+        XCTAssertTrue(h.canUndo(in: "matrix"))
+    }
+
     func testNothingToUndo() {
         var h = DocumentHistory()
         XCTAssertFalse(h.canUndo)

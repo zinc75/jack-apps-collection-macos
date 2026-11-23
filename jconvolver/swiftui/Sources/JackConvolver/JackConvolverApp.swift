@@ -11,6 +11,17 @@ func editCommand(_ selector: Selector, _ onMatrix: () -> Void) {
     if NSApp.keyWindow?.firstResponder is NSTextView { NSApp.sendAction(selector, to: nil, from: nil) } else { onMatrix() }
 }
 
+/// Undo and redo are for the view that has the focus: a text being edited (the editor of the configuration, a field) undoes what was typed in it
+/// and nothing else; elsewhere it is the last change made in the page that is shown, and only that one.
+@MainActor
+func undoCommand(redo: Bool, _ onConfiguration: () -> Void) {
+    if let text = NSApp.keyWindow?.firstResponder as? NSTextView {
+        if let manager = text.undoManager { if redo { if manager.canRedo { manager.redo() } } else if manager.canUndo { manager.undo() } }
+    } else {
+        onConfiguration()
+    }
+}
+
 final class AppDelegate: NSObject, NSApplicationDelegate {
     static var model: AppModel?
     static var appearance: AppearanceSettings?
@@ -79,10 +90,11 @@ struct JackConvolverApp: App {
             }
             CommandGroup(replacing: .importExport) {}
             CommandGroup(replacing: .undoRedo) {
-                Button(model.history.undoLabel.map { String(localized: "Annuler \($0)") } ?? String(localized: "Annuler")) { model.undo() }
-                    .keyboardShortcut("z", modifiers: .command).disabled(!model.canUndo)
-                Button(model.history.redoLabel.map { String(localized: "Rétablir \($0)") } ?? String(localized: "Rétablir")) { model.redo() }
-                    .keyboardShortcut("z", modifiers: [.command, .shift]).disabled(!model.canRedo)
+                // Not disabled with the history: a text being edited has its own undo, which the menu cannot know about.
+                Button(model.undoLabel.map { String(localized: "Annuler \($0)") } ?? String(localized: "Annuler")) { undoCommand(redo: false) { model.undo() } }
+                    .keyboardShortcut("z", modifiers: .command)
+                Button(model.redoLabel.map { String(localized: "Rétablir \($0)") } ?? String(localized: "Rétablir")) { undoCommand(redo: true) { model.redo() } }
+                    .keyboardShortcut("z", modifiers: [.command, .shift])
             }
             CommandGroup(replacing: .pasteboard) {
                 Button("Couper") { editCommand(#selector(NSText.cut(_:))) { model.cutSelection() } }.keyboardShortcut("x", modifiers: .command)

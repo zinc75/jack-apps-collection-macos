@@ -258,7 +258,7 @@ final class AppModel {
         let before = d
         change(&d)
         guard d != before else { return }
-        history.record(label, before: before)
+        history.record(label, before: before, scope: page.rawValue)
         document = d
         documentChanged()
     }
@@ -285,17 +285,20 @@ final class AppModel {
         loadBin()
     }
 
-    var canUndo: Bool { !isLocked && history.canUndo }
-    var canRedo: Bool { !isLocked && history.canRedo }
+    /// An undo is for the page where the change was made: the last change, made elsewhere, is not touched from here.
+    var canUndo: Bool { !isLocked && history.canUndo(in: page.rawValue) }
+    var canRedo: Bool { !isLocked && history.canRedo(in: page.rawValue) }
+    var undoLabel: String? { canUndo ? history.undoLabel : nil }
+    var redoLabel: String? { canRedo ? history.redoLabel : nil }
 
     func undo() {
-        guard !isLocked, let document, let step = history.undo(current: document) else { return }
+        guard !isLocked, let document, let step = history.undo(current: document, in: page.rawValue) else { return }
         self.document = step.document
         documentChanged()
     }
 
     func redo() {
-        guard !isLocked, let document, let step = history.redo(current: document) else { return }
+        guard !isLocked, let document, let step = history.redo(current: document, in: page.rawValue) else { return }
         self.document = step.document
         documentChanged()
     }

@@ -10,6 +10,7 @@ struct MatrixView: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
+        @Bindable var model = model
         if model.document == nil {
             SettingsPage {
                 Text("Matrice de convolution").font(.title2).fontWeight(.semibold)
@@ -17,6 +18,9 @@ struct MatrixView: View {
             }
         } else {
             VStack(alignment: .leading, spacing: 12) {
+                // The two ways to look at the impulse responses, over the whole width.
+                GlassTabs(selection: $model.viewMode, items: [(.matrix, String(localized: "Matrice")), (.table, String(localized: "Tableau"))])
+                    .help("Voir les réponses impulsionnelles en matrice ou en tableau")
                 // The title and the line under it say what this view is for.
                 VStack(alignment: .leading, spacing: 2) {
                     if model.viewMode == .table {
@@ -73,22 +77,12 @@ struct DraggedItemsBadge: View {
     }
 }
 
-/// The window toolbar on this page: the way to look at the impulse responses at the centre, then undo and redo, the actions on the
+/// The window toolbar on this page: undo and redo, the actions on the
 /// matrix, the help, and save. The state of JACK keeps its own place (`JackStatusPill`, in the toolbar of the window).
 struct MatrixToolbar: ToolbarContent {
     let model: AppModel
 
     var body: some ToolbarContent {
-        @Bindable var model = model
-        ToolbarItem(placement: .principal) {
-            // Two words: the native segmented control.
-            Picker("Vue", selection: $model.viewMode) {
-                Text("Matrice").tag(ViewMode.matrix)
-                Text("Tableau").tag(ViewMode.table)
-            }
-            .pickerStyle(.segmented).labelsHidden().accentTint()
-            .help("Voir les réponses impulsionnelles en matrice ou en tableau")
-        }
         ToolbarItemGroup(placement: .primaryAction) {
             Button { model.undo() } label: { Label("Annuler", systemImage: "arrow.uturn.backward") }
                 .disabled(!model.canUndo).help("Annuler")

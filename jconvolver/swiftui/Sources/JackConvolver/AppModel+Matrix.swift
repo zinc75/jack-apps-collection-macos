@@ -420,3 +420,29 @@ extension AppModel {
         return out
     }
 }
+
+// MARK: The text of the configuration
+
+extension AppModel {
+    /// What a text of configuration has wrong, line by line (the files are looked for from the folder of the configuration).
+    func confTextProblems(_ text: String) -> [ConfLineProblem] {
+        let catalog = catalog
+        var rate: Double?
+        if mode == .realTime, let hertz = jack.sampleRate { rate = Double(hertz) }
+        return ConfTextAnalysis.problems(in: text, configDirectory: configDirectory, fileInfo: { catalog.info(at: $0) }, jackRate: rate)
+    }
+
+    /// Takes a text of configuration as the configuration: one step of the history. A text that is not a configuration of jconvolver is refused.
+    @discardableResult
+    func applyConfigText(_ text: String) -> Bool {
+        guard !isLocked else { return false }
+        let (config, _) = ConvConfig.parse(text)
+        guard config.convolver != nil else {
+            message = String(localized: "Ce texte n'a pas de ligne /convolver/new : ce n'est pas une configuration de jconvolver.")
+            return false
+        }
+        let imported = ConvDocument.make(from: config)
+        edit(String(localized: "texte du fichier de configuration")) { $0.content = imported.document.content }
+        return true
+    }
+}

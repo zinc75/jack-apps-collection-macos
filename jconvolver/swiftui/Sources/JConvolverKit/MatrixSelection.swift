@@ -143,6 +143,8 @@ public struct DocumentHistory: Sendable {
     public struct Step: Sendable {
         public var label: String
         public var document: ConvDocument
+        /// Where the change was made (a page, say): a step is undone from there only. Empty when it does not matter.
+        public var scope: String = ""
     }
 
     public private(set) var undoSteps: [Step] = []
@@ -156,24 +158,31 @@ public struct DocumentHistory: Sendable {
     public var undoLabel: String? { undoSteps.last?.label }
     public var redoLabel: String? { redoSteps.last?.label }
 
+    /// Whether the last change was made in this scope: it can be undone from there, and from nowhere else.
+    public func canUndo(in scope: String) -> Bool { undoSteps.last?.scope == scope }
+    public func canRedo(in scope: String) -> Bool { redoSteps.last?.scope == scope }
+
     /// Records a change that is about to be made: the document as it is now.
-    public mutating func record(_ label: String, before document: ConvDocument) {
-        undoSteps.append(Step(label: label, document: document))
+    public mutating func record(_ label: String, before document: ConvDocument, scope: String = "") {
+        undoSteps.append(Step(label: label, document: document, scope: scope))
         if undoSteps.count > capacity { undoSteps.removeFirst(undoSteps.count - capacity) }
         redoSteps.removeAll()
     }
 
     /// The document before the last change; the current one is kept for a redo.
-    public mutating func undo(current: ConvDocument) -> Step? {
-        guard let step = undoSteps.popLast() else { return nil }
-        redoSteps.append(Step(label: step.label, document: current))
-        return step
+    /// With a scope, only a change made in that scope is undone: what was done elsewhere is not touched.
+    public mutating func undo(current: ConvDocument, in scope: String? = nil) -> Step? {
+        guard let last = undoSteps.last, scope == nil || last.scope == scope else { return nil }
+        undoSteps.removeLast()
+        redoSteps.append(Step(label: last.label, document: current, scope: last.scope))
+        return last
     }
 
-    public mutating func redo(current: ConvDocument) -> Step? {
-        guard let step = redoSteps.popLast() else { return nil }
-        undoSteps.append(Step(label: step.label, document: current))
-        return step
+    public mutating func redo(current: ConvDocument, in scope: String? = nil) -> Step? {
+        guard let last = redoSteps.last, scope == nil || last.scope == scope else { return nil }
+        redoSteps.removeLast()
+        undoSteps.append(Step(label: last.label, document: current, scope: last.scope))
+        return last
     }
 
     public mutating func clear() {
