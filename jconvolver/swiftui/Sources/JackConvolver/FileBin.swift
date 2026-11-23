@@ -57,8 +57,6 @@ struct FileBin: View {
             HStack {
                 Text("Fichiers de RI").font(.headline)
                 Spacer()
-                // One button, one panel for files and folders (they can also be dropped here from the Finder).
-                Button("Ajouter…") { model.chooseForBin() }
             }
             if model.fileURL != nil {
                 Text(model.configDirectory).font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.head)
@@ -73,6 +71,7 @@ struct FileBin: View {
                     }
                 }
             }
+            footer
         }
         .padding(12)
         .frame(maxHeight: .infinity, alignment: .top)
@@ -90,6 +89,47 @@ struct FileBin: View {
                     .allowsHitTesting(false)
             }
         }
+    }
+
+    /// The bar under the list, which does not scroll: "+" to add (one panel for files and folders, which can also be dropped here from the
+    /// Finder), and a menu of what else can be done with the list.
+    private var footer: some View {
+        VStack(spacing: 6) {
+            Divider()
+            HStack(spacing: 4) {
+                Button { model.chooseForBin() } label: { Self.footerSymbol("plus.circle") }
+                    .buttonStyle(GlyphButtonStyle())
+                    .help("Ajouter des fichiers audio ou un dossier…")
+                    .accessibilityLabel("Ajouter des fichiers audio ou un dossier")
+                Spacer()
+                Menu {
+                    Button("Ajouter des fichiers…") { model.chooseFilesForBin() }
+                    Button("Ajouter un dossier…") { model.chooseFolderForBin() }
+                    Divider()
+                    Button("Relire le dossier de la configuration") { model.loadBin() }
+                        .disabled(model.fileURL == nil)
+                    Button("Afficher dans le Finder") { NSWorkspace.shared.activateFileViewerSelecting(pickedFiles) }
+                        .disabled(pickedFiles.isEmpty)
+                } label: {
+                    Self.footerSymbol("ellipsis.circle")
+                }
+                // The style of a button, not the one of a menu of the system, which draws its symbol at its own size: both symbols are the same.
+                .menuStyle(.button).buttonStyle(GlyphButtonStyle()).menuIndicator(.hidden).fixedSize()
+                .help("Plus d'actions sur la liste")
+                .accessibilityLabel("Plus d'actions sur la liste")
+            }
+        }
+    }
+
+    /// A symbol of the bar under the list: the same size for every one.
+    private static func footerSymbol(_ name: String) -> some View {
+        Image(systemName: name).resizable().scaledToFit().frame(width: 16, height: 16)
+    }
+
+    /// The files of what is chosen in the list.
+    private var pickedFiles: [URL] {
+        Set(model.picked.compactMap { item -> String? in if case .channel(let path, _) = item { path } else { nil } })
+            .sorted().map { URL(fileURLWithPath: $0) }
     }
 
     private func rowView(_ row: Row, index: Int, all: [Row]) -> some View {

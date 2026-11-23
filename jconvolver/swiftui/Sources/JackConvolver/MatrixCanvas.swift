@@ -123,20 +123,41 @@ struct MatrixCanvas: View {
 
     // MARK: The menu of a right-click
 
+    /// The impulse responses read from a file on the cell under the pointer, with their place on the cell.
+    private var inspectable: [(index: Int, impulse: ConvImpulse)] {
+        guard let pair = model.hoverPair, let document = model.document else { return [] }
+        return document.impulses(at: pair).enumerated().compactMap { index, impulse in
+            if case .file = impulse.source { (index, impulse) } else { nil }
+        }
+    }
+
+    /// Opens the detail window of an impulse response of the cell: one entry when there is one, a list when there are several.
+    @ViewBuilder
+    private var inspectItems: some View {
+        let items = inspectable
+        if items.count > 1 {
+            Menu("Inspecter les réponses impulsionnelles") {
+                ForEach(items, id: \.index) { item in
+                    Button(model.label(of: item.impulse)) { inspect(item.index) }
+                }
+            }
+        } else {
+            Button("Inspecter la réponse impulsionnelle…") { if let item = items.first { inspect(item.index) } }
+                .disabled(items.isEmpty)
+        }
+    }
+
+    private func inspect(_ index: Int) {
+        if let pair = model.hoverPair { model.detail = DetailTarget(pair: pair, index: index) }
+    }
+
     @ViewBuilder
     private var contextMenu: some View {
-        let hasImpulse = model.hoverPair.map { !(model.document?.impulses(at: $0).isEmpty ?? true) } ?? false
         Button("Copier") { model.copySelection() }.disabled(!model.canCopy)
         Button("Couper") { model.cutSelection() }.disabled(!model.canCopy)
         Button("Coller") { model.paste() }.disabled(model.clipboard.isEmpty)
         Button("Vider", role: .destructive) { model.clearSelection() }.disabled(!model.canCopy)
-        Button("Détail de la RI…") {
-            if let p = model.hoverPair, let d = model.document,
-               let i = d.impulses(at: p).firstIndex(where: { if case .file = $0.source { true } else { false } }) {
-                model.detail = DetailTarget(pair: p, index: i)
-            }
-        }
-        .disabled(!hasImpulse)
+        inspectItems
         Divider()
         if model.placesOnAllChosenCells {
             Button("Placer sur toutes les cases choisies") { model.placePicked(mode: .row) }
@@ -163,7 +184,7 @@ struct MatrixCanvas: View {
         Button("Sélectionner tout ce qui utilise ce fichier") {
             if let p = model.hoverPair ?? Optional(ConvPair(input: model.selection.bounds.firstInput, output: model.selection.bounds.firstOutput)) { model.selectPairsUsingFile(of: p) }
         }
-        .disabled(!hasImpulse)
+        .disabled(inspectable.isEmpty)
     }
 
     // MARK: Where things are
@@ -335,6 +356,13 @@ struct MatrixCanvas: View {
         switch first.source {
         case .file:
             context.fill(Path(roundedRect: cell, cornerRadius: radius), with: .color(color))
+            // A decorative impulse response, the symbol of the system the detail button uses too (the same on every cell: it says what the cell
+            // holds, not what the file is), when the cell is large enough for it not to be noise.
+            if cell.width >= 20 {
+                let ink = context.environment.colorScheme == .dark ? Color.white.opacity(0.38) : Color.black.opacity(0.30)
+                let glyph = context.resolve(Text(Image(systemName: "waveform.path.ecg")).font(.system(size: cell.width * 0.5, weight: .regular)).foregroundColor(ink))
+                context.draw(glyph, at: CGPoint(x: cell.midX, y: cell.midY), anchor: .center)
+            }
         case .dirac:
             context.fill(Path(roundedRect: cell, cornerRadius: radius), with: .color(Color.primary.opacity(0.07)))
             if cell.width >= 13 {

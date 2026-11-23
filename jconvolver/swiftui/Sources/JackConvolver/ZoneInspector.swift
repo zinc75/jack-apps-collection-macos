@@ -42,7 +42,7 @@ struct ZoneInspector: View {
                 .lineLimit(2).fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 12).padding(.bottom, 2)
             PlotInspectorSection(id: "zoneLimits", title: String(localized: "Début et fin retenus"),
-                                 info: String(localized: "Tronque la RI : le moteur ne lit que cette partie du fichier. Ces valeurs sont écrites dans le fichier .conf (offset et length). Tire les poignées sur la courbe, ou tape les valeurs.")) {
+                                 info: String(localized: "Tronque la réponse impulsionnelle : le moteur ne lit que cette partie du fichier. Ces valeurs sont écrites dans le fichier .conf (offset et length). Tire les poignées sur la courbe, ou tape les valeurs.")) {
                 // Three columns that line up: the label, the value in a field of the same width for every row, and the time it makes.
                 Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 8) {
                     GridRow {

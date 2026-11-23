@@ -30,9 +30,9 @@ extension ConvProblem {
         case .inputFileChannels(let channels, let expected):
             return String(localized: "Le fichier d'entrée a \(channels) voie(s) ; la configuration compte \(expected) entrée(s). fconvolver exige le même nombre.")
         case .latencyAffects(let count):
-            return String(localized: "La compensation de latence supprime ou raccourcit \(count) RI.")
+            return String(localized: "La compensation de latence supprime ou raccourcit \(count) réponses impulsionnelles.")
         case .latencyBeyondFile(let path, let frames, let removed):
-            return String(localized: "La compensation de latence retire \(removed) échantillons au début de « \(name(path)) », qui n'en a que \(frames) : cette RI restera muette. Donnez-lui un retard, ou baissez la compensation.")
+            return String(localized: "La compensation de latence retire \(removed) échantillons au début de « \(name(path)) », qui n'en a que \(frames) : cette réponse impulsionnelle restera muette. Donnez-lui un retard, ou baissez la compensation.")
         case .tooManyPorts(let inputs, let outputs, let maximum):
             return String(localized: "\(inputs) entrées et \(outputs) sorties : au plus \(maximum).")
         case .emptyPortName(let isInput, let index):
@@ -42,7 +42,7 @@ extension ConvProblem {
         case .sharedPortName(let n):
             return String(localized: "« \(n) » est le nom d'une entrée et d'une sortie : les ports d'un client JACK ont des noms uniques.")
         case .noImpulse:
-            return String(localized: "Aucune RI : glissez des fichiers sur les cases.")
+            return String(localized: "Aucune réponse impulsionnelle : glissez des fichiers sur les cases.")
         case .fileMissing(let path):
             return String(localized: "« \(name(path)) » est introuvable dans \((path as NSString).deletingLastPathComponent).")
         case .sampleRateMismatch(let path, let fileRate, let expected):
@@ -62,7 +62,7 @@ extension ConvProblem {
         case .maxLengthOutOfRange(let m):
             return String(localized: "La longueur maximale (\(m)) dépasse 1 048 576.")
         case .maxLengthTooShort(let m, let needed):
-            return String(localized: "La longueur maximale (\(m)) est plus courte que la plus longue RI (\(needed)) : elle sera tronquée.")
+            return String(localized: "La longueur maximale (\(m)) est plus courte que la plus longue réponse impulsionnelle (\(needed)) : elle sera tronquée.")
         case .densityOutOfRange(let d):
             return String(localized: "La densité (\(d.formatted())) doit être entre 0 et 1.")
         }

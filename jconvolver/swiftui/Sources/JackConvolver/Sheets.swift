@@ -62,7 +62,7 @@ struct ResizeSheet: View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Entrées et sorties").font(.title3).fontWeight(.semibold)
-                Text("Le nombre de voies de la matrice. Les noms et les RI des voies qui restent sont gardés.")
+                Text("Le nombre de voies de la matrice. Les noms et les réponses impulsionnelles des voies qui restent sont gardés.")
                     .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
             Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 10) {
@@ -78,7 +78,7 @@ struct ResizeSheet: View {
                 }
             }
             if lost > 0 {
-                Label(lost == 1 ? "1 RI sera retirée." : "\(lost) RI seront retirées.", systemImage: "exclamationmark.triangle.fill")
+                Label(lost == 1 ? "1 réponse impulsionnelle sera retirée." : "\(lost) réponses impulsionnelles seront retirées.", systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(Color.alert)
             }
             HStack {

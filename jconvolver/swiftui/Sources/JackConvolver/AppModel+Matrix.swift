@@ -203,7 +203,7 @@ extension AppModel {
         // Several cells chosen in the matrix: one thing goes on all of them; several things cannot be placed on a set of cells.
         if selection.pairs.count > 1 {
             guard items.count == 1 else {
-                message = String(localized: "Plusieurs RI ne peuvent pas être placées sur plusieurs cases : choisissez une seule case, ou une seule RI.")
+                message = String(localized: "Plusieurs réponses impulsionnelles ne peuvent pas être placées sur plusieurs cases : choisissez une seule case, ou une seule réponse impulsionnelle.")
                 return
             }
             apply(Placement.distribute(items, over: selection.pairs))
@@ -225,7 +225,7 @@ extension AppModel {
         }
         var changed = 0
         edit(label) { changed = $0.bulkSet(field, bulkShifts ? .shift : .replace, value: value, on: pairs) }
-        if changed == 0 { message = String(localized: "Aucune RI concernée.") }
+        if changed == 0 { message = String(localized: "Aucune réponse impulsionnelle concernée.") }
     }
 
     // MARK: Copy and paste
@@ -252,7 +252,7 @@ extension AppModel {
             selection.select(from: start, to: ConvPair(input: min(start.input + clipboardSize.inputs - 1, document.inputCount - 1),
                                                         output: min(start.output + clipboardSize.outputs - 1, document.outputCount - 1)))
         }
-        if count < items.count { message = String(localized: "\(items.count - count) RI n'ont pas trouvé de case : la matrice s'arrête.") }
+        if count < items.count { message = String(localized: "\(items.count - count) réponses impulsionnelles n'ont pas trouvé de case : la matrice s'arrête.") }
     }
 
     func cutSelection() {

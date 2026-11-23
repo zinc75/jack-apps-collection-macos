@@ -148,7 +148,7 @@ struct JackConvolverApp: App {
                     .disabled(!model.isOpen || model.picked.isEmpty)
                 }
                 Divider()
-                Button("Retirer les RI de la sélection") { model.clearSelection() }.disabled(!model.canCopy)
+                Button("Retirer les réponses impulsionnelles de la sélection") { model.clearSelection() }.disabled(!model.canCopy)
             }
             CommandGroup(after: .help) {
                 Divider()

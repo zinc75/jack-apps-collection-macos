@@ -58,7 +58,7 @@ struct DraggedItemsBadge: View {
         if let pointer = model.dragPointer {
             Group {
                 if model.dropBlocked {
-                    Label("Une seule RI sur plusieurs cases", systemImage: "nosign")
+                    Label("Une seule réponse impulsionnelle sur plusieurs cases", systemImage: "nosign")
                 } else {
                     Text("\(model.draggedItems.count) RI")
                 }
@@ -86,7 +86,7 @@ struct MatrixToolbar: ToolbarContent {
                 Text("Tableau").tag(ViewMode.table)
             }
             .pickerStyle(.segmented).labelsHidden().accentTint()
-            .help("Voir les RI en matrice ou en tableau")
+            .help("Voir les réponses impulsionnelles en matrice ou en tableau")
         }
         ToolbarItemGroup(placement: .primaryAction) {
             Button { model.undo() } label: { Label("Annuler", systemImage: "arrow.uturn.backward") }
@@ -104,7 +104,7 @@ struct MatrixToolbar: ToolbarContent {
             // Not asked for confirmation: it can be undone.
             Button { model.clearAll() } label: { Label("Tout vider", systemImage: "trash") }
                 .disabled((model.document?.placedPairs ?? 0) == 0)
-                .help("Retirer toutes les RI de la matrice (annulable)")
+                .help("Retirer toutes les réponses impulsionnelles de la matrice (annulable)")
         }
         ToolbarItem(placement: .primaryAction) {
             // Save: the picture and the word together (there is no picture for it that means it alone).

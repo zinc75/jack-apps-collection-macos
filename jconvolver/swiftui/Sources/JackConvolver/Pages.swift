@@ -165,7 +165,7 @@ struct LaunchView: View {
             }
             if model.mode == .realTime {
                 SettingsGroup("Latence") {
-                    OptionRow("Compenser une latence", "Avance chaque RI de ce nombre d'échantillons.", info: "Pour compenser un retard introduit ailleurs dans la chaîne. Une RI qui n'a pas assez de retard est raccourcie au début, ou supprimée si c'est une impulsion ou un filtre de Hilbert.") {
+                    OptionRow("Compenser une latence", "Avance chaque réponse impulsionnelle de ce nombre d'échantillons.", info: "Pour compenser un retard introduit ailleurs dans la chaîne. Une réponse impulsionnelle qui n'a pas assez de retard est raccourcie au début, ou supprimée si c'est une impulsion ou un filtre de Hilbert.") {
                         NumberField(label: "Latence à compenser", value: $model.options.latencyCompensation, range: 0...1_000_000)
                         Text("échantillons").font(.caption).foregroundStyle(.secondary)
                     }

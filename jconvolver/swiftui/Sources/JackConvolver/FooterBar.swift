@@ -127,7 +127,7 @@ struct ConfigurationName: View {
             if model.isEdited { Circle().fill(Color.orange).frame(width: 7, height: 7).help("Modifié, pas encore enregistré (⌘S)") }
             if let d = model.document {
                 Text(verbatim: "· \(d.inputCount) × \(d.outputCount) · \(d.placedPairs) RI").foregroundStyle(.secondary).fixedSize()
-                    .help("\(d.inputCount) entrées, \(d.outputCount) sorties, \(d.placedPairs) cases avec une RI")
+                    .help("\(d.inputCount) entrées, \(d.outputCount) sorties, \(d.placedPairs) cases avec une réponse impulsionnelle")
             }
         }
         .font(.caption)

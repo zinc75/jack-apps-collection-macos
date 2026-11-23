@@ -34,7 +34,7 @@ struct ImpulseTable: View {
             header
             Divider()
             if rows.isEmpty {
-                Text("Aucune RI pour l'instant. Passez à la matrice et glissez-y des fichiers de la liste.")
+                Text("Aucune réponse impulsionnelle pour l'instant. Passez à la matrice et glissez-y des fichiers de la liste.")
                     .foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(40)
                 Spacer(minLength: 0)
             } else {
@@ -55,7 +55,7 @@ struct ImpulseTable: View {
         HStack(spacing: 8) {
             Text("Entrée").frame(width: 120, alignment: .leading)
             Text("Sortie").frame(width: 120, alignment: .leading)
-            Text("RI").frame(maxWidth: .infinity, alignment: .leading)
+            AdaptiveText(long: String(localized: "Réponse impulsionnelle"), short: String(localized: "RI")).frame(maxWidth: .infinity, alignment: .leading)
             Text("Gain (dB)").frame(width: 70, alignment: .trailing)
             Text("Retard").frame(width: 70, alignment: .trailing)
             Text("Début").frame(width: 70, alignment: .trailing)
@@ -112,7 +112,7 @@ struct BulkRow: View {
                 Text("Décaler").tag(true)
             }
             .pickerStyle(.segmented).labelsHidden().fixedSize().accentTint()
-            .help("Remplacer : la valeur prend la place de celle de chaque RI. Décaler : elle s'ajoute à celle de chaque RI, les écarts sont conservés.")
+            .help("Remplacer : la valeur prend la place de celle de chaque réponse impulsionnelle. Décaler : elle s'ajoute à celle de chaque réponse impulsionnelle, les écarts sont conservés.")
             Spacer()
             BulkInput(field: .gain)
             BulkInput(field: .delay)

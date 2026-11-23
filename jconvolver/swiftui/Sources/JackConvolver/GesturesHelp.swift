@@ -30,9 +30,9 @@ struct GesturesSheet: View {
         Row(keys: ["Clic droit"], text: "Le menu d'une case : copier, coller, placer, détail…"),
     ]
     private let editing: [Row] = [
-        Row(keys: ["⌘", "C"], text: "Copier les RI des cases choisies"),
+        Row(keys: ["⌘", "C"], text: "Copier les réponses impulsionnelles des cases choisies"),
         Row(keys: ["⌘", "V"], text: "Coller à partir de la première case choisie"),
-        Row(keys: ["⌫"], text: "Retirer les RI des cases choisies"),
+        Row(keys: ["⌫"], text: "Retirer les réponses impulsionnelles des cases choisies"),
         Row(keys: ["⌘", "Z"], text: "Annuler (⇧ ⌘ Z : rétablir)"),
     ]
 
@@ -42,7 +42,7 @@ struct GesturesSheet: View {
             group("Choisir", choosing)
             group("Placer", placing)
             group("Modifier", editing)
-            Text("Plusieurs cases choisies : une seule RI (fichier mono, Dirac, Hilbert) peut être posée sur toutes à la fois.")
+            Text("Plusieurs cases choisies : une seule réponse impulsionnelle (fichier mono, Dirac, Hilbert) peut être posée sur toutes à la fois.")
                 .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             HStack { Spacer(); Button("Fermer") { dismiss() }.keyboardShortcut(.defaultAction).accentTint() }
         }
@@ -107,7 +107,7 @@ struct EmptyMatrixHint: View {
                 Image(systemName: "waveform.path").font(.system(size: 24, weight: .semibold)).foregroundStyle(.white)
             }
             VStack(spacing: 4) {
-                Text("Aucune RI pour l'instant").font(.headline)
+                Text("Aucune réponse impulsionnelle pour l'instant").font(.headline)
                 Text("Glissez un fichier de la liste sur une case de la matrice : chaque case relie une entrée à une sortie.")
                     .font(.callout).foregroundStyle(.secondary).multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
             }

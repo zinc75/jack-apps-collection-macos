@@ -35,14 +35,15 @@ struct SelectionPanel: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(who).font(.headline)
-                Text(list.isEmpty ? String(localized: "aucune RI") : String(localized: "\(list.count) RI")).foregroundStyle(.secondary)
-                Spacer()
+                AdaptiveText(long: list.isEmpty ? String(localized: "aucune réponse impulsionnelle") : list.count == 1 ? String(localized: "1 réponse impulsionnelle") : String(localized: "\(list.count) réponses impulsionnelles"),
+                             short: list.isEmpty ? String(localized: "aucune RI") : String(localized: "\(list.count) RI"))
+                    .foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
                 if !list.isEmpty { Button("Vider", role: .destructive) { model.clearSelection() } }
             }
             if model.document?.placedPairs == 0 {
-                Text("Aucune RI pour l'instant. Glissez des fichiers de la liste sur les cases.").foregroundStyle(.secondary)
+                Text("Aucune réponse impulsionnelle pour l'instant. Glissez des fichiers de la liste sur les cases.").foregroundStyle(.secondary)
             } else if list.isEmpty {
-                Text("Pas de RI ici. Glissez-y un fichier de la liste.").foregroundStyle(.secondary)
+                Text("Pas de réponse impulsionnelle ici. Glissez-y un fichier de la liste.").foregroundStyle(.secondary)
             } else {
                 header
                 ScrollView {
@@ -75,7 +76,7 @@ struct SelectionPanel: View {
     private var header: some View {
         HStack(spacing: 8) {
             Text("Entrée → sortie").frame(width: 150, alignment: .leading)
-            Text("RI").frame(maxWidth: .infinity, alignment: .leading)
+            AdaptiveText(long: String(localized: "Réponse impulsionnelle"), short: String(localized: "RI")).frame(maxWidth: .infinity, alignment: .leading)
             Text("Gain (dB)").frame(width: 70, alignment: .trailing)
             Text("Retard").frame(width: 70, alignment: .trailing)
             Text("Début").frame(width: 70, alignment: .trailing)
@@ -124,11 +125,17 @@ struct ImpulseRowFields: View {
             ValueField(text: "\(impulse.delay)", enabled: !isCopy) { commit(delay: $0) }
             ValueField(text: "\(impulse.offset)", enabled: isFile) { commit(offset: $0) }
             ValueField(text: "\(impulse.length)", enabled: isFile) { commit(length: $0) }
-            Button { model.detail = DetailTarget(pair: pair, index: index) } label: { Image(systemName: "waveform.path.ecg") }
-                .buttonStyle(.plain).foregroundStyle(.secondary).frame(width: 22).opacity(isFile ? 1 : 0.25).disabled(!isFile)
-                .help("Détail de la RI : forme d'onde et analyse")
+            Button { model.detail = DetailTarget(pair: pair, index: index) } label: {
+                // The impulse response in a viewfinder, both symbols of the system.
+                ZStack {
+                    Image(systemName: "viewfinder").font(.system(size: 18, weight: .regular))
+                    Image(systemName: "waveform.path.ecg").font(.system(size: 10, weight: .bold))
+                }
+            }
+                .buttonStyle(GlyphButtonStyle()).opacity(isFile ? 1 : 0.25).disabled(!isFile)
+                .help("Inspecter la réponse impulsionnelle : forme d'onde, spectre et analyse")
             Button { model.edit(String(localized: "RI retirée")) { $0.remove(at: index, of: pair) } } label: { Image(systemName: "xmark.circle.fill") }
-                .buttonStyle(.plain).foregroundStyle(.secondary).frame(width: 22).help("Vider cette RI")
+                .buttonStyle(.plain).foregroundStyle(.secondary).frame(width: 22).help("Vider cette réponse impulsionnelle")
         }
         .padding(.vertical, 3)
     }
@@ -189,5 +196,45 @@ struct ValueField: View {
 
     private func validate() {
         if edited != text, !commit(edited) { edited = text }
+    }
+}
+
+/// A button that is a symbol (the detail of an impulse response, the "+" of the list of files): grey at rest, plain (white in a dark appearance) and a little larger when the
+/// pointer is over it.
+struct GlyphButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        Face(label: configuration.label, isPressed: configuration.isPressed)
+    }
+
+    private struct Face<Label: View>: View {
+        let label: Label
+        let isPressed: Bool
+        @Environment(\.isEnabled) private var isEnabled
+        @State private var hovering = false
+
+        var body: some View {
+            let lit = hovering && isEnabled
+            label
+                .foregroundStyle(lit ? Color.primary : Color.secondary)
+                .frame(width: 26, height: 24)
+                .scaleEffect(lit ? (isPressed ? 1.04 : 1.16) : 1)
+                .animation(.easeOut(duration: 0.12), value: lit)
+                .animation(.easeOut(duration: 0.08), value: isPressed)
+                .onHover { hovering = $0 }
+                .contentShape(Rectangle())
+        }
+    }
+}
+
+/// A text in two forms: the long one where there is room for it, the short one (an abbreviation) where there is not.
+struct AdaptiveText: View {
+    let long: String
+    let short: String
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            Text(verbatim: long).lineLimit(1)
+            Text(verbatim: short).lineLimit(1)
+        }
     }
 }

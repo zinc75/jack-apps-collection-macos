@@ -91,10 +91,10 @@ private struct HeaderTab: View {
                     Text(verbatim: "\(model.document?.inputCount ?? 0) × \(model.document?.outputCount ?? 0)").foregroundStyle(.secondary).monospacedDigit()
                     Button("Modifier…") { model.showsResize = true }
                 }
-                OptionRow("Calcul automatique", "Les trois valeurs suivent les RI placées.",
+                OptionRow("Calcul automatique", "Les trois valeurs suivent les réponses impulsionnelles placées.",
                           info: model.mode == .file
-                          ? "La partition, la longueur maximale et la densité sont calculées d'après les RI placées. Désactivé, elles se règlent à la main et sont écrites telles quelles dans le fichier."
-                          : "La partition suit la période de JACK ; la longueur maximale et la densité sont calculées d'après les RI placées. Désactivé, elles se règlent à la main et sont écrites telles quelles dans le fichier.") {
+                          ? "La partition, la longueur maximale et la densité sont calculées d'après les réponses impulsionnelles placées. Désactivé, elles se règlent à la main et sont écrites telles quelles dans le fichier."
+                          : "La partition suit la période de JACK ; la longueur maximale et la densité sont calculées d'après les réponses impulsionnelles placées. Désactivé, elles se règlent à la main et sont écrites telles quelles dans le fichier.") {
                     Toggle("Calcul automatique", isOn: Binding(get: { !isManual }, set: { automaticOn in
                         if automaticOn {
                             manualRequested = false
@@ -112,14 +112,14 @@ private struct HeaderTab: View {
                 }
                 if isManual {
                     partitionRow(automatic)
-                    OptionRow("Longueur maximale", "La plus longue RI telle que le moteur la lit, en échantillons. Calculée : \(automatic.maxLength).", info: "Retard compris, début ignoré retiré, fin tronquée par la longueur choisie. Ce n'est pas la longueur des fichiers. Au plus 1 048 576 échantillons.") {
+                    OptionRow("Longueur maximale", "La plus longue réponse impulsionnelle telle que le moteur la lit, en échantillons. Calculée : \(automatic.maxLength).", info: "Retard compris, début ignoré retiré, fin tronquée par la longueur choisie. Ce n'est pas la longueur des fichiers. Au plus 1 048 576 échantillons.") {
                         CommitField(text: content?.maxLength.map(String.init) ?? "", placeholder: String(automatic.maxLength), width: 100, trailing: true) { value in
                             guard let v = Int(value) ?? (value.isEmpty ? 0 : nil), v >= 0 else { return false }
                             model.edit(String(localized: "longueur maximale")) { $0.content.maxLength = value.isEmpty ? nil : v }
                             return true
                         }
                     }
-                    OptionRow("Densité", "La part des paires qui ont une RI, de 0 à 1. Calculée : \((automatic.density ?? 0).formatted(.number.precision(.fractionLength(2)))).", info: "Une paire est une entrée reliée à une sortie. Une densité proche de la réalité aide jconvolver à réserver la bonne quantité de mémoire.") {
+                    OptionRow("Densité", "La part des paires qui ont une réponse impulsionnelle, de 0 à 1. Calculée : \((automatic.density ?? 0).formatted(.number.precision(.fractionLength(2)))).", info: "Une paire est une entrée reliée à une sortie. Une densité proche de la réalité aide jconvolver à réserver la bonne quantité de mémoire.") {
                         CommitField(text: content?.density.map { $0.formatted(.number.precision(.fractionLength(0...2))) } ?? "",
                                     placeholder: (automatic.density ?? 0).formatted(.number.precision(.fractionLength(2))), width: 100, trailing: true) { value in
                             let v = Double(value.replacingOccurrences(of: ",", with: ".")) ?? (value.isEmpty ? 0 : nil)
@@ -133,11 +133,11 @@ private struct HeaderTab: View {
                         Text(verbatim: String(automatic.partition)).foregroundStyle(.secondary).monospacedDigit()
                         Text("(calculé)").foregroundStyle(.secondary)
                     }
-                    OptionRow("Longueur maximale", "La plus longue RI telle que le moteur la lit, en échantillons.", info: "Retard compris, début ignoré retiré, fin tronquée par la longueur choisie. Ce n'est pas la longueur des fichiers.") {
+                    OptionRow("Longueur maximale", "La plus longue réponse impulsionnelle telle que le moteur la lit, en échantillons.", info: "Retard compris, début ignoré retiré, fin tronquée par la longueur choisie. Ce n'est pas la longueur des fichiers.") {
                         Text(verbatim: String(automatic.maxLength)).foregroundStyle(.secondary).monospacedDigit()
                         Text("(calculé)").foregroundStyle(.secondary)
                     }
-                    OptionRow("Densité", "La part des paires qui ont une RI.", info: "Une paire est une entrée reliée à une sortie.") {
+                    OptionRow("Densité", "La part des paires qui ont une réponse impulsionnelle.", info: "Une paire est une entrée reliée à une sortie.") {
                         Text(verbatim: (automatic.density ?? 0).formatted(.number.precision(.fractionLength(2)))).foregroundStyle(.secondary).monospacedDigit()
                         Text("(calculé)").foregroundStyle(.secondary)
                     }
