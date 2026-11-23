@@ -31,6 +31,22 @@ public struct CurveData: Sendable {
         return CurveData(samples: out, sampleRate: file.sampleRate)
     }
 
+    /// Reads every channel of a sound file in one pass: one `CurveData` per channel, in the order of the channels.
+    public static func loadAll(url: URL) throws -> [CurveData] {
+        let file = try SoundFile(url: url)
+        let channels = file.channels
+        var out = [[Float]](repeating: [], count: channels)
+        for c in 0..<channels { out[c].reserveCapacity(Int(file.frames)) }
+        let block = 1 << 14
+        var buffer = [Float](repeating: 0, count: block * channels)
+        while true {
+            let got = try buffer.withUnsafeMutableBufferPointer { try file.read(into: $0.baseAddress!, maxFrames: block) }
+            if got == 0 { break }
+            for c in 0..<channels { for i in 0..<got { out[c].append(buffer[i * channels + c]) } }
+        }
+        return out.map { CurveData(samples: $0, sampleRate: file.sampleRate) }
+    }
+
     public var count: Int { samples.count }
     public var peak: Float { samples.reduce(0) { max($0, abs($1)) } }
 

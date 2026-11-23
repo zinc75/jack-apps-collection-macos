@@ -5,6 +5,19 @@ import XCTest
 @testable import JConvolverKit
 
 final class CurveDataTests: XCTestCase {
+    func testLoadAllGivesEveryChannelInOnePass() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("loadall-\(UUID().uuidString).wav")
+        defer { try? FileManager.default.removeItem(at: url) }
+        try WAVSupport.write(url, channels: 3, samples: [1, 10, 100, 2, 20, 200, 3, 30, 300, 4, 40, 400])
+        let all = try CurveData.loadAll(url: url)
+        XCTAssertEqual(all.count, 3)
+        XCTAssertEqual(all[0].samples, [1, 2, 3, 4])
+        XCTAssertEqual(all[1].samples, [10, 20, 30, 40])
+        XCTAssertEqual(all[2].samples, [100, 200, 300, 400])
+        // The same as reading the channels one by one.
+        XCTAssertEqual(try CurveData.load(url: url, channel: 2).samples, all[1].samples)
+    }
+
     func testColumnsKeepEveryPeak() {
         var s = [Float](repeating: 0.01, count: 1000)
         s[503] = 0.9

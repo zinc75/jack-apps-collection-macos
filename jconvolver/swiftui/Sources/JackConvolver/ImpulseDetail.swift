@@ -330,10 +330,7 @@ struct ImpulseDetailWindow: View {
         guard let resolved else { return }
         let path = resolved.path, channel = resolved.channel, catalog = model.catalog
         info = catalog.info(at: path)
-        let loaded = await Task.detached(priority: .userInitiated) { () -> (CurveData, PeakPyramid)? in
-            guard let curve = try? CurveData.load(url: URL(fileURLWithPath: path), channel: channel) else { return nil }
-            return (curve, PeakPyramid(samples: curve.samples))
-        }.value
+        let loaded = await ImpulseLoading.load(path: path, channel: channel)
         data = loaded?.0
         pyramid = loaded?.1
         failed = loaded == nil

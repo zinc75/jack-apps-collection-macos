@@ -16,6 +16,10 @@ struct FileBin: View {
     @State private var anchor = 0
     /// Something from the Finder is above the list.
     @State private var targeted = false
+    /// The file whose impulse response is looked at in a popover: the row it comes from, its path and its channel.
+    @State private var preview: Preview?
+
+    private struct Preview: Equatable { var rowID: String; var path: String; var channel: Int? }
 
     private struct Row: Identifiable {
         let id: String
@@ -132,6 +136,12 @@ struct FileBin: View {
             .sorted().map { URL(fileURLWithPath: $0) }
     }
 
+    /// Opens the plots of the file of a row, from its channel when the row is one (all the channels when it is the file).
+    private func openPreview(_ row: Row) {
+        guard case .channel(let path, let channel)? = row.items.first else { return }
+        preview = Preview(rowID: row.id, path: path, channel: row.isChild ? channel : nil)
+    }
+
     private func rowView(_ row: Row, index: Int, all: [Row]) -> some View {
         let selected = row.items.allSatisfy { model.picked.contains($0) }
         return HStack(spacing: 6) {
@@ -144,7 +154,17 @@ struct FileBin: View {
                 Color.clear.frame(width: 12, height: 1)
             }
             VStack(alignment: .leading, spacing: 1) {
-                Text(row.title).fontWeight(selected ? .semibold : .regular).lineLimit(1).truncationMode(.middle)
+                HStack(spacing: 2) {
+                    Text(row.title).fontWeight(selected ? .semibold : .regular).lineLimit(1).truncationMode(.middle)
+                    // The way in to the plots of the file, next to its name (the menu of a right click has it too).
+                    if let item = row.items.first, case .channel = item {
+                        Button { openPreview(row) } label: { InspectSymbol(size: 14) }
+                            .buttonStyle(GlyphButtonStyle())
+                            .help("Inspecter la réponse impulsionnelle : forme d'onde, spectre et phase")
+                            .accessibilityLabel("Inspecter la réponse impulsionnelle")
+                            .layoutPriority(1)
+                    }
+                }
                 if !row.subtitle.isEmpty { Text(row.subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(1) }
             }
             Spacer(minLength: 4)
@@ -155,6 +175,14 @@ struct FileBin: View {
         .background(selected ? accent.opacity(0.22) : .clear, in: RoundedRectangle(cornerRadius: 6))
         .contentShape(Rectangle())
         .onTapGesture { click(row, index: index, all: all) }
+        .contextMenu {
+            if case .channel? = row.items.first {
+                Button("Inspecter la réponse impulsionnelle…") { openPreview(row) }
+            }
+        }
+        .popover(isPresented: Binding(get: { preview?.rowID == row.id }, set: { if !$0, preview?.rowID == row.id { preview = nil } }), arrowEdge: .trailing) {
+            if let preview, preview.rowID == row.id { FilePreview(path: preview.path, channel: preview.channel).environment(model) }
+        }
         .gesture(DragGesture(minimumDistance: 5, coordinateSpace: .named("matrixPage"))
             .onChanged { value in
                 if model.dragPointer == nil { model.beginItemDrag(row.items) }

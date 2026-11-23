@@ -126,11 +126,7 @@ struct ImpulseRowFields: View {
             ValueField(text: "\(impulse.offset)", enabled: isFile) { commit(offset: $0) }
             ValueField(text: "\(impulse.length)", enabled: isFile) { commit(length: $0) }
             Button { model.detail = DetailTarget(pair: pair, index: index) } label: {
-                // The impulse response in a viewfinder, both symbols of the system.
-                ZStack {
-                    Image(systemName: "viewfinder").font(.system(size: 18, weight: .regular))
-                    Image(systemName: "waveform.path.ecg").font(.system(size: 10, weight: .bold))
-                }
+                InspectSymbol()
             }
                 .buttonStyle(GlyphButtonStyle()).opacity(isFile ? 1 : 0.25).disabled(!isFile)
                 .help("Inspecter la réponse impulsionnelle : forme d'onde, spectre et analyse")
@@ -196,6 +192,18 @@ struct ValueField: View {
 
     private func validate() {
         if edited != text, !commit(edited) { edited = text }
+    }
+}
+
+/// "Look at this impulse response": its line in a viewfinder, both symbols of the system.
+struct InspectSymbol: View {
+    var size: CGFloat = 18
+
+    var body: some View {
+        ZStack {
+            Image(systemName: "viewfinder").font(.system(size: size, weight: .regular))
+            Image(systemName: "waveform.path.ecg").font(.system(size: size * 0.55, weight: .bold))
+        }
     }
 }
 
