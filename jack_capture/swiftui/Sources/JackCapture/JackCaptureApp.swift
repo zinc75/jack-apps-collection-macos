@@ -4,31 +4,28 @@ import SwiftUI
 import MatrixKit
 import JackCaptureKit
 import AppearanceKit
+import SessionKit
 
 /// Removes the menus that the system adds by itself and that have nothing left in them (Format, once its commands are gone),
 /// and holds back the quitting while a file is being written.
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    static var model: RecorderModel?
+    static var sessions: CaptureSessions?
     /// The look chosen by the user; given by the application before the first window, applied at launch.
     static var appearance: AppearanceSettings?
     private var pending = false
 
-    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+    /// The click on the icon of the Dock while no window is seen: the window of the one session that has none, or the list of them when there are several.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        Self.sessions?.handleReopen(hasVisibleWindows: flag) ?? true
+    }
 
-    /// Quitting stops the recording first, and waits for jack_capture to close the file: it would otherwise
-    /// be cut (its output pipes close with the application, and it would die writing to them).
+    /// The application stays while a recording goes on without its window (it is in the menu bar).
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { Self.sessions?.shouldTerminateAfterLastWindowClosed ?? true }
+
+    /// Quitting asks every session, then stops what is written and waits for jack_capture to close the file: it would otherwise be cut (its output pipes
+    /// close with the application, and it would die writing to them).
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        guard let model = Self.model, model.isBusy else { return .terminateNow }
-        if model.isWriting {
-            let alert = NSAlert()
-            alert.messageText = String(localized: "Un enregistrement est en cours")
-            alert.informativeText = String(localized: "Arrêter l'enregistrement et quitter ? Le fichier est refermé proprement.")
-            alert.addButton(withTitle: String(localized: "Arrêter et quitter"))
-            alert.addButton(withTitle: String(localized: "Annuler"))
-            if alert.runModal() != .alertFirstButtonReturn { return .terminateCancel }
-        }
-        model.stopForQuit { NSApp.reply(toApplicationShouldTerminate: true) }
-        return .terminateLater
+        Self.sessions?.terminateReply() ?? .terminateNow
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -61,8 +58,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 struct JackCaptureApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
-    /// The settings of the last session come back; a development run that forces settings does not keep them.
-    @State private var model: RecorderModel
+    /// The sessions: one window each. The settings of the last session come back in the first one; a development run that forces settings does not keep them.
+    @State private var sessions: CaptureSessions
     @State private var appearance: AppearanceSettings
 
     private static var keepsSettings: Bool {
@@ -75,11 +72,15 @@ struct JackCaptureApp: App {
 
     init() {
         CollectionMenus.disableSystemMenuAdditions()
-        let model = RecorderModel(defaults: Self.keepsSettings ? .standard : nil)
-        _model = State(initialValue: model)
-        AppDelegate.model = model
+        let hub = CaptureHub(defaults: Self.keepsSettings ? .standard : nil)
+        let sessions = CaptureSessions(
+            configuration: SessionKitConfiguration(toolName: "Jack Capture", showsDockBadge: true, runningNoun: "enregistrement", runningNounPlural: "enregistrements"),
+            makeSession: { id in RecorderModel(hub: hub, id: id, usesSavedSettings: hub.claimSavedSettings()) },
+            makeIdleSession: { RecorderModel(hub: hub, usesSavedSettings: false) })
+        _sessions = State(initialValue: sessions)
+        AppDelegate.sessions = sessions
         #if DEBUG
-        if ProcessInfo.processInfo.environment["JACKCAPTURE_FRESH"] != nil { model.pretendFirstLaunch() }
+        if ProcessInfo.processInfo.environment["JACKCAPTURE_FRESH"] != nil { hub.pretendFirstLaunch() }
         #endif
 
         // The colour of the application is a red a little deeper than the one of the system, so that it is not taken for the red of
@@ -101,52 +102,23 @@ struct JackCaptureApp: App {
     }
 
     var body: some Scene {
-        WindowGroup {
-            ContentView()
-                .environment(model)
-                .environment(appearance)
-                .appAccent(appearance)
-                // The window is never smaller than 940 x 850 (the toolbar adds 52 points to the height below).
-                .frame(minWidth: 940, minHeight: 798)
-        }
+        // One window for each session: the number of a session is the value of its window.
+        WindowGroup(for: UUID.self, content: { $id in
+            SessionWindowHost(hub: sessions, id: id) { session in
+                ContentView()
+                    .environment(session)
+                    .environment(appearance)
+                    .appAccent(appearance)
+                    .focusedSceneValue(\.session, session)
+                    // The window is never smaller than 940 x 850 (the toolbar adds 52 points to the height below).
+                    .frame(minWidth: 940, minHeight: 798)
+            }
+        }, defaultValue: { sessions.defaultWindowID() })
         .defaultSize(width: 1120, height: 850)
         .windowResizability(.contentMinSize)
-        .commands {
-            // Nothing to open, save, print, find, format or look up: only what the application uses stays.
-            // Cut, copy and paste remain for the text fields.
-            CommandGroup(replacing: .newItem) {}
-            CommandGroup(replacing: .saveItem) {}
-            CommandGroup(replacing: .importExport) {}
-            CommandGroup(replacing: .printItem) {}
-        }
-        .commands {
-            CommandGroup(replacing: .textEditing) {}
-            CommandGroup(replacing: .textFormatting) {}
-            CommandGroup(replacing: .toolbar) {
-                Button("Enregistrement") { model.view = .recording }.keyboardShortcut("1", modifiers: .command)
-                Divider()
-                Button("Voies") { model.view = .channels }.keyboardShortcut("2", modifiers: .command)
-                Button("Fichier") { model.view = .file }.keyboardShortcut("3", modifiers: .command)
-                Button("Démarrage et arrêt") { model.view = .startStop }.keyboardShortcut("4", modifiers: .command)
-                Button("Avancé") { model.view = .advanced }.keyboardShortcut("5", modifiers: .command)
-                Button("Affichage") { model.view = .display }.keyboardShortcut("6", modifiers: .command)
-            }
-            // The settings of the system convention (command comma) are the page "Affichage".
-            CommandGroup(replacing: .appSettings) {
-                Button("Réglages…") { model.view = .display }.keyboardShortcut(",", modifiers: .command)
-            }
-        }
-        .commands {
-            CommandMenu("Enregistrement") {
-                Button(model.phase.showsStopSymbol ? "Arrêter" : "Enregistrer") {
-                    #if DEBUG
-                    model.trace("menu action fired")
-                    #endif
-                    model.toggleRecording()
-                }
-                    .keyboardShortcut("r", modifiers: .command)
-            }
-        }
+        // The windows are not brought back at the next launch: a session is something the person starts.
+        .restorationBehavior(.disabled)
+        .commands { CaptureCommands(hub: sessions) }
         .commands {
             CollectionMenus(
                 about: AboutInfo(
@@ -164,5 +136,30 @@ struct JackCaptureApp: App {
                 documentationTitle: String(localized: "Documentation Jack Capture"),
                 documentationURL: URL(string: "https://github.com/zinc75/jack-apps-collection-macos/tree/main/jack_capture")!)
         }
+
+        // The list of the sessions in a window, for the click on the Dock when several have none (the same list as the panel of the menu bar).
+        Window(sessions.configuration.sessionsWindowTitle, id: SessionIdentifiers.sessionsWindow) {
+            SessionsWindowView(hub: sessions)
+                .environment(appearance)
+                .appAccent(appearance)
+                .containerBackground(Color.windowFill, for: .window)
+        }
+        .defaultSize(width: 700, height: 520)
+        // In the middle of the screen, not at its top.
+        .defaultPosition(.center)
+        .windowResizability(.contentMinSize)
+        .defaultLaunchBehavior(.suppressed)
+        .restorationBehavior(.disabled)
+
+        // The icon of the menu bar: there only while something is to be reached from it, and filled while a recording goes on.
+        MenuBarExtra(isInserted: Binding(get: { sessions.showsMenuBarIcon }, set: { _ in })) {
+            SessionMenuPanel(hub: sessions)
+                .environment(appearance)
+                .appAccent(appearance)
+        } label: {
+            Image(systemName: sessions.anyRunning ? "record.circle.fill" : "record.circle")
+        }
+        // A panel and not a menu: a row has buttons, not a submenu.
+        .menuBarExtraStyle(.window)
     }
 }

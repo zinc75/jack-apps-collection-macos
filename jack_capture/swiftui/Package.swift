@@ -15,6 +15,8 @@ let package = Package(
         .package(path: "../../shared/MeterKit"),
         // The look (dark, system, light) and the accent, MIT, shared with the other tools.
         .package(path: "../../shared/AppearanceKit"),
+        // The sessions of an application in windows, the menu bar and the Dock, MIT, shared with the other tools.
+        .package(path: "../../shared/SessionKit"),
     ],
     targets: [
         // Logic without any UI: settings, command line, file names, recorder state. Unit tested.
@@ -30,6 +32,7 @@ let package = Package(
                 .product(name: "MatrixKit", package: "MatrixKit"),
                 .product(name: "MeterKit", package: "MeterKit"),
                 .product(name: "AppearanceKit", package: "AppearanceKit"),
+                .product(name: "SessionKit", package: "SessionKit"),
             ],
             swiftSettings: [.unsafeFlags(["-Xfrontend", "-default-isolation", "-Xfrontend", "MainActor"])]
         ),

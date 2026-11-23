@@ -23,13 +23,17 @@ public final class RecorderModel {
     }
     /// False on the very first launch, until the page of the channels has been seen: the red button then leads
     /// there instead of recording with settings nobody has looked at.
-    public private(set) var isConfigured = true
+    public var isConfigured: Bool { hub.isConfigured }
     public private(set) var phase: RecorderPhase = .configuration
     public private(set) var elapsed: TimeInterval = 0
 
     public var settings = CaptureSettings()
+    /// What tells this session from the others: the window that shows it is opened for it.
+    public let id: UUID
+    /// What the windows share: the JACK client and the settings kept between two launches.
+    public let hub: CaptureHub
     /// The JACK graph: sources for the matrix, state of the server.
-    public let graph = JackGraph()
+    public var graph: JackGraph { hub.graph }
     /// Sample rate of the JACK server; 48 kHz while no server runs (what the estimates assume).
     public var sampleRate: Int { graph.sampleRate ?? 48_000 }
 
@@ -108,21 +112,17 @@ public final class RecorderModel {
     /// What the recording was started with: the settings and the command may change while it runs.
     private var launched: (settings: CaptureSettings, commandText: String, sampleRate: Int, date: Date)?
 
-    /// Where the settings are kept between two launches; nil in the tests.
-    private let defaults: UserDefaults?
-    private static let settingsKey = "settings.v1"
-    private static let configuredKey = "configured.v1"
+    /// A session of the application. `usesSavedSettings`: it starts from the settings of the last session (the first window at the launch); the others start from
+    /// the defaults.
+    public init(hub: CaptureHub, id: UUID = UUID(), usesSavedSettings: Bool = true) {
+        self.hub = hub
+        self.id = id
+        if usesSavedSettings, let saved = hub.savedSettings() { settings = saved }
+    }
 
-    /// With `defaults`, the settings of the last session are read back, and `saveSettings()` keeps them.
-    public init(defaults: UserDefaults? = nil) {
-        self.defaults = defaults
-        isConfigured = defaults == nil || defaults?.data(forKey: Self.settingsKey) != nil || defaults?.bool(forKey: Self.configuredKey) == true
-        if let data = defaults?.data(forKey: Self.settingsKey), var saved = Self.decodeSettings(data) {
-            // Bring back inside the limits what may have been written by another version.
-            saved.setFormat(saved.format)
-            saved.setChannels(saved.channels)
-            settings = saved
-        }
+    /// A session with a hub of its own: with `defaults`, the settings of the last session are read back, and `saveSettings()` keeps them. What the tests use.
+    public convenience init(defaults: UserDefaults? = nil) {
+        self.init(hub: CaptureHub(defaults: defaults), usesSavedSettings: true)
     }
 
     /// Reads saved settings, whichever version wrote them: a setting that was not saved takes its default, and
@@ -143,15 +143,11 @@ public final class RecorderModel {
     }
 
     /// The page of the channels has been seen: from now on the red button records.
-    public func markConfigured() {
-        guard !isConfigured else { return }
-        isConfigured = true
-        defaults?.set(true, forKey: Self.configuredKey)
-    }
+    public func markConfigured() { hub.markConfigured() }
 
     #if DEBUG
     /// Development aid: behaves as on a first launch, without touching what is saved.
-    public func pretendFirstLaunch() { isConfigured = false }
+    public func pretendFirstLaunch() { hub.pretendFirstLaunch() }
     #endif
 
     /// Notes the application behind each client of the graph that has one.
@@ -162,10 +158,7 @@ public final class RecorderModel {
     }
 
     /// Keeps the settings for the next launch. Call it when they change.
-    public func saveSettings() {
-        guard let defaults, let data = try? JSONEncoder().encode(settings) else { return }
-        defaults.set(data, forKey: Self.settingsKey)
-    }
+    public func saveSettings() { hub.save(settings) }
 
     /// The big red button: starts when idle, stops when something is running.
     public func toggleRecording() {
@@ -199,6 +192,29 @@ public final class RecorderModel {
     public func startAnyway() {
         asksToConfirm = false
         start()
+    }
+
+    /// Something has been set up or recorded here: settings that are not the defaults, or a recording that is done.
+    public var hasPreparedSettings: Bool { settings != CaptureSettings() || phase == .done }
+
+    /// Back to a session with nothing in it: the defaults, and the page of the recording.
+    public func resetToDefaults() {
+        newRecording()
+        settings = CaptureSettings()
+    }
+
+    /// Kept alive until jack_capture has closed the file when the session is dropped while it records: the recording must not be cut.
+    private var keepAliveUntilExit: RecorderModel?
+
+    /// Stops what is recorded now (the window of the session is closed over it, or the application leaves): the file is closed properly, and the session stays
+    /// in memory until jack_capture is gone, or 25 seconds.
+    public func stopNow() {
+        guard runner != nil else { return }
+        keepAliveUntilExit = self
+        let before = afterExit
+        afterExit = { [weak self] in before?(); self?.keepAliveUntilExit = nil }
+        stop()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 25) { [weak self] in self?.keepAliveUntilExit = nil }
     }
 
     public func newRecording() {
