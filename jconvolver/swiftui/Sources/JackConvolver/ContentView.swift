@@ -60,7 +60,6 @@ struct ContentView: View {
             FooterBar()
         }
         .containerBackground(Color.windowFill, for: .window)
-        .background(LeavingGuard(model: model))
         .task {
             model.start()
             #if DEBUG

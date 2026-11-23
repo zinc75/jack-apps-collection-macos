@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import AppearanceKit
+import SessionKit
 import JConvolverKit
 import SwiftUI
 
@@ -26,30 +27,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     static var hub: AppHub?
     static var appearance: AppearanceSettings?
 
-    /// The application stays while an engine goes on without its window (it is in the menu bar).
     /// The click on the icon of the Dock while no window is seen: the window of the one session that has none, or the list of them when there are several
     /// (what is already open stays as it is, and with no session at all it is the usual new window).
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        guard !flag, let hub = Self.hub else { return true }
-        let hidden = hub.shownSessions.filter(\.isWindowHidden)
-        switch hidden.count {
-        case 0: return true
-        case 1: hub.showWindow(of: hidden[0]); return false
-        default: hub.showSessionsWindow(); return false
-        }
+        Self.hub?.sessionHub.handleReopen(hasVisibleWindows: flag) ?? true
     }
 
-    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { Self.hub?.shownSessions.isEmpty ?? true }
+    /// The application stays while an engine goes on without its window (it is in the menu bar).
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { Self.hub?.sessionHub.shouldTerminateAfterLastWindowClosed ?? true }
     func applicationDidFinishLaunching(_ notification: Notification) { Self.appearance?.applyAppearance() }
     func applicationWillTerminate(_ notification: Notification) { Self.hub?.shutdown() }
-    /// Quitting asks about the changes that are not saved, and about the engine that runs (unless closing the window already did).
+    /// Quitting asks every session (the changes that are not saved, the engine that runs); one that says no keeps the application open.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        guard let hub = Self.hub else { return .terminateNow }
-        // Every session is asked (the changes that are not saved, the engine that runs); one that says no keeps the application open.
-        for session in hub.sessions {
-            if !session.confirmLeaving(.quit) { return .terminateCancel }
-        }
-        return .terminateNow
+        Self.hub?.sessionHub.terminateReply() ?? .terminateNow
     }
 }
 
@@ -94,8 +84,15 @@ struct JackConvolverApp: App {
     var body: some Scene {
         // One window for each session: the number of a session is the value of its window.
         WindowGroup(for: UUID.self, content: { $id in
-            SessionWindow(hub: hub, id: id, appearance: appearance)
-        }, defaultValue: { hub.defaultWindowID() })
+            SessionWindowHost(hub: hub.sessionHub, id: id) { session in
+                ContentView()
+                    .environment(session)
+                    .environment(appearance)
+                    .appAccent(appearance)
+                    .focusedSceneValue(\.session, session)
+                    .frame(minWidth: 1070, minHeight: 830)
+            }
+        }, defaultValue: { hub.sessionHub.defaultWindowID() })
         .defaultSize(width: 1180, height: 940)
         .windowResizability(.contentMinSize)
         // The windows are not brought back at the next launch: a session is a configuration that the person opens.
@@ -120,8 +117,8 @@ struct JackConvolverApp: App {
         }
 
         // The list of the sessions in a window, for the click on the Dock when several have none (the same list as the panel of the menu bar).
-        Window(AppHub.sessionsWindowTitle, id: "sessions") {
-            SessionsWindowView(hub: hub)
+        Window(hub.sessionHub.configuration.sessionsWindowTitle, id: SessionIdentifiers.sessionsWindow) {
+            SessionsWindowView(hub: hub.sessionHub, openAction: { hub.openInNewSession() }, accessory: AnyView(JackLoadChip(hub: hub)))
                 .environment(appearance)
                 .appAccent(appearance)
                 .containerBackground(Color.windowFill, for: .window)
@@ -134,14 +131,25 @@ struct JackConvolverApp: App {
         .restorationBehavior(.disabled)
 
         // The icon of the menu bar: there only while something is to be reached from it, and filled while an engine runs.
-        MenuBarExtra(isInserted: Binding(get: { hub.showsMenuBarIcon }, set: { _ in })) {
-            MenuBarContent(hub: hub)
+        MenuBarExtra(isInserted: Binding(get: { hub.sessionHub.showsMenuBarIcon }, set: { _ in })) {
+            SessionMenuPanel(hub: hub.sessionHub)
                 .environment(appearance)
                 .appAccent(appearance)
         } label: {
-            Image(systemName: hub.anyRunning ? "waveform.circle.fill" : "waveform.circle")
+            Image(systemName: hub.sessionHub.anyRunning ? "waveform.circle.fill" : "waveform.circle")
         }
         // A panel and not a menu: a row has buttons, not a submenu.
         .menuBarExtraStyle(.window)
+    }
+}
+
+/// The load of JACK, shown by the list of the sessions while an engine runs.
+private struct JackLoadChip: View {
+    let hub: AppHub
+
+    var body: some View {
+        if let load = hub.jack.cpuLoad, hub.sessionHub.anyRunning {
+            Chip(text: Text("JACK \(Int(load.rounded())) %"), kind: load >= 90 ? .bad : load >= 70 ? .warn : .plain, symbol: "waveform.path.ecg")
+        }
     }
 }

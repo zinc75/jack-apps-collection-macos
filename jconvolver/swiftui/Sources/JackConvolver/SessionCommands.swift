@@ -13,7 +13,7 @@ extension FocusedValues {
 struct SessionCommands: Commands {
     let hub: AppHub
     @FocusedValue(\.session) private var focused: AppModel?
-    private var model: AppModel { focused ?? hub.idleSession }
+    private var model: AppModel { focused ?? hub.sessionHub.idleSession }
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
@@ -77,7 +77,7 @@ struct SessionCommands: Commands {
 struct SelectionCommands: Commands {
     let hub: AppHub
     @FocusedValue(\.session) private var focused: AppModel?
-    private var model: AppModel { focused ?? hub.idleSession }
+    private var model: AppModel { focused ?? hub.sessionHub.idleSession }
 
     var body: some Commands {
         CommandMenu("Sélection") {

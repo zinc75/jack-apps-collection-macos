@@ -23,6 +23,8 @@ let package = Package(
         .package(path: "../../shared/WaveformKit"),
         .package(path: "../../shared/AppearanceKit"),
         .package(path: "../../shared/MatrixKit"),
+        // The sessions of an application in windows, the menu bar and the Dock, MIT, shared with the other tools.
+        .package(path: "../../shared/SessionKit"),
         // The plots of an impulse response (waveform, spectrum, phase), MIT, shared with the other tools.
         .package(path: "../../shared/PlotKit"),
     ],
@@ -55,6 +57,7 @@ let package = Package(
                 .product(name: "AppearanceKit", package: "AppearanceKit"),
                 .product(name: "MatrixKit", package: "MatrixKit"),
                 .product(name: "PlotKit", package: "PlotKit"),
+                .product(name: "SessionKit", package: "SessionKit"),
             ],
             swiftSettings: [.unsafeFlags(["-Xfrontend", "-default-isolation", "-Xfrontend", "MainActor"] + headers)]
         ),
