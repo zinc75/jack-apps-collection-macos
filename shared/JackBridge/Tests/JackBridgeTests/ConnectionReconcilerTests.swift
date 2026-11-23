@@ -136,4 +136,61 @@ final class ConnectionReconcilerTests: XCTestCase {
         XCTAssertEqual(groups.first?.ports, ["capture_1", "capture_2"]); XCTAssertEqual(groups.first?.isSystem, true)
         XCTAssertEqual(groups.last?.fullName(of: "out2"), "Carla:out2")
     }
+
+    // MARK: Reality is adopted
+
+    func testAConnectionMadeElsewhereBecomesWanted() {
+        let graph = MemoryGraph()
+        graph.outputs = ["play:out_1", "play:out_2"]; graph.inputs = ["a:in", "b:in"]
+        let r = ConnectionReconciler(linking: graph, own: .output, checksOwnPorts: false)
+        let wanted: Set<JackLink> = [JackLink(output: "play:out_1", input: "a:in")]
+        r.reconcile(wanted: wanted)
+        // Another tool connects the second output to b.
+        graph.links.insert(JackLink(output: "play:out_2", input: "b:in"))
+        let adopted = r.adopted(wanted: wanted, ownClient: "play")
+        XCTAssertEqual(adopted, [JackLink(output: "play:out_1", input: "a:in"), JackLink(output: "play:out_2", input: "b:in")])
+    }
+
+    func testAConnectionRemovedElsewhereIsNoLongerWanted() {
+        let graph = MemoryGraph()
+        graph.outputs = ["play:out_1"]; graph.inputs = ["a:in"]
+        let r = ConnectionReconciler(linking: graph, own: .output, checksOwnPorts: false)
+        let link = JackLink(output: "play:out_1", input: "a:in")
+        r.reconcile(wanted: [link])
+        graph.links.remove(link)
+        XCTAssertEqual(r.adopted(wanted: [link], ownClient: "play"), [])
+    }
+
+    func testALinkWhoseDestinationIsNotThereStaysWanted() {
+        let graph = MemoryGraph()
+        graph.outputs = ["play:out_1"]; graph.inputs = []
+        let r = ConnectionReconciler(linking: graph, own: .output, checksOwnPorts: false)
+        let link = JackLink(output: "play:out_1", input: "later:in")
+        XCTAssertEqual(r.adopted(wanted: [link], ownClient: "play"), [link])
+    }
+
+    func testAnOwnPortNotRegisteredYetKeepsItsLinks() {
+        let graph = MemoryGraph()
+        graph.outputs = []; graph.inputs = ["a:in"]
+        let r = ConnectionReconciler(linking: graph, own: .output, checksOwnPorts: false)
+        let link = JackLink(output: "play:out_1", input: "a:in")
+        XCTAssertEqual(r.adopted(wanted: [link], ownClient: "play"), [link])
+    }
+
+    func testOnlyTheLinksOfTheOwnClientAreAdopted() {
+        let graph = MemoryGraph()
+        graph.outputs = ["play:out_1", "other:out_1"]; graph.inputs = ["a:in"]
+        graph.links = [JackLink(output: "other:out_1", input: "a:in")]
+        let r = ConnectionReconciler(linking: graph, own: .output, checksOwnPorts: false)
+        XCTAssertEqual(r.adopted(wanted: [], ownClient: "play"), [])
+    }
+
+    func testTheInputsOfTheProgramAreFedByOtherClients() {
+        let graph = MemoryGraph()
+        graph.outputs = ["system:capture_1", "app:out"]; graph.inputs = ["rec:in_1", "rec:in_2", "mon:in"]
+        graph.links = [JackLink(output: "system:capture_1", input: "rec:in_1"), JackLink(output: "app:out", input: "mon:in")]
+        let r = ConnectionReconciler(linking: graph, own: .input, checksOwnPorts: false)
+        XCTAssertEqual(r.adopted(wanted: [JackLink(output: "app:out", input: "rec:in_2")], ownClient: "rec"),
+                       [JackLink(output: "system:capture_1", input: "rec:in_1")])
+    }
 }

@@ -20,6 +20,16 @@ public protocol JackLinking: AnyObject {
     func destinations(of output: String) -> Set<String>
     func connect(from output: String, to input: String) throws
     func disconnect(from output: String, to input: String) throws
+    /// Every connection of the audio ports of the graph now. The default asks each output; an implementation that reads the graph at once should give it.
+    func allLinks() -> Set<JackLink>
+}
+
+extension JackLinking {
+    public func allLinks() -> Set<JackLink> {
+        var links = Set<JackLink>()
+        for output in outputPorts() { for input in destinations(of: output) { links.insert(JackLink(output: output, input: input)) } }
+        return links
+    }
 }
 
 /// Keeps the connections of a program as an application wants them. The application says which links it wants; the
@@ -90,6 +100,25 @@ public final class ConnectionReconciler {
         applied = applied.filter { isThere(output: $0.output) && isThere(input: $0.input) }
         missingPorts = missing
         failures = failed
+    }
+
+    // MARK: What is really there
+
+    /// The connections of the program's own ports as they are in the graph now, whoever made them (this application, JackMate, a patchbay).
+    public func actualLinks(ownClient: String) -> Set<JackLink> {
+        let prefix = ownClient + ":"
+        return linking.allLinks().filter { own == .output ? $0.output.hasPrefix(prefix) : $0.input.hasPrefix(prefix) }
+    }
+
+    /// What the wanted links become when the graph has been changed by someone else: **the reality is adopted** (a connection made elsewhere is wanted
+    /// from now on, one removed elsewhere is no longer wanted). A link whose port is not in the graph (a device that is unplugged, an application that is
+    /// not running, an own port not registered yet) keeps its place: it is made when the port comes.
+    public func adopted(wanted: Set<JackLink>, ownClient: String) -> Set<JackLink> {
+        let actual = actualLinks(ownClient: ownClient)
+        let outputs = linking.outputPorts(), inputs = linking.inputPorts()
+        var result = actual
+        for link in wanted where !actual.contains(link) && !(outputs.contains(link.output) && inputs.contains(link.input)) { result.insert(link) }
+        return result
     }
 
     /// The program has ended (its connections went with it), or starts again: forgets what was made.
