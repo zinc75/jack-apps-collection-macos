@@ -134,6 +134,10 @@ final class AppModel {
     var pathProposals: [PathProposal] = []
     var showsResolver = false
     var showsPortable = false
+    /// The fade typed for the response that is edited, in samples: a draft, shown on the plots, until it is applied (a new file is then written).
+    var fadeIn = 0
+    var fadeOut = 0
+    var showsFade = false
     var showsNewConfiguration = false
     var showsPortNames = false
     /// Which side the page of the connections shows: the inputs (from JACK to jconvolver) or the outputs.

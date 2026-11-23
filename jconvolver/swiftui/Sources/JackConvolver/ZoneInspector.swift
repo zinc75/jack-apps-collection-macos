@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+import AppKit
 import AppearanceKit
 import JConvolverKit
 import PlotKit
@@ -10,6 +11,7 @@ import SwiftUI
 /// plot. The handles on the curve change the same two values.
 struct ZoneInspector: View {
     @Environment(\.appAccentColor) private var accent
+    @Environment(AppModel.self) private var model
     /// The zone in frames, from the first frame read to the last one (the end of the file when the engine reads to the end).
     let zone: ClosedRange<Double>
     /// The frames of the file.
@@ -77,9 +79,63 @@ struct ZoneInspector: View {
                 }
                 .font(.callout)
             }
+            fadeSection
         }
         .onAppear { syncTexts() }
-        .onChange(of: zone) { _, _ in syncTexts() }
+        .onChange(of: zone) { _, _ in syncTexts(); clampFade() }
+    }
+
+    // MARK: The fade
+
+    /// The fade is not a setting of the engine: it is set here as a draft, shown on the plots, and applying it writes a new audio file.
+    private var fadeSection: some View {
+        let length = model.fadeContext()?.length ?? 0
+        return PlotInspectorSection(id: "zoneFade", title: String(localized: "Fondu"),
+                             info: String(localized: "Un fondu à la montée et à la descente de la partie lue, pour que la troncature ne finisse pas sur une marche. Les courbes montrent la réponse avec le fondu, le reste à zéro, et la réponse d'origine en gris. « Appliquer… » écrit un nouveau fichier audio que la configuration lira à la place de l'original, qui n'est pas modifié. 0 : pas de fondu. Les flèches changent la valeur d'un centième de la partie lue, avec ⌥ d'un échantillon.")) {
+            VStack(alignment: .leading, spacing: 10) {
+                Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 8) {
+                    GridRow {
+                        label(String(localized: "Montée"))
+                        fadeStepper(\.fadeIn, length: length, other: model.fadeOut)
+                    }
+                    GridRow {
+                        label(String(localized: "Descente"))
+                        fadeStepper(\.fadeOut, length: length, other: model.fadeIn)
+                    }
+                }
+                .font(.callout)
+                HStack {
+                    Button("Appliquer…") { model.showsFade = true }
+                        .disabled(!model.hasFadeDraft || length < 2).controlSize(.small)
+                    if model.hasFadeDraft {
+                        Button("Annuler le fondu") { model.resetFade() }.controlSize(.small)
+                    }
+                }
+            }
+        }
+    }
+
+    /// A value in samples and the time it makes, with a stepper: a step is a hundredth of the part that is read (1 sample with ⌥), and the two fades
+    /// together stay inside that part.
+    private func fadeStepper(_ keyPath: ReferenceWritableKeyPath<AppModel, Int>, length: Int, other: Int) -> some View {
+        let value = model[keyPath: keyPath]
+        let room = max(length - other, 0)
+        func step() -> Int { NSEvent.modifierFlags.contains(.option) ? 1 : max(1, length / 100) }
+        return HStack(spacing: 8) {
+            Text(verbatim: "\(value)").monospacedDigit().frame(width: Self.fieldWidth, alignment: .trailing)
+            time(value)
+            Stepper("", onIncrement: { model[keyPath: keyPath] = min(value + step(), room) },
+                    onDecrement: { model[keyPath: keyPath] = max(value - step(), 0) })
+                .labelsHidden()
+        }
+    }
+
+    /// The two lengths together are no longer than the part that is read: a zone made shorter takes them back.
+    private func clampFade() {
+        guard let length = model.fadeContext()?.length else { return }
+        let kept = ImpulseFade.clamped(fadeIn: model.fadeIn, fadeOut: model.fadeOut, length: length)
+        if kept.fadeIn != model.fadeIn { model.fadeIn = kept.fadeIn }
+        if kept.fadeOut != model.fadeOut { model.fadeOut = kept.fadeOut }
     }
 
     /// The width of the fields: the same for every row, and no wider than a number of this size needs.

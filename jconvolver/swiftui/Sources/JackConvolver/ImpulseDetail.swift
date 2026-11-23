@@ -62,6 +62,10 @@ struct ImpulseDetailPage: View {
     @State private var showsDifference = false
     /// The vertical axes are to be fitted when the traces of the engine are made (the switch to "Appliquer troncature, gain et retard").
     @State private var fitsAfterEngine = false
+    /// The edited response with the fade that is typed: the part of the file that is read, windowed (see `fading`).
+    @State private var fadePreview: LoadedTrace?
+    /// The window of the fade, as a curve on the time axis of the file (scaled to the largest sample of the part that is read, so that it is seen at any level).
+    @State private var fadeWindow: PeakPyramid?
     @State private var engineTraces: [String: LoadedTrace] = [:]
     @State private var engineEntries: [String: EngineEntry] = [:]
     @State private var time = PlotViewport.signal(count: 2)
@@ -173,6 +177,7 @@ struct ImpulseDetailPage: View {
                             }
                         }
                         rateBanner
+                        fadeBanner
                         conversionBanner
                         if let line = deviationLine {
                             HStack(spacing: 10) {
@@ -218,6 +223,10 @@ struct ImpulseDetailPage: View {
         }
         .task(id: loadKey) { await load() }
         .task(id: othersKey) { await loadOthers() }
+        .task(id: FadeKey(fadeIn: model.fadeIn, fadeOut: model.fadeOut, load: loadKey, used: used, active: fading)) { await computeFadePreview() }
+        // A fade is typed for one response: another one starts without it.
+        .onChange(of: model.detail) { _, _ in model.resetFade() }
+        .onChange(of: loadKey) { _, _ in model.resetFade() }
         .task(id: EngineTaskKey(entries: engineView ? engineEntriesNow : [], cached: engineView ? fileCache.keys.sorted() : [])) { await computeEngine() }
         // The time axis follows the longest trace that is shown.
         .task(id: TimeFit(length: timeLength, load: loadKey)) { fitTime() }
@@ -313,6 +322,20 @@ struct ImpulseDetailPage: View {
     }
 
     /// A file at another rate than the one that is expected: said, with the way to bring it to it.
+    /// While a fade is typed: what the plots show, and the way back.
+    @ViewBuilder private var fadeBanner: some View {
+        if fading {
+            HStack(spacing: 10) {
+                Label("Aperçu du fondu : la partie lue avec le fondu, le reste à zéro ; la réponse d'origine est en gris. « Appliquer… » (page Troncature de l'inspecteur) écrit un nouveau fichier audio.", systemImage: "waveform.path")
+                    .font(.callout).foregroundStyle(.secondary).lineLimit(2)
+                Spacer(minLength: 8)
+                Button("Annuler le fondu") { model.resetFade() }.controlSize(.small)
+            }
+            .padding(.horizontal, 12).padding(.vertical, 6)
+            .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+        }
+    }
+
     @ViewBuilder private var rateBanner: some View {
         if let expected = model.expectedRate, let rate = data?.sampleRate, abs(rate - expected) > 0.5, let path = resolved?.path {
             let hz: (Double) -> String = { $0.formatted(.number.precision(.fractionLength(0...1))) }
@@ -407,6 +430,11 @@ struct ImpulseDetailPage: View {
     /// The handles of the zone, its bar and its rail: only to change it, so not with the zone applied to the traces, nor while the engine runs.
     private var showsHandles: Bool { !engineView && !model.isLocked && !isComparing }
 
+    /// Whether the plots show the response with the fade that is typed. It is drawn on the time axis of the file, where it is: the part that is read,
+    /// windowed, and silence outside of it, with the response as it is behind, pale, to compare. Not with the settings applied (the engine view) nor in
+    /// a comparison.
+    private var fading: Bool { model.hasFadeDraft && !engineView && !isComparing && resolved != nil }
+
     /// A comparison with a reference is only looked at: no markers of the analysis, no handles, no zone to change.
     private var isComparing: Bool { !model.references.isEmpty }
 
@@ -484,6 +512,7 @@ struct ImpulseDetailPage: View {
         let trace = model.traces[id]
         if engineView { return engineTraces[trace.id].map { ($0.data, $0.pyramid, $0.response) } }
         if trace == model.detail {
+            if fading, let fadePreview { return (fadePreview.data, fadePreview.pyramid, fadePreview.response) }
             guard let data, let pyramid else { return nil }
             return (data, pyramid, response)
         }
@@ -493,17 +522,31 @@ struct ImpulseDetailPage: View {
     private var timeTraces: [PlotTrace] {
         // Each trace is placed by time: a response recorded at another rate than the edited one is spread over the axis of the edited one.
         let reference = data?.sampleRate ?? 0
-        return drawOrder.compactMap { s in
+        var traces: [PlotTrace] = drawOrder.compactMap { s in
             loadedTrace(s.id).map {
                 PlotTrace(name: s.name, signal: $0.pyramid, color: tint(s), timeScale: reference > 0 && $0.data.sampleRate > 0 ? reference / $0.data.sampleRate : 1)
             }
         }
+        // With a fade typed, the response as it is stays behind, pale, to compare with.
+        if showsFadeOriginal, let pyramid { traces.append(PlotTrace(name: String(localized: "original"), signal: pyramid, color: Self.originalColor, timeScale: 1)) }
+        // And the window of the fade, over them: what is multiplied to the response, so that its shape is seen as it is set.
+        if showsFadeOriginal, let fadeWindow { traces.insert(PlotTrace(name: String(localized: "fenêtre du fondu"), signal: fadeWindow, color: Self.windowColor, timeScale: 1), at: 0) }
+        return traces
     }
+
+    private static let originalColor = Color(white: 0.55).opacity(0.55)
+    private static let windowColor = Color.orange
+
+    /// Whether the response as it is drawn behind the one with the fade: when the fade is shown, and the edited trace with it.
+    private var showsFadeOriginal: Bool { fading && fadePreview != nil && drawOrder.contains { $0.id == editedIndex } }
 
     private var magnitudeCurves: [PlotCurve] {
         var curves: [PlotCurve] = drawOrder.compactMap { s in
             guard let r = loadedTrace(s.id)?.response else { return nil }
             return PlotCurve(name: s.name, x: r.frequencies, y: r.magnitudes, color: tint(s), isMagnitude: true)
+        }
+        if showsFadeOriginal, let original = response, !original.isEmpty {
+            curves.append(PlotCurve(name: String(localized: "original"), x: original.frequencies, y: original.magnitudes, color: Self.originalColor, filled: false, isMagnitude: true))
         }
         // A comparison also draws the difference of the two spectra, under them: how far they are from each other.
         if showsDifference, let reference = model.references.first, let edited = response, !edited.isEmpty, let other = refs[reference.id]?.response, !other.isEmpty {
@@ -517,12 +560,50 @@ struct ImpulseDetailPage: View {
     }
 
     private var phaseCurves: [PlotCurve] {
-        drawOrder.compactMap { s in
+        var curves: [PlotCurve] = drawOrder.compactMap { s in
             guard let r = loadedTrace(s.id)?.response else { return nil }
             var curve = PlotCurve(name: s.name, x: r.frequencies, y: r.phases, color: tint(s), filled: false, phase: .degrees)
             curve.exactGroupDelay = r.groupDelays
             return curve
         }
+        if showsFadeOriginal, let original = response, !original.isEmpty {
+            var curve = PlotCurve(name: String(localized: "original"), x: original.frequencies, y: original.phases, color: Self.originalColor, filled: false, phase: .degrees)
+            curve.exactGroupDelay = original.groupDelays
+            curves.append(curve)
+        }
+        return curves
+    }
+
+    private struct FadeKey: Hashable { var fadeIn: Int; var fadeOut: Int; var load: String; var used: Range<Int>?; var active: Bool }
+
+    /// The edited response as it would be after the fade: the part that is read, windowed, in its place on the time axis of the file and silence everywhere
+    /// else (what the new file would hold), with its peaks and the frequency response of the part. The views do not change scale: nothing is fitted again.
+    private func computeFadePreview() async {
+        guard fading, let data, let used, used.count >= 2, let resolved else {
+            if fadePreview != nil { fadePreview = nil; fadeWindow = nil }
+            return
+        }
+        let kept = ImpulseFade.clamped(fadeIn: model.fadeIn, fadeOut: model.fadeOut, length: used.count)
+        // A moment to see whether another click is coming.
+        try? await Task.sleep(for: .milliseconds(40))
+        guard !Task.isCancelled else { return }
+        let all = data.samples, rate = data.sampleRate
+        let built = await Task.detached(priority: .userInitiated) { () -> (CurveData, PeakPyramid, FrequencyResponse?, PeakPyramid) in
+            let part = Array(all[used])
+            let windowed = ImpulseFade.apply(to: part, fadeIn: kept.fadeIn, fadeOut: kept.fadeOut)
+            var placed = [Float](repeating: 0, count: all.count)
+            placed.replaceSubrange(used, with: windowed)
+            // The window itself, from 0 to 1, times the largest sample of the part, in the place of the part.
+            let peak = max(part.reduce(Float(0)) { max($0, abs($1)) }, 1e-9)
+            var window = [Float](repeating: 0, count: all.count)
+            for n in 0..<part.count { window[used.lowerBound + n] = ImpulseFade.gain(at: n, count: part.count, fadeIn: kept.fadeIn, fadeOut: kept.fadeOut) * peak }
+            return (CurveData(samples: placed, sampleRate: rate), PeakPyramid(samples: placed),
+                    FrequencyResponse(samples: windowed, range: 0..<windowed.count, sampleRate: rate), PeakPyramid(samples: window))
+        }.value
+        guard !Task.isCancelled else { return }
+        fadePreview = LoadedTrace(key: OtherKey(id: "fade", path: resolved.path, channel: resolved.channel, offset: used.lowerBound, length: used.count),
+                                  data: built.0, pyramid: built.1, response: built.2)
+        fadeWindow = built.3
     }
 
     /// The edited trace as the engine reads it.
