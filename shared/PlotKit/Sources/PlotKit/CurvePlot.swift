@@ -16,6 +16,7 @@ public struct CurvePlot: View {
     var accent: Color
     var labels: PlotLabels
     var controller: PlotController?
+    var display: PlotDisplayOptions?
     var yScaleSwitchable: Bool
     var previewHover: CGPoint?
     var previewMeasure: PlotSegment?
@@ -25,9 +26,11 @@ public struct CurvePlot: View {
     ///   - yUnit: the unit of the values when they are not in decibels ("°", "s").
     ///   - yScale: how the values are drawn, when there is no controller to say it; the values are magnitudes for decibels.
     ///   - controller: that of a window that has a toolbar of its own: it carries the scales, and the toolbar shows the menus.
+    ///   - display: the display options (a phase unwrapped, its delay taken out or shown as a group delay, smoothing) when there is no controller to
+    ///     carry them: a plot that is not in a window with an inspector keeps its own, and offers them its own way.
     ///   - yScaleSwitchable: whether the toolbar offers decibels for the vertical axis (not for a phase).
     public init(curves: [PlotCurve], viewport: Binding<PlotViewport>, xUnit: String = "Hz", yUnit: String = "", yScale: AmplitudeScale = .linear,
-                accent: Color = .accentColor, labels: PlotLabels = PlotLabels(), controller: PlotController? = nil, yScaleSwitchable: Bool = true,
+                accent: Color = .accentColor, labels: PlotLabels = PlotLabels(), controller: PlotController? = nil, display: PlotDisplayOptions? = nil, yScaleSwitchable: Bool = true,
                 previewHover: CGPoint? = nil, previewMeasure: (x0: Double, y0: Double, x1: Double, y1: Double)? = nil) {
         self.curves = curves
         _viewport = viewport
@@ -37,14 +40,18 @@ public struct CurvePlot: View {
         self.accent = accent
         self.labels = labels
         self.controller = controller
+        self.display = display
         self.yScaleSwitchable = yScaleSwitchable
         self.previewHover = previewHover
         self.previewMeasure = previewMeasure.map { PlotSegment(x0: $0.x0, y0: $0.y0, x1: $0.x1, y1: $0.y1) }
     }
 
+    /// The display options: those of the window, or the ones the plot was given.
+    private var options: PlotDisplayOptions? { controller?.display ?? display }
+
     /// The curves as they are drawn: the phases unwrapped and/or without their delay when the inspector says so.
     private var shown: [PlotCurve] {
-        let display = controller?.display
+        let display = options
         let unwrap = display?.unwrapPhase ?? false, removeDelay = display?.removeDelay ?? false
         let smoothing = display?.smoothing ?? .none, keepsRaw = display?.showsUnsmoothed ?? true
         let groupDelay = display?.showGroupDelay ?? false
@@ -71,7 +78,7 @@ public struct CurvePlot: View {
         }
     }
 
-    private var showsGroupDelay: Bool { (controller?.display.showGroupDelay ?? false) && curves.contains { $0.phase != nil } }
+    private var showsGroupDelay: Bool { (options?.showGroupDelay ?? false) && curves.contains { $0.phase != nil } }
 
     /// The phase runs over another range once it is unwrapped or without its delay: the vertical axis is fitted again.
     private func refitVertical() { viewport.y = PlotViewport.curves(shown, xScale: viewport.x.scale, yScale: effectiveYScale).y }
@@ -79,7 +86,7 @@ public struct CurvePlot: View {
     private var effectiveYScale: AmplitudeScale { yScaleSwitchable ? (controller?.yScale ?? yScale) : yScale }
 
     public var body: some View {
-        PlotView(content: CurveContent(curves: shown, yScale: effectiveYScale, xUnitText: xUnit, yUnitText: showsGroupDelay ? "ms" : yUnit, gradient: controller?.display.gradient ?? PlotGradient()), viewport: $viewport,
+        PlotView(content: CurveContent(curves: shown, yScale: effectiveYScale, xUnitText: xUnit, yUnitText: showsGroupDelay ? "ms" : yUnit, gradient: options?.gradient ?? PlotGradient()), viewport: $viewport,
                  accent: accent, labels: labels, controller: controller, previewHover: previewHover, previewMeasure: previewMeasure, previewBox: nil)
             .onAppear {
                 guard let controller else { return }
@@ -98,10 +105,10 @@ public struct CurvePlot: View {
                 let span = viewport.x.bounds.upperBound - viewport.x.bounds.lowerBound
                 viewport.x = viewport.x.switched(to: new, minSpan: new == .logarithmic ? 1.01 : span * 1e-4, positiveFloor: positive)
             }
-            .onChange(of: controller?.display.unwrapPhase) { _, _ in refitVertical() }
-            .onChange(of: controller?.display.removeDelay) { _, _ in refitVertical(); updateDelays() }
-            .onChange(of: controller?.display.smoothing) { _, _ in refitVertical() }
-            .onChange(of: controller?.display.showGroupDelay) { _, _ in refitVertical() }
+            .onChange(of: options?.unwrapPhase) { _, _ in refitVertical() }
+            .onChange(of: options?.removeDelay) { _, _ in refitVertical(); updateDelays() }
+            .onChange(of: options?.smoothing) { _, _ in refitVertical() }
+            .onChange(of: options?.showGroupDelay) { _, _ in refitVertical() }
             .onChange(of: curves.map(\.name)) { _, _ in updateDelays() }
             .onChange(of: controller?.yScale) { _, new in
                 guard yScaleSwitchable, let new else { return }
