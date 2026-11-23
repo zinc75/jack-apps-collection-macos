@@ -509,6 +509,13 @@ public final class PlayerModel {
 
     /// The graph has changed, or the server has come or gone.
     private func serverChanged() {
+        // A connection made or removed by someone else is the routing from now on: the matrix shows what the graph has.
+        if let file, let adopted = manager.adoptedRouting() {
+            routing = adopted.resized(to: file.info.channels)
+            usesDefaultRouting = false
+            store.remember(routing, for: file.key)
+            manager.update(routing: routing)
+        }
         manager.graphChanged()
         standby?.manager.graphChanged()
         missingPorts = manager.missingPorts

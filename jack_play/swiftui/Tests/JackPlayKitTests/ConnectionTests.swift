@@ -138,11 +138,18 @@ final class ConnectionStoreTests: XCTestCase {
 @MainActor
 final class FakeLinking: JackLinking {
     var inputs: Set<String> = []
+    var outputs: Set<String> = []        // empty: the player says its ports exist before it is attached, not checked
     var links: Set<String> = []          // "output>input"
     var connectCalls = 0
     var refuse: Set<String> = []         // inputs that JACK refuses
 
-    func outputPorts() -> Set<String> { [] }   // the player says its ports exist before it is attached: not checked
+    func outputPorts() -> Set<String> { outputs }
+    func allLinks() -> Set<JackLink> {
+        Set(links.compactMap { pair in
+            guard let i = pair.firstIndex(of: ">") else { return nil }
+            return JackLink(output: String(pair[..<i]), input: String(pair[pair.index(after: i)...]))
+        })
+    }
     func inputPorts() -> Set<String> { inputs }
     func destinations(of output: String) -> Set<String> {
         Set(links.compactMap { $0.hasPrefix(output + ">") ? String($0.dropFirst(output.count + 1)) : nil })
@@ -235,6 +242,35 @@ final class ConnectionManagerTests: XCTestCase {
         XCTAssertEqual(fake.connectCalls, 0)
         manager.update(routing: ChannelRouting(channels: [[]]))
         XCTAssertTrue(fake.links.isEmpty, "the connection that was found is the manager's to remove")
+    }
+
+    func testAConnectionMadeElsewhereIsAdopted() {
+        let (manager, fake) = make(inputs: ["a:in", "b:in"])
+        fake.outputs = ["jack_play-4242:out_1", "jack_play-4242:out_2"]
+        manager.attach(client: client, routing: ChannelRouting(channels: [["a:in"], []]))
+        XCTAssertNil(manager.adoptedRouting())
+        // JackMate connects the second channel to b, and the first to b as well.
+        fake.links.insert("jack_play-4242:out_2>b:in")
+        fake.links.insert("jack_play-4242:out_1>b:in")
+        XCTAssertEqual(manager.adoptedRouting()?.channels, [["a:in", "b:in"], ["b:in"]])
+    }
+
+    func testAConnectionRemovedElsewhereIsNoLongerInTheRouting() {
+        let (manager, fake) = make(inputs: ["a:in", "b:in"])
+        fake.outputs = ["jack_play-4242:out_1"]
+        manager.attach(client: client, routing: ChannelRouting(channels: [["a:in", "b:in"]]))
+        fake.links.remove("jack_play-4242:out_1>a:in")
+        XCTAssertEqual(manager.adoptedRouting()?.channels, [["b:in"]])
+    }
+
+    func testADestinationThatIsNotThereKeepsItsPlaceWhenTheRoutingIsAdopted() {
+        let (manager, fake) = make(inputs: ["a:in"])
+        fake.outputs = ["jack_play-4242:out_1"]
+        manager.attach(client: client, routing: ChannelRouting(channels: [["a:in", "Carla:in1"]]))
+        // Nothing changed in the graph: Carla is not running, and the routing stays as it is.
+        XCTAssertNil(manager.adoptedRouting())
+        fake.links.remove("jack_play-4242:out_1>a:in")
+        XCTAssertEqual(manager.adoptedRouting()?.channels, [["Carla:in1"]])
     }
 
     func testNothingHappensAfterTheStop() {
