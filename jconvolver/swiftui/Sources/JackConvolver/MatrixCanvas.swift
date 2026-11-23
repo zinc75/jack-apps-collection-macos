@@ -131,7 +131,7 @@ struct MatrixCanvas: View {
         }
     }
 
-    /// Opens the detail window of an impulse response of the cell: one entry when there is one, a list when there are several.
+    /// Opens the page of an impulse response of the cell: one entry when there is one, a list when there are several.
     @ViewBuilder
     private var inspectItems: some View {
         let items = inspectable

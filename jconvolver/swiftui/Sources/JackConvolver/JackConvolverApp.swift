@@ -64,21 +64,10 @@ struct JackConvolverApp: App {
                 .environment(model)
                 .environment(appearance)
                 .appAccent(appearance)
-                .frame(minWidth: 1130, minHeight: 900)
+                .frame(minWidth: 1070, minHeight: 830)
         }
         .defaultSize(width: 1180, height: 940)
         .windowResizability(.contentMinSize)
-        // The detail of an impulse response: a window of its own, so that it has a toolbar.
-        Window("Détail de la RI", id: "impulse-detail") {
-            ImpulseDetailWindow()
-                .environment(model)
-                .environment(appearance)
-                .appAccent(appearance)
-                .frame(minWidth: 720, minHeight: 560)
-        }
-        .defaultSize(width: 1280, height: 780)
-        // The window of a response is opened from the matrix: it is not one that comes back with the application.
-        .restorationBehavior(.disabled)
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("Nouvelle configuration…") { model.showsNewConfiguration = true }.keyboardShortcut("n", modifiers: .command)
@@ -114,10 +103,11 @@ struct JackConvolverApp: App {
                 Button("Accueil") { model.page = .home }.keyboardShortcut("1", modifiers: .command)
                 Divider()
                 Button("Convolutions") { model.page = .matrix }.keyboardShortcut("2", modifiers: .command).disabled(!model.isOpen)
-                Button("Connexions") { model.page = .ports }.keyboardShortcut("3", modifiers: .command).disabled(!model.isOpen || model.mode == .file)
-                Button("Lancement") { model.page = .launch }.keyboardShortcut("4", modifiers: .command).disabled(!model.isOpen || model.mode == .file)
-                Button("Journal") { model.page = .log }.keyboardShortcut("5", modifiers: .command).disabled(!model.isOpen)
-                Button("Affichage") { model.page = .display }.keyboardShortcut("6", modifiers: .command)
+                Button("Réponse impulsionnelle") { model.page = .impulse }.keyboardShortcut("3", modifiers: .command).disabled(!model.isOpen || model.detail == nil)
+                Button("Connexions") { model.page = .ports }.keyboardShortcut("4", modifiers: .command).disabled(!model.isOpen || model.mode == .file)
+                Button("Lancement") { model.page = .launch }.keyboardShortcut("5", modifiers: .command).disabled(!model.isOpen || model.mode == .file)
+                Button("Journal") { model.page = .log }.keyboardShortcut("6", modifiers: .command).disabled(!model.isOpen)
+                Button("Affichage") { model.page = .display }.keyboardShortcut("7", modifiers: .command)
             }
             CommandGroup(replacing: .appSettings) {
                 Button("Réglages…") { model.page = .display }.keyboardShortcut(",", modifiers: .command)

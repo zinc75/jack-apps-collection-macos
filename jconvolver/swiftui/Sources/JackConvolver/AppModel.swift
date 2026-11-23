@@ -4,12 +4,13 @@ import AppKit
 import JackBridge
 import JConvolverKit
 import Observation
+import PlotKit
 import SoundFileKit
 import SwiftUI
 import UniformTypeIdentifiers
 
 enum Page: String, CaseIterable, Identifiable {
-    case home, matrix, ports, launch, log, display
+    case home, matrix, impulse, ports, launch, log, display
     var id: String { rawValue }
 }
 
@@ -134,10 +135,10 @@ final class AppModel {
     @ObservationIgnored var appliedLinks: Set<JackLink> = []
     var showsResize = false
     var showsGestures = false
-    /// The impulse response whose detail window is open.
-    var detail: DetailTarget? { didSet { if detail != nil { detailRequests += 1 } } }
-    /// Counts the requests to show the detail, so that asking again for the one that is shown brings its window to the front.
-    var detailRequests = 0
+    /// The impulse response that its page shows: choosing one (the inspect button of a row, of a cell, of the list) brings the page.
+    var detail: DetailTarget? { didSet { if detail != nil { page = .impulse } } }
+    /// The state of the plots of that page, which its tools in the toolbar of the window and its inspector share.
+    let plotController = PlotController()
 
     let controller = EngineController()
     let jack = JackStatus()
@@ -249,6 +250,7 @@ final class AppModel {
     }
 
     private func resetEditing() {
+        detail = nil
         history.clear()
         zoomIsManual = false
         setClipboard([])

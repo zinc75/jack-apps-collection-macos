@@ -3,7 +3,7 @@
 import Foundation
 
 /// The zone of a sound file that the engine reads: where it starts and where it ends, in frames, and what the configuration file says of it
-/// (an offset and a length). The detail window of an impulse response and its inspector share these rules.
+/// (an offset and a length). The page of an impulse response and its inspector share these rules.
 public enum ImpulseZone {
     /// The zone a start and an end make in a file of `total` frames: inside the file, and at least one frame long.
     public static func clamped(start: Int, end: Int, total: Int) -> (start: Int, end: Int) {

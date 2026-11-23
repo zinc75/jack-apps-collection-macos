@@ -5,7 +5,7 @@ import JConvolverKit
 import PlotKit
 import SwiftUI
 
-/// The page "Troncature" of the inspector of the detail window: where the engine starts reading the file and where it stops, in frames, to type
+/// The page "Troncature" of the inspector of the page of an impulse response: where the engine starts reading the file and where it stops, in frames, to type
 /// or to set from what the analysis found. It is the `offset` and the `length` of the impulse response in the .conf file, not a setting of the
 /// plot. The handles on the curve change the same two values.
 struct ZoneInspector: View {

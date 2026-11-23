@@ -7,7 +7,7 @@ import SoundFileKit
 import SwiftUI
 
 /// A sound file of the list, looked at without being placed: the waveform, the frequency response and the phase of its channels, in a popover
-/// that is not modal. It is the plot of the detail window without what edits the zone (no handles, no minimap, no inspector), whole file. A file
+/// that is not modal. It is the plot of the page of an impulse response without what edits the zone (no handles, no minimap, no inspector), whole file. A file
 /// with several channels shows them together, in a colour each, and the legend shows or hides them.
 struct FilePreview: View {
     @Environment(AppModel.self) private var model
@@ -28,7 +28,7 @@ struct FilePreview: View {
     @State private var time = PlotViewport.signal(count: 2)
     @State private var spectrum = PlotViewport.signal(count: 2)
     @State private var phase = PlotViewport.signal(count: 2)
-    /// How the phase is shown: unwrapped, without its delay, or as a group delay (the options of the inspector of the detail window).
+    /// How the phase is shown: unwrapped, without its delay, or as a group delay (the options of the inspector of the page of an impulse response).
     @State private var display = PlotDisplayOptions()
 
     private static let sidebarWidth: CGFloat = 250
@@ -100,7 +100,7 @@ struct FilePreview: View {
                     }
                 }
                 if datas.count > 1 {
-                    // The channels, as the inspector of the detail window lists them: show or hide, colour, alone, order.
+                    // The channels, as the inspector of the page of an impulse response lists them: show or hide, colour, alone, order.
                     PlotChannelList(series: series, labels: labels, inInspector: true).padding(.top, 10)
                 }
             }

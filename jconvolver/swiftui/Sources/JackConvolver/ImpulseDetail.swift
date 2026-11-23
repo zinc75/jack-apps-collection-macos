@@ -6,30 +6,34 @@ import PlotKit
 import SoundFileKit
 import SwiftUI
 
-/// Which impulse response the detail window shows: the one at this place of this pair.
+/// Which impulse response its page shows: the one at this place of this pair.
 struct DetailTarget: Identifiable, Equatable {
     let pair: ConvPair
     let index: Int
     var id: String { "\(pair.input)-\(pair.output)-\(index)" }
 }
 
-/// The detail of an impulse response that comes from a sound file, in a window of its own: the waveform with the part the engine
+/// The detail of an impulse response that comes from a sound file, in a page of the window: the waveform with the part the engine
 /// reads and what the analysis found (where the attack starts, where the useful tail ends), the frequency response and the phase or
 /// the group delay, drawn by PlotKit with the tools of its toolbar and an inspector for how the curves are shown.
-struct ImpulseDetailWindow: View {
+struct ImpulseDetailPage: View {
     @Environment(AppModel.self) private var model
     @Environment(\.appAccentColor) private var accent
     @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.dismissWindow) private var dismissWindow
 
     private enum Kind: String { case time, spectrum, phase }
     /// The width of the inspector: fixed, as in Keynote.
     private static let inspectorWidth: CGFloat = 280
-    /// From this width of the window the inspector keeps its room beside the plot; under it, it floats over the plot instead of squeezing it.
-    private static let dockedFrom: CGFloat = 900
-    /// Whether the window is wide enough for the docked inspector. It is read from the window, and has a margin of its own when it goes back,
-    /// so that the nudge of the toolbar (two points) cannot make it flip at the limit.
+    /// From this width of the page the inspector keeps its room beside the plot; under it, it floats over the plot instead of squeezing it.
+    private static let dockedFrom: CGFloat = 950
+    /// Whether the page is wide enough for the docked inspector. It has a margin of its own when it goes back,
+    /// so that it cannot flip at the limit.
     @State private var isWide = true
+    /// The size of the page, and where the plot area ends in it: a floating inspector stops there, so that the sliders of the zone and the minimap
+    /// under the plot stay within reach.
+    @State private var pageHeight: CGFloat = 0
+    @State private var plotBottom: CGFloat = 0
+    private static let pageSpace = "impulsePage"
 
     @State private var kind: Kind = .time
     @State private var data: CurveData?
@@ -40,7 +44,7 @@ struct ImpulseDetailWindow: View {
     @State private var info: SoundFileInfo?
     /// The zone the engine reads, in frames, as the handles show it: it follows the pointer, and the file when the drag ends.
     @State private var zone: ClosedRange<Double> = 0...1
-    @State private var controller = PlotController()
+    private var controller: PlotController { model.plotController }
     @State private var series = PlotSeriesSet(count: 1)
     @State private var time = PlotViewport.signal(count: 2)
     @State private var spectrum = PlotViewport.signal(count: 2)
@@ -121,25 +125,33 @@ struct ImpulseDetailWindow: View {
         Group {
             if let impulse, let resolved, let target = model.detail {
                 VStack(alignment: .leading, spacing: 10) {
-                    header(resolved, target)
-                    tabs(impulse)
-                    facts(impulse)
+                    // The part that the inspector shares the room of: the plot with what is under it. The figures below have the whole width, so
+                    // the panel, docked or floating, never takes room from them.
+                    VStack(alignment: .leading, spacing: 10) {
+                        header(resolved, target)
+                        tabs(impulse)
+                    }
+                    .padding([.top, .horizontal], 14)
+                    .coordinateSpace(name: Self.pageSpace)
+                    // The inspector is a panel of glass: beside the plot when the page has the room, over it when it has not.
+                    .plotOverlayInspector(isPresented: controller.showsInspector, docked: isWide, width: Self.inspectorWidth,
+                                          bottomInset: plotBottom > 0 ? pageHeight - plotBottom : 0) {
+                        PlotInspector(controller: controller, labels: .localized, accent: accent, extraTabs: [zoneTab])
+                    }
+                    // The width of the page decides whether the inspector keeps its room beside the plot or floats over it.
+                    .onGeometryChange(for: CGSize.self, of: { $0.size }) { size in
+                        // A page that is hidden has no size: it keeps what it had.
+                        guard size.width > 100, size.height > 100 else { return }
+                        pageHeight = size.height
+                        let width = size.width
+                        let wide = isWide ? width >= Self.dockedFrom - 24 : width >= Self.dockedFrom
+                        if wide != isWide { isWide = wide }
+                    }
+                    facts(impulse).padding([.horizontal, .bottom], 14)
                 }
-                .padding(14)
             } else {
                 Text("Cette RI n'existe plus.").foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-        }
-        // The inspector is a panel of glass: beside the plot when the window has the room, over it when it has not.
-        .plotOverlayInspector(isPresented: controller.showsInspector, docked: isWide, width: Self.inspectorWidth) {
-            PlotInspector(controller: controller, labels: .localized, accent: accent, extraTabs: [zoneTab])
-        }
-        .navigationTitle(String(localized: "Détail de la RI"))
-        .navigationSubtitle(resolved.map { ($0.path as NSString).lastPathComponent } ?? "")
-        .toolbar { PlotToolbarContent(controller: controller, labels: .localized, accent: accent, includesInspectorControls: true) }
-        .plotWindowWidth { width in
-            let wide = isWide ? width >= Self.dockedFrom - 24 : width >= Self.dockedFrom
-            if wide != isWide { isWide = wide }
         }
         .task(id: loadKey) { await load() }
         .task(id: ResponseKey(load: loadKey, used: draftUsed)) { await computeResponse() }
@@ -148,8 +160,6 @@ struct ImpulseDetailWindow: View {
         .onChange(of: used) { _, _ in zone = zoneOfImpulse }
         .onChange(of: data?.count) { _, _ in zone = zoneOfImpulse }
         .onAppear {
-            // A window with nothing to show (the system brought it back) closes at once.
-            if model.detail == nil { dismissWindow(id: "impulse-detail"); return }
             controller.hasInspector = true
             controller.series = series
             #if DEBUG
@@ -210,6 +220,7 @@ struct ImpulseDetailWindow: View {
                 VStack(spacing: 8) {
                     SignalPlot(signal: pyramid, viewport: $time, sampleRate: data.sampleRate, amplitude: yScales[.time] ?? .linear, accent: accent,
                                labels: .localized, controller: controller, annotations: annotations, region: regionEditor(total: data.count))
+                        .trackPlotBottom(below: PlotLayout.bottom + PlotLayout.regionRail, in: Self.pageSpace) { plotBottom = $0 }
                     PlotOverview(signal: pyramid, viewport: $time, region: zone, regionColor: colorScheme == .dark ? Self.zoneColor : Self.zoneColorLight, accent: accent)
                 }
             case .spectrum:
@@ -217,6 +228,7 @@ struct ImpulseDetailWindow: View {
                     VStack(spacing: 8) {
                         CurvePlot(curves: magnitudeCurves, viewport: $spectrum, xUnit: "Hz", yScale: yScales[.spectrum] ?? .decibels(floor: -120),
                                   accent: accent, labels: .localized, controller: controller)
+                            .trackPlotBottom(below: PlotLayout.bottom, in: Self.pageSpace) { plotBottom = $0 }
                         // The zone the spectrum is computed on: it changes with the ends, and the spectrum follows.
                         PlotZoneBar(signal: pyramid, zone: regionEditor(total: data.count), accent: accent)
                     }
@@ -226,6 +238,7 @@ struct ImpulseDetailWindow: View {
                     VStack(spacing: 8) {
                         CurvePlot(curves: phaseCurves, viewport: $phase, xUnit: "Hz", yUnit: "°", accent: accent, labels: .localized,
                                   controller: controller, yScaleSwitchable: false)
+                            .trackPlotBottom(below: PlotLayout.bottom, in: Self.pageSpace) { plotBottom = $0 }
                         PlotZoneBar(signal: pyramid, zone: regionEditor(total: data.count), accent: accent)
                     }
                 } else { ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity) }
@@ -301,13 +314,6 @@ struct ImpulseDetailWindow: View {
                 }
             }
             .fixedSize(horizontal: true, vertical: false)
-            Grid(alignment: .leading, horizontalSpacing: 18, verticalSpacing: 4) {
-                if let analysis {
-                    row("Silence au début", time(analysis.leadingFrames))
-                    row("Silence à la fin", time(analysis.trailingFrames))
-                }
-            }
-            .fixedSize(horizontal: true, vertical: false)
         }
         return ViewThatFits(in: .horizontal) {
             HStack(alignment: .top, spacing: 28) { columns; Spacer(minLength: 0) }
@@ -371,5 +377,12 @@ struct ImpulseDetailWindow: View {
         // The vertical axis fits what is drawn: the group delay, in milliseconds, when that is what the inspector asks for.
         let drawn = controller.display.showGroupDelay ? phaseCurves.map { $0.groupDelay() } : phaseCurves
         phase = PlotViewport.curves(drawn, xScale: scale, visibleX: scale == .logarithmic ? 20...20_000 : nil)
+    }
+}
+
+private extension View {
+    /// Reports where the plot area of a plot ends, in a named coordinate space: the bottom of the view less what is under the plot area.
+    func trackPlotBottom(below: CGFloat, in space: String, _ report: @escaping (CGFloat) -> Void) -> some View {
+        onGeometryChange(for: CGFloat.self, of: { $0.frame(in: .named(space)).maxY - below }) { report($0) }
     }
 }
