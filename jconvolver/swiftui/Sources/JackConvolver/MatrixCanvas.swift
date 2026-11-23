@@ -164,21 +164,21 @@ struct MatrixCanvas: View {
     @ViewBuilder
     private var contextMenu: some View {
         Button("Copier") { model.copySelection() }.disabled(!model.canCopy)
-        Button("Couper") { model.cutSelection() }.disabled(!model.canCopy)
-        Button("Coller") { model.paste() }.disabled(model.clipboard.isEmpty)
-        Button("Vider", role: .destructive) { model.clearSelection() }.disabled(!model.canCopy)
+        Button("Couper") { model.cutSelection() }.disabled(!model.canCopy || model.isLocked)
+        Button("Coller") { model.paste() }.disabled(model.clipboard.isEmpty || model.isLocked)
+        Button("Vider", role: .destructive) { model.clearSelection() }.disabled(!model.canCopy || model.isLocked)
         inspectItems
         Divider()
         if model.placesOnAllChosenCells {
             Button("Placer sur toutes les cases choisies") { model.placePicked(mode: .row) }
-                .disabled(!model.canPlaceOnChosenCells)
+                .disabled(!model.canPlaceOnChosenCells || model.isLocked)
         } else {
             Menu("Placer ici ce qui est choisi dans la liste") {
                 Button("En ligne") { model.placePicked(mode: .row) }
                 Button("En colonne") { model.placePicked(mode: .column) }
                 Button("En diagonale") { model.placePicked(mode: .diagonal) }
             }
-            .disabled(model.picked.isEmpty)
+            .disabled(model.picked.isEmpty || model.isLocked)
         }
         Divider()
         Button("Sélectionner toute la ligne") {

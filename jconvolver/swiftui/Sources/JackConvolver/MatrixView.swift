@@ -29,6 +29,7 @@ struct MatrixView: View {
                             .font(.callout).foregroundStyle(.secondary)
                     }
                 }
+                LockBanner()
                 if model.viewMode == .table {
                     ImpulseTable().frame(minHeight: 300)
                 } else {
@@ -96,14 +97,16 @@ struct MatrixToolbar: ToolbarContent {
         }
         ToolbarItemGroup(placement: .primaryAction) {
             Button { model.showsResize = true } label: { Label("Entrées et sorties…", systemImage: "arrow.up.left.and.arrow.down.right") }
+                .disabled(model.isLocked)
                 .help("Changer le nombre d'entrées et de sorties")
             if model.mode == .realTime {
                 Button { model.showsPortNames = true } label: { Label("Noms des ports JACK…", systemImage: "pencil") }
+                    .disabled(model.isLocked)
                     .help("Noms des ports JACK")
             }
             // Not asked for confirmation: it can be undone.
             Button { model.clearAll() } label: { Label("Tout vider", systemImage: "trash") }
-                .disabled((model.document?.placedPairs ?? 0) == 0)
+                .disabled((model.document?.placedPairs ?? 0) == 0 || model.isLocked)
                 .help("Retirer toutes les réponses impulsionnelles de la matrice (annulable)")
         }
         ToolbarItem(placement: .primaryAction) {

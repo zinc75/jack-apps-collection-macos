@@ -29,7 +29,7 @@ struct ImpulseTable: View {
     var body: some View {
         let rows = entries
         VStack(spacing: 0) {
-            BulkRow()
+            BulkRow().disabled(model.isLocked)
             Divider()
             header
             Divider()

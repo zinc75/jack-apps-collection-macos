@@ -35,10 +35,17 @@ struct ConfigFileSheet: View {
             }
             .pickerStyle(.segmented).labelsHidden().fixedSize().accentTint()
             ScrollView {
-                switch tab {
-                case .header: HeaderTab()
-                case .ports: PortsTab()
-                case .text: TextTab()
+                VStack(alignment: .leading, spacing: 12) {
+                    LockBanner()
+                    // The engine read the file once: while it runs, it is only looked at.
+                    Group {
+                        switch tab {
+                        case .header: HeaderTab()
+                        case .ports: PortsTab()
+                        case .text: TextTab()
+                        }
+                    }
+                    .disabled(model.isLocked)
                 }
             }
             HStack {

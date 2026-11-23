@@ -16,7 +16,7 @@ struct ConnectionsView: View {
     private static let nameWidth: CGFloat = 230, cellWidth: CGFloat = 44
 
     var body: some View {
-        if model.document == nil {
+        if model.wiringSource == nil {
             SettingsPage {
                 Text("Connexions").font(.title2).fontWeight(.semibold)
                 Text("Aucune configuration ouverte.").foregroundStyle(.secondary)
@@ -34,6 +34,15 @@ struct ConnectionsView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Connexions").font(.title2).fontWeight(.semibold)
                 Text("Chaque voie de jconvolver se relie à des ports d'autres applications.").font(.callout).foregroundStyle(.secondary)
+            }
+            if model.isLocked, model.mode == .realTime {
+                // The only thing that is changed while the engine runs: made in JACK at once, the file is not touched.
+                Label("Moteur en marche : les branchements s'appliquent tout de suite à JACK, sans modifier le fichier de configuration. À l'arrêt, vous pourrez les y reporter.",
+                      systemImage: "arrow.left.arrow.right")
+                    .font(.callout).foregroundStyle(.secondary)
+                    .padding(.horizontal, 12).padding(.vertical, 7)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
             }
             // The two ways are two tabs laid out as the system does (the tabs centred over a box), but drawn here: the tab view of
             // macOS keeps the accent of the system and ignores the one of the application.
@@ -79,14 +88,14 @@ struct ConnectionsView: View {
 
     // MARK: The matrix
 
-    private var channels: [Int] { Array(0..<((side == .input ? model.document?.inputCount : model.document?.outputCount) ?? 0)) }
+    private var channels: [Int] { Array(0..<((side == .input ? model.wiringSource?.inputCount : model.wiringSource?.outputCount) ?? 0)) }
 
     private var clients: [JackPortClient] { side == .input ? model.jack.sources : model.jack.destinations }
 
     /// Ports the file connects to that are not in the graph (the other application is not running, or JACK is not).
     private var absentPorts: [String] {
         let known = Set(clients.flatMap { c in c.ports.map { c.fullName(of: $0) } })
-        let named = channels.flatMap { model.document?.connections(side, $0) ?? [] }
+        let named = channels.flatMap { model.wiringSource?.connections(side, $0) ?? [] }
         return Array(Set(named).subtracting(known)).sorted()
     }
 
@@ -120,9 +129,9 @@ struct ConnectionsView: View {
             Text(side == .input ? "Ports JACK de source" : "Ports JACK de destination").font(.callout).foregroundStyle(.secondary)
                 .padding(.leading, 14).frame(width: Self.nameWidth, alignment: .leading)
             ForEach(channels, id: \.self) { index in
-                let name = model.document?.portName(side, index) ?? ""
+                let name = model.wiringSource?.portName(side, index) ?? ""
                 VStack(spacing: 2) {
-                    ChannelNumber(number: index + 1, warns: model.document?.connections(side, index).isEmpty ?? true)
+                    ChannelNumber(number: index + 1, warns: model.wiringSource?.connections(side, index).isEmpty ?? true)
                     Text(verbatim: name).font(.system(size: 9.5)).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle).help(name)
                 }
                 .frame(width: Self.cellWidth)
@@ -184,7 +193,7 @@ struct ConnectionsView: View {
                 Text(verbatim: name).font(.system(size: 12.5)).lineLimit(1).truncationMode(.middle)
                     .padding(.leading, 30).frame(width: Self.nameWidth, alignment: .leading)
                 ForEach(channels, id: \.self) { index in
-                    WireLED(isOn: model.document?.connections(side, index).contains(full) ?? false) {
+                    WireLED(isOn: model.wiringSource?.connections(side, index).contains(full) ?? false) {
                         model.toggleWire(side, channel: index, port: full)
                     }
                 }
@@ -212,8 +221,8 @@ struct ConnectionsView: View {
         } else {
             base = loose.count == 1 ? Text("Voie \(list) : aucune destination branchée.") : Text("Voies \(list) : aucune destination branchée.")
         }
-        let summed = side == .output && !(model.document?.summedDestinations.isEmpty ?? true)
-        let mixed = side == .input ? (model.document?.mixedInputs ?? []).map { $0 + 1 } : []
+        let summed = side == .output && !(model.wiringSource?.summedDestinations.isEmpty ?? true)
+        let mixed = side == .input ? (model.wiringSource?.mixedInputs ?? []).map { $0 + 1 } : []
         var text = base + (summed ? Text(" ") + Text("Un port qui reçoit plusieurs sorties les additionne.") : Text(verbatim: ""))
         if !mixed.isEmpty {
             let list = mixed.map(String.init).joined(separator: ", ")

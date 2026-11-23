@@ -127,6 +127,13 @@ struct ContentView: View {
         }
         #endif
         .onChange(of: model.jack.sampleRate) { _, _ in model.refreshProblems() }
+        .onChange(of: model.controller.isRunning) { _, _ in model.engineRunningChanged() }
+        .alert("Reporter les branchements dans le fichier de configuration ?", isPresented: $model.showsApplyWiring) {
+            Button("Appliquer") { model.applyPendingWiring() }
+            Button("Ne pas appliquer", role: .cancel) { model.discardPendingWiring() }
+        } message: {
+            Text("Les branchements faits pendant que le moteur tournait ne sont pas ceux du fichier de configuration utilisé.")
+        }
         .navigationTitle(windowTitle)
         .navigationSubtitle("Jack Apps Collection for macOS")
         .toolbar {

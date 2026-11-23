@@ -164,6 +164,7 @@ extension AppModel {
 
     /// Starts to drag what is chosen in the list (the row dragged joins the choice when it is not in it).
     func beginItemDrag(_ items: [Placeable]) {
+        guard !isLocked else { return }
         if !items.allSatisfy({ picked.contains($0) }) { picked = Set(items) }
         draggedItems = orderedPicks()
     }

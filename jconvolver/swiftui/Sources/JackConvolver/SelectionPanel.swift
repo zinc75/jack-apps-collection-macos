@@ -38,7 +38,7 @@ struct SelectionPanel: View {
                 AdaptiveText(long: list.isEmpty ? String(localized: "aucune réponse impulsionnelle") : list.count == 1 ? String(localized: "1 réponse impulsionnelle") : String(localized: "\(list.count) réponses impulsionnelles"),
                              short: list.isEmpty ? String(localized: "aucune RI") : String(localized: "\(list.count) RI"))
                     .foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
-                if !list.isEmpty { Button("Vider", role: .destructive) { model.clearSelection() } }
+                if !list.isEmpty { Button("Vider", role: .destructive) { model.clearSelection() }.disabled(model.isLocked) }
             }
             if model.document?.placedPairs == 0 {
                 Text("Aucune réponse impulsionnelle pour l'instant. Glissez des fichiers de la liste sur les cases.").foregroundStyle(.secondary)
@@ -136,7 +136,7 @@ struct ImpulseRowFields: View {
                 .buttonStyle(GlyphButtonStyle()).opacity(isFile ? 1 : 0.25).disabled(!isFile)
                 .help("Inspecter la réponse impulsionnelle : forme d'onde, spectre et analyse")
             Button { model.edit(String(localized: "RI retirée")) { $0.remove(at: index, of: pair) } } label: { Image(systemName: "xmark.circle.fill") }
-                .buttonStyle(.plain).foregroundStyle(.secondary).frame(width: 22).help("Vider cette réponse impulsionnelle")
+                .buttonStyle(.plain).foregroundStyle(.secondary).frame(width: 22).disabled(model.isLocked).help("Vider cette réponse impulsionnelle")
         }
         .padding(.vertical, 3)
     }
@@ -182,13 +182,14 @@ struct ValueField: View {
     let text: String
     var enabled = true
     let commit: (String) -> Bool
+    @Environment(AppModel.self) private var model
     @State private var edited = ""
     @FocusState private var focused: Bool
 
     var body: some View {
         TextField("", text: $edited)
             .labelsHidden().textFieldStyle(.roundedBorder).multilineTextAlignment(.trailing).monospacedDigit()
-            .frame(width: 70).focused($focused).disabled(!enabled).opacity(enabled ? 1 : 0.35)
+            .frame(width: 70).focused($focused).disabled(!enabled || model.isLocked).opacity(enabled && !model.isLocked ? 1 : 0.35)
             .onAppear { edited = text }
             .onChange(of: text) { _, new in edited = new }
             .onSubmit { validate() }

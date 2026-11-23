@@ -122,6 +122,7 @@ struct ImpulseDetailPage: View {
 
     /// Sets the zone of the impulse response from the handles (one change in the history of the matrix).
     private func commitZone(_ z: ClosedRange<Double>? = nil) {
+        guard !model.isLocked else { self.zone = zoneOfImpulse; return }
         guard let target = model.detail, let impulse, let total = data?.count, total > 1 else { return }
         let zone = z ?? self.zone
         let start = max(0, Int(zone.lowerBound.rounded())), end = Int(zone.upperBound.rounded())
@@ -309,8 +310,8 @@ struct ImpulseDetailPage: View {
                     // With the zone, the gain and the delay applied, the zone is not drawn on the file: no handles, no markers of the file.
                     SignalPlot(traces: timeTraces, viewport: $time, sampleRate: data.sampleRate, amplitude: yScales[.time] ?? .linear, accent: accent,
                                labels: .localized, controller: controller, annotations: engineView ? PlotAnnotations() : annotations,
-                               region: engineView ? nil : regionEditor(total: data.count))
-                        .trackPlotBottom(below: PlotLayout.bottom + (engineView ? 0 : PlotLayout.regionRail), in: Self.pageSpace) { plotBottom = $0 }
+                               region: showsHandles ? regionEditor(total: data.count) : nil)
+                        .trackPlotBottom(below: PlotLayout.bottom + (showsHandles ? PlotLayout.regionRail : 0), in: Self.pageSpace) { plotBottom = $0 }
                     PlotOverview(signal: engineView ? (editedEngine?.pyramid ?? pyramid) : pyramid, viewport: $time, region: engineView ? nil : zone,
                                  regionColor: colorScheme == .dark ? Self.zoneColor : Self.zoneColorLight, accent: editedColor)
                 }
@@ -321,7 +322,7 @@ struct ImpulseDetailPage: View {
                                   accent: accent, labels: .localized, controller: controller)
                             .trackPlotBottom(below: PlotLayout.bottom, in: Self.pageSpace) { plotBottom = $0 }
                         // The zone the spectrum is computed on: it changes with the ends, and the spectrum follows.
-                        if !engineView { PlotZoneBar(signal: pyramid, zone: regionEditor(total: data.count), accent: editedColor) }
+                        if showsHandles { PlotZoneBar(signal: pyramid, zone: regionEditor(total: data.count), accent: editedColor) }
                     }
                 } else { ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity) }
             case .phase:
@@ -330,12 +331,15 @@ struct ImpulseDetailPage: View {
                         CurvePlot(curves: phaseCurves, viewport: $phase, xUnit: "Hz", yUnit: "°", accent: accent, labels: .localized,
                                   controller: controller, yScaleSwitchable: false)
                             .trackPlotBottom(below: PlotLayout.bottom, in: Self.pageSpace) { plotBottom = $0 }
-                        if !engineView { PlotZoneBar(signal: pyramid, zone: regionEditor(total: data.count), accent: editedColor) }
+                        if showsHandles { PlotZoneBar(signal: pyramid, zone: regionEditor(total: data.count), accent: editedColor) }
                     }
                 } else { ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity) }
             }
         }
     }
+
+    /// The handles of the zone, its bar and its rail: only to change it, so not with the zone applied to the traces, nor while the engine runs.
+    private var showsHandles: Bool { !engineView && !model.isLocked }
 
     /// The attack and the end of the tail are marked (the zone the engine reads has its own handles).
     private var annotations: PlotAnnotations {
@@ -367,8 +371,12 @@ struct ImpulseDetailPage: View {
     /// The page "Zone" of the inspector.
     private var zoneTab: PlotInspectorTab {
         PlotInspectorTab(id: "zone", title: String(localized: "Troncature")) {
-            ZoneInspector(zone: zone, total: data?.count ?? 0, sampleRate: data?.sampleRate ?? 0,
-                          attack: analysis?.attackFrame, tail: analysis?.tailFrame, apply: { applyZone(start: $0, end: $1) })
+            VStack(alignment: .leading, spacing: 8) {
+                LockBanner().padding(.top, 8)
+                ZoneInspector(zone: zone, total: data?.count ?? 0, sampleRate: data?.sampleRate ?? 0,
+                              attack: analysis?.attackFrame, tail: analysis?.tailFrame, apply: { applyZone(start: $0, end: $1) })
+                    .disabled(model.isLocked)
+            }
         }
     }
 

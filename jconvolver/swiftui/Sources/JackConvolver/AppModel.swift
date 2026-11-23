@@ -138,6 +138,14 @@ final class AppModel {
     /// The connections made to the running program, as the configuration says: what the page of the connections changes is
     /// made at once, and these are what to take away when a connection is removed.
     @ObservationIgnored var appliedLinks: Set<JackLink> = []
+    /// While the engine runs, the configuration is only looked at: nothing of it can be changed (the engine read it once, at its start).
+    var isLocked: Bool { controller.isRunning }
+    /// The connections as they are while the engine runs in real time: they are made in JACK at once and do not change the configuration.
+    /// A copy of the configuration that only the page of the connections reads and changes.
+    var liveWiring: ConvDocument?
+    /// What the connections were when the engine stopped, if they differ from the file: the person is asked whether to write them there.
+    var pendingWiring: ConvDocument?
+    var showsApplyWiring = false
     var showsResize = false
     var showsGestures = false
     /// The impulse responses drawn on the page of the analysis, in the order they were added, and the one of them that is edited (its zone, its
@@ -215,6 +223,7 @@ final class AppModel {
     }
 
     func open(_ url: URL) {
+        guard !isLocked else { message = String(localized: "Arrêtez le moteur avant d'ouvrir une autre configuration."); return }
         guard let data = try? Data(contentsOf: url) else {
             message = String(localized: "Le fichier « \(url.lastPathComponent) » ne peut pas être lu.")
             return
@@ -236,6 +245,7 @@ final class AppModel {
     }
 
     func newConfiguration(inputs: Int, outputs: Int) {
+        guard !isLocked else { message = String(localized: "Arrêtez le moteur avant de créer une autre configuration."); return }
         document = ConvDocument(inputs: inputs, outputs: outputs)
         fileURL = nil
         resetEditing()
@@ -245,7 +255,7 @@ final class AppModel {
 
     /// Changes the matrix, and keeps the change in the history. Everything that depends on it is worked out again.
     func edit(_ label: String, _ change: (inout ConvDocument) -> Void) {
-        guard var d = document else { return }
+        guard !isLocked, var d = document else { return }
         let before = d
         change(&d)
         guard d != before else { return }
@@ -276,17 +286,17 @@ final class AppModel {
         loadBin()
     }
 
-    var canUndo: Bool { history.canUndo }
-    var canRedo: Bool { history.canRedo }
+    var canUndo: Bool { !isLocked && history.canUndo }
+    var canRedo: Bool { !isLocked && history.canRedo }
 
     func undo() {
-        guard let document, let step = history.undo(current: document) else { return }
+        guard !isLocked, let document, let step = history.undo(current: document) else { return }
         self.document = step.document
         documentChanged()
     }
 
     func redo() {
-        guard let document, let step = history.redo(current: document) else { return }
+        guard !isLocked, let document, let step = history.redo(current: document) else { return }
         self.document = step.document
         documentChanged()
     }
@@ -411,6 +421,7 @@ final class AppModel {
             controller.acknowledgeEnd()
             runCount += 1
             try controller.start(command, executable: executable)
+            liveWiring = mode == .realTime ? document : nil
             appliedLinks = mode == .realTime ? wantedLinks : []
         } catch {
             message = String(localized: "Le moteur ne peut pas démarrer : \(error.localizedDescription)")

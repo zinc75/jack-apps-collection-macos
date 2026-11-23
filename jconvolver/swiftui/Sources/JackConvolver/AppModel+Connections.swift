@@ -13,9 +13,12 @@ extension AppModel {
         "\(ownClientName):\(document?.portName(side, index) ?? "")"
     }
 
-    /// The connections the configuration asks for: the ports that each channel has in the file.
+    /// What the page of the connections shows and changes: the connections as they are in JACK while the engine runs, else those of the file.
+    var wiringSource: ConvDocument? { liveWiring ?? document }
+
+    /// The connections the configuration asks for: the ports that each channel has in the file (while the engine runs, those that were made since).
     var wantedLinks: Set<JackLink> {
-        guard let document else { return [] }
+        guard let document = wiringSource else { return [] }
         var links = Set<JackLink>()
         for i in 0..<document.inputCount { for c in document.connections(.input, i) { links.insert(JackLink(output: c, input: ownPort(.input, i))) } }
         for o in 0..<document.outputCount { for c in document.connections(.output, o) { links.insert(JackLink(output: ownPort(.output, o), input: c)) } }
@@ -24,17 +27,56 @@ extension AppModel {
 
     /// What a click on a crossing of the matrix does: the channel goes to this port, or leaves it.
     func toggleWire(_ side: PortSide, channel: Int, port: String) {
-        edit(String(localized: "branchement")) { $0.toggleConnection(port, side, channel) }
+        changeWiring(String(localized: "branchement")) { $0.toggleConnection(port, side, channel) }
     }
 
     func clearWires(_ side: PortSide) {
-        edit(String(localized: "effacement des branchements")) { $0.clearConnections(side) }
+        changeWiring(String(localized: "effacement des branchements")) { $0.clearConnections(side) }
     }
 
     func wireToSoundCard(_ side: PortSide) {
         let ports = side == .input ? jack.capturePorts : jack.playbackPorts
-        edit(String(localized: "retour à la carte son")) { $0.connectToSoundCard(side, ports: ports) }
+        changeWiring(String(localized: "retour à la carte son")) { $0.connectToSoundCard(side, ports: ports) }
     }
+
+    /// A change of the connections. While the engine runs in real time it is an action in JACK only (made at once): the file is not touched, and
+    /// when the engine stops the person is asked whether to write what was made. Otherwise it is an edit of the configuration, as any.
+    private func changeWiring(_ label: String, _ change: (inout ConvDocument) -> Void) {
+        if isLocked, mode == .realTime, var live = liveWiring {
+            change(&live)
+            guard live != liveWiring else { return }
+            liveWiring = live
+            syncConnections()
+        } else {
+            edit(label, change)
+        }
+    }
+
+    /// The engine started or stopped. When it stops, the connections made meanwhile are offered to the file if they are not those it had.
+    func engineRunningChanged() {
+        guard !controller.isRunning, let live = liveWiring else { return }
+        liveWiring = nil
+        guard let document, mode == .realTime else { return }
+        func wiring(_ d: ConvDocument) -> [[Set<String>]] {
+            [(0..<d.inputCount).map { Set(d.connections(.input, $0)) }, (0..<d.outputCount).map { Set(d.connections(.output, $0)) }]
+        }
+        if wiring(live) != wiring(document) {
+            pendingWiring = live
+            showsApplyWiring = true
+        }
+    }
+
+    /// Writes the connections made while the engine ran into the configuration (one step of the history).
+    func applyPendingWiring() {
+        guard let live = pendingWiring else { return }
+        pendingWiring = nil
+        edit(String(localized: "branchements faits pendant l'exécution")) { d in
+            for i in 0..<min(d.inputCount, live.inputCount) { d.setConnections(live.connections(.input, i), .input, i) }
+            for o in 0..<min(d.outputCount, live.outputCount) { d.setConnections(live.connections(.output, o), .output, o) }
+        }
+    }
+
+    func discardPendingWiring() { pendingWiring = nil }
 
     /// While the program runs, a change of a connection is made at once (and the same on undo): the connections that are no
     /// longer wanted are taken away, the new ones are made.

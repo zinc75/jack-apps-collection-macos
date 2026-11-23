@@ -150,6 +150,7 @@ struct LaunchView: View {
             Text("Options de lancement").font(.title2).fontWeight(.semibold)
             Text("Passées à jconvolver au démarrage. Elles sont mémorisées avec cette configuration, pas dans le fichier de configuration.")
                 .foregroundStyle(.secondary)
+            LockBanner()
             SettingsGroup("Calcul") {
                 OptionRow("Mode vectoriel", "Calcul vectoriel de quatre fréquences à la fois.", info: "Traite quatre fréquences à la fois avec des instructions vectorielles.") {
                     Toggle("-V", isOn: $model.options.vectorMode).toggleStyle(.switch).labelsHidden().accentTint()
@@ -180,6 +181,7 @@ struct LaunchView: View {
             Button("Rétablir les valeurs par défaut") { model.options = EngineCommand.Options(); model.refreshProblems() }
                 .disabled(running)
         }
+        .disabled(running)
         .onChange(of: model.options.latencyCompensation) { _, _ in model.refreshProblems() }
     }
 }
