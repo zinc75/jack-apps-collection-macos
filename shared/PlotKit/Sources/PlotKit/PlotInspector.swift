@@ -237,27 +237,55 @@ public struct PlotInspector: View {
         .tint(accent)
     }
 
-    /// The tabs, in a rounded container; the page that is open has the accent.
-    private func strip(_ all: [PlotInspectorTab]) -> some View {
+    /// The tabs: on macOS 26 a cell of Liquid Glass each, the one that is open with the accent shining through the glass (a tint of the glass
+    /// would read grey); before, a rounded container with the open tab filled with the accent.
+    @ViewBuilder private func strip(_ all: [PlotInspectorTab]) -> some View {
         let current = selected?.id
-        return HStack(spacing: 2) {
-            ForEach(all) { tab in
-                Button { controller.inspectorTab = tab.id } label: {
-                    Text(tab.title)
-                        .font(.system(size: 11.5, weight: .medium))
-                        .lineLimit(1).minimumScaleFactor(0.8)
-                        .frame(maxWidth: .infinity, minHeight: 24)
-                        .foregroundStyle(tab.id == current ? Color.white : Color.primary.opacity(0.75))
-                        .background(tab.id == current ? accent : Color.clear, in: RoundedRectangle(cornerRadius: 6))
-                        .contentShape(Rectangle())
+        if #available(macOS 26.0, *) {
+            GlassEffectContainer(spacing: 6) {
+                HStack(spacing: 6) {
+                    ForEach(all) { tab in
+                        let isOpen = tab.id == current
+                        Button { controller.inspectorTab = tab.id } label: {
+                            Text(tab.title)
+                                .font(.system(size: 11.5, weight: .semibold))
+                                .lineLimit(1).minimumScaleFactor(0.8)
+                                .frame(maxWidth: .infinity, minHeight: 26)
+                                .foregroundStyle(isOpen ? Color.white : Color.primary.opacity(0.8))
+                                .background {
+                                    if isOpen {
+                                        Capsule().fill(LinearGradient(colors: [accent.opacity(0.6), accent.opacity(0.85)], startPoint: .top, endPoint: .bottom))
+                                    }
+                                }
+                                .glassEffect(.regular.interactive(), in: Capsule())
+                                .contentShape(Capsule())
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
-                .buttonStyle(.plain)
             }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 12)
+        } else {
+            HStack(spacing: 2) {
+                ForEach(all) { tab in
+                    Button { controller.inspectorTab = tab.id } label: {
+                        Text(tab.title)
+                            .font(.system(size: 11.5, weight: .medium))
+                            .lineLimit(1).minimumScaleFactor(0.8)
+                            .frame(maxWidth: .infinity, minHeight: 24)
+                            .foregroundStyle(tab.id == current ? Color.white : Color.primary.opacity(0.75))
+                            .background(tab.id == current ? accent : Color.clear, in: RoundedRectangle(cornerRadius: 6))
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(3)
+            .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 9))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 12)
         }
-        .padding(3)
-        .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 9))
-        .padding(.horizontal, 12)
-        .padding(.vertical, 12)
     }
 
     @ViewBuilder private var display: some View {
