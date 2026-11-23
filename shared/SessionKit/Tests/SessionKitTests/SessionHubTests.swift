@@ -42,6 +42,25 @@ final class SessionHubTests: XCTestCase {
         return hub
     }
 
+    func testASessionThatLeavesByAnyWayIsSaidOnce() async {
+        let hub = makeHub()
+        var left: [FakeSession] = []
+        hub.onRemove = { left.append($0) }
+        // Made for a window that never comes: dropped from the list after a while, which must let go of what it holds.
+        let stale = hub.makeSession()
+        hub.presenceChanged()
+        XCTAssertTrue(left.isEmpty, "it is given time to get a window")
+        let shown = hub.makeSession()
+        hub.attach(window(), to: shown)
+        hub.discard(shown)
+        XCTAssertEqual(left.count, 1)
+        XCTAssertTrue(left[0] === shown)
+        hub.remove(shown)
+        XCTAssertEqual(left.count, 1, "a session that is not there any more is not said again")
+        hub.remove(stale)
+        XCTAssertEqual(left.count, 2)
+    }
+
     func testAWindowThatWasJustFoundIsNotOneThatWasHidden() async {
         let hub = makeHub()
         hub.settlingTime = 0.2

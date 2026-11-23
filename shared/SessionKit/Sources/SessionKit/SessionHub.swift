@@ -102,10 +102,16 @@ public final class SessionHub<S: HostedSession> {
     /// The sessions that a window has shown: one that is only being opened, or was made for nothing, is not one to list.
     public var shownSessions: [S] { sessions.filter { states[$0.id]?.shownOnce == true } }
 
+    /// Said when a session leaves the hub, whatever the way (its window closed, a session dropped from the list, one made for a window that never came): the
+    /// tool lets go of what the session held (a number, a file). Said once for a session; what it does must be harmless for one that was already stopped.
+    @ObservationIgnored public var onRemove: ((S) -> Void)?
+
     /// Takes a session away (its window is not asked about).
     public func remove(_ session: S) {
+        guard sessions.contains(where: { $0 === session }) else { states[session.id] = nil; return }
         sessions.removeAll { $0 === session }
         states[session.id] = nil
+        onRemove?(session)
     }
 
     // MARK: Windows
