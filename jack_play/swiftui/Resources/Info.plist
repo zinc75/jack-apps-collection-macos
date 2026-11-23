@@ -23,10 +23,8 @@
 			<key>CFBundleTypeName</key><string>Audio file</string>
 			<key>CFBundleTypeRole</key><string>Viewer</string>
 			<key>LSHandlerRank</key><string>Alternate</string>
-			<key>LSItemContentTypes</key>
-			<array><string>public.audio</string></array>
 			<key>CFBundleTypeExtensions</key>
-			<array><string>wav</string><string>wave</string><string>w64</string><string>rf64</string><string>aif</string><string>aiff</string><string>caf</string><string>flac</string><string>ogg</string><string>oga</string><string>opus</string><string>mp3</string><string>au</string></array>
+			<array><string>aif</string><string>aifc</string><string>aiff</string><string>au</string><string>avr</string><string>caf</string><string>flac</string><string>gsm</string><string>htk</string><string>iff</string><string>m1a</string><string>m2a</string><string>mat</string><string>mp2</string><string>mp3</string><string>mpc</string><string>nist</string><string>oga</string><string>ogg</string><string>opus</string><string>paf</string><string>pvf</string><string>raw</string><string>rf64</string><string>sd2</string><string>sds</string><string>sf</string><string>snd</string><string>sph</string><string>svx</string><string>voc</string><string>vox</string><string>w64</string><string>wav</string><string>wave</string><string>wavex</string><string>wve</string><string>xi</string></array>
 		</dict>
 		<dict>
 			<key>CFBundleTypeName</key><string>Playlist</string>

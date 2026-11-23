@@ -95,8 +95,10 @@ final class AppModel {
     // MARK: Files
 
     static let audioTypes: [UTType] = {
-        var types: [UTType] = [.audio]
-        for ext in ["wav", "wave", "aif", "aiff", "caf", "flac", "ogg", "oga", "opus", "mp3", "w64", "rf64", "au"] {
+        var types: [UTType] = []
+        // Every format libsndfile reads (the same list as the document types of Info.plist).
+        for ext in ["aif", "aifc", "aiff", "au", "avr", "caf", "flac", "gsm", "htk", "iff", "m1a", "m2a", "mat", "mp2", "mp3", "mpc", "nist", "oga", "ogg", "opus",
+                    "paf", "pvf", "raw", "rf64", "sd2", "sds", "sf", "snd", "sph", "svx", "voc", "vox", "w64", "wav", "wave", "wavex", "wve", "xi"] {
             if let t = UTType(filenameExtension: ext), !types.contains(t) { types.append(t) }
         }
         return types
