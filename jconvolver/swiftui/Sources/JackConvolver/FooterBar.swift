@@ -5,13 +5,14 @@ import JConvolverKit
 import MatrixKit
 import SwiftUI
 
-/// The same on every page: under the sidebar and the page, over the whole width of the window, 98 points high.
+/// The same on every page: under the sidebar and the page, over the whole width of the window, 98 points high. On the left, two chips side
+/// by side (the state, the mode) and under them what the configuration holds; in the middle the round button; on the right the command line.
 struct FooterBar: View {
     var body: some View {
         HStack {
             StatusColumn().frame(maxWidth: .infinity, alignment: .leading)
             RoundButton()
-            ModeColumn().frame(maxWidth: .infinity, alignment: .trailing)
+            CommandColumn().frame(maxWidth: .infinity, alignment: .trailing)
         }
         .padding(.horizontal, 24)
         .frame(height: 98)
@@ -20,18 +21,36 @@ struct FooterBar: View {
     }
 }
 
-/// On the left: the state in a pill, the load while the engine runs, and the configuration that is open.
+/// On the left: the state and the mode in chips, the load while the engine runs, and what the configuration holds.
 struct StatusColumn: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 14) {
+            HStack(spacing: 8) {
                 StatusPill()
-                if model.controller.isRunning { LoadGauges() }
+                ModeChip()
+                if model.controller.isRunning { LoadGauges().padding(.leading, 6) }
             }
-            if model.isOpen { ConfigurationName() }
+            .frame(height: 28)
+            ConfigurationSummary().opacity(model.isOpen ? 1 : 0).frame(height: 18)
         }
+    }
+}
+
+/// The mode, said as the state is: a chip of information (the mode is chosen on the home page).
+struct ModeChip: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        HStack(spacing: 7) {
+            Image(systemName: model.mode == .file ? "waveform.path" : "dot.radiowaves.left.and.right").foregroundStyle(.secondary)
+            Text(model.mode == .file ? "Sur fichier audio" : "Temps réel")
+        }
+        .font(.callout)
+        .padding(.horizontal, 12).frame(height: 28)
+        .background(Color.primary.opacity(0.07), in: Capsule())
+        .help("Le mode se choisit sur la page d'accueil")
     }
 }
 
@@ -110,28 +129,20 @@ struct LoadGauges: View {
     }
 }
 
-/// The name of the configuration, a dot while it has changes that are not saved, and its size.
-struct ConfigurationName: View {
+/// What the configuration holds, in words: its inputs and outputs and its impulse responses.
+struct ConfigurationSummary: View {
     @Environment(AppModel.self) private var model
-    @State private var hovered = false
 
     var body: some View {
-        HStack(spacing: 6) {
-            // In the normal text colour, so that it reads on the dark footer; it is underlined under the pointer, as a link.
-            Button { model.showsConfigFile = true } label: {
-                Text(model.name).underline(hovered).lineLimit(1).truncationMode(.middle)
-            }
-            .buttonStyle(.plain)
-            .onHover { hovered = $0 }
-            .help("Voir et régler le fichier de configuration")
-            if model.isEdited { Circle().fill(Color.orange).frame(width: 7, height: 7).help("Modifié, pas encore enregistré (⌘S)") }
-            if let d = model.document {
-                Text(verbatim: "· \(d.inputCount) × \(d.outputCount) · \(d.placedPairs) RI").foregroundStyle(.secondary).fixedSize()
-                    .help("\(d.inputCount) entrées, \(d.outputCount) sorties, \(d.placedPairs) cases avec une réponse impulsionnelle")
-            }
+        if let d = model.document {
+            let inputs = d.inputCount == 1 ? String(localized: "1 entrée") : String(localized: "\(d.inputCount) entrées")
+            let outputs = d.outputCount == 1 ? String(localized: "1 sortie") : String(localized: "\(d.outputCount) sorties")
+            let responses = d.placedPairs == 0 ? String(localized: "aucune réponse impulsionnelle")
+                : d.placedPairs == 1 ? String(localized: "1 réponse impulsionnelle") : String(localized: "\(d.placedPairs) réponses impulsionnelles")
+            Text(verbatim: "\(inputs) · \(outputs) · \(responses)")
+                .font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.tail)
+                .help("\(d.placedPairs) cases de la matrice ont une réponse impulsionnelle")
         }
-        .font(.caption)
-        .frame(maxWidth: 320, alignment: .leading)
     }
 }
 
@@ -158,22 +169,12 @@ struct RoundButton: View {
     }
 }
 
-/// On the right: the mode (real time or sound files), and the command line.
-struct ModeColumn: View {
+/// On the right: the command line, a button as in the other applications of the collection.
+struct CommandColumn: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        @Bindable var model = model
-        VStack(alignment: .trailing, spacing: 8) {
-            // The mode is chosen on the home page; here it is only said, and a click goes there.
-            Button { model.page = .home } label: {
-                Label(model.mode == .file ? "Sur fichier audio" : "Temps réel", systemImage: model.mode == .file ? "waveform.path" : "dot.radiowaves.left.and.right")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            .buttonStyle(.plain)
-            .help("Le mode se choisit sur la page d'accueil")
-            Button("Ligne de commande générée") { model.showsCommand = true }
-                .disabled(!model.isOpen)
-        }
+        Button("Ligne de commande générée") { model.showsCommand = true }
+            .disabled(!model.isOpen)
     }
 }

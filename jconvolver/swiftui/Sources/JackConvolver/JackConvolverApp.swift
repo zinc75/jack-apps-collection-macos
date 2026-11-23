@@ -106,8 +106,9 @@ struct JackConvolverApp: App {
                 Button("Analyse") { model.page = .impulse }.keyboardShortcut("3", modifiers: .command).disabled(!model.isOpen)
                 Button("Connexions") { model.page = .ports }.keyboardShortcut("4", modifiers: .command).disabled(!model.isOpen || model.mode == .file)
                 Button("Lancement") { model.page = .launch }.keyboardShortcut("5", modifiers: .command).disabled(!model.isOpen || model.mode == .file)
-                Button("Journal") { model.page = .log }.keyboardShortcut("6", modifiers: .command).disabled(!model.isOpen)
-                Button("Affichage") { model.page = .display }.keyboardShortcut("7", modifiers: .command)
+                Button("Fichier de configuration") { model.page = .config }.keyboardShortcut("6", modifiers: .command).disabled(!model.isOpen)
+                Button("Journal") { model.page = .log }.keyboardShortcut("7", modifiers: .command).disabled(!model.isOpen)
+                Button("Affichage") { model.page = .display }.keyboardShortcut("8", modifiers: .command)
             }
             CommandGroup(replacing: .appSettings) {
                 Button("Réglages…") { model.page = .display }.keyboardShortcut(",", modifiers: .command)

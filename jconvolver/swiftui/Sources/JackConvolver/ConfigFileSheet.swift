@@ -6,11 +6,10 @@ import JConvolverKit
 import MatrixKit
 import SwiftUI
 
-/// The configuration file as it is: the numbers of the header, the names of the ports, and the text that is written. The name of the
-/// file in the footer opens it. The impulse responses are edited on the page of the convolutions, not here.
-struct ConfigFileSheet: View {
+/// The configuration file as it is: the numbers of the header, the names of the ports, and the text that is written. A page of the sidebar.
+/// The impulse responses are edited on the page of the convolutions, not here.
+struct ConfigFilePage: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.dismiss) private var dismiss
     @State private var tab = Tab.header
 
     enum Tab: Hashable { case header, ports, text }
@@ -20,7 +19,7 @@ struct ConfigFileSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 3) {
-                Text("Fichier de configuration").font(.title3).fontWeight(.semibold)
+                Text("Fichier de configuration").font(.title2).fontWeight(.semibold)
                 Text("Le contenu de \(model.name) tel que \(model.mode == .file ? "fconvolver" : "jconvolver") le lit. Les réponses impulsionnelles se règlent dans la page Convolutions.")
                     .font(.callout).foregroundStyle(.secondary)
             }
@@ -53,10 +52,9 @@ struct ConfigFileSheet: View {
                 Button { model.redo() } label: { Image(systemName: "arrow.uturn.forward") }.disabled(!model.canRedo).help("Rétablir")
                 Spacer()
                 Button(model.savesAsNew ? "Enregistrer sous…" : "Enregistrer") { model.save() }.disabled(!model.isEdited && !model.savesAsNew)
-                Button("Fermer") { dismiss() }.buttonStyle(.borderedProminent).accentTint().keyboardShortcut(.defaultAction)
             }
         }
-        .padding(22).frame(width: 860, height: 660)
+        .padding(24).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         #if DEBUG
         .onAppear {
             switch ProcessInfo.processInfo.environment["JACKCONVOLVER_CONFIGTAB"] { case "ports": tab = .ports; case "text": tab = .text; default: break }

@@ -24,6 +24,7 @@ struct ContentView: View {
                     case .impulse: Color.clear
                     case .ports: ConnectionsView()
                     case .launch: LaunchView()
+                    case .config: ConfigFilePage()
                     case .log: LogView()
                     case .display: DisplayView()
                     }
@@ -68,7 +69,7 @@ struct ContentView: View {
             if let path = env["JACKCONVOLVER_OPEN"] { model.open(URL(fileURLWithPath: path)) }
             if let page = env["JACKCONVOLVER_PAGE"].flatMap(Page.init(rawValue:)) { model.page = page }
             if env["JACKCONVOLVER_VIEW"] == "table" { model.viewMode = .table }
-            if env["JACKCONVOLVER_SHEET"] == "config" { try? await Task.sleep(for: .milliseconds(800)); model.showsConfigFile = true }
+            if env["JACKCONVOLVER_SHEET"] == "config" { try? await Task.sleep(for: .milliseconds(800)); model.page = .config }
             if env["JACKCONVOLVER_SHEET"] == "render" { try? await Task.sleep(for: .milliseconds(800)); model.showsRender = true }
             if env["JACKCONVOLVER_SHEET"] == "gestures" { try? await Task.sleep(for: .milliseconds(800)); model.showsGestures = true }
             if env["JACKCONVOLVER_SHEET"] == "names" { try? await Task.sleep(for: .milliseconds(800)); model.showsPortNames = true }
@@ -162,7 +163,6 @@ struct ContentView: View {
         .sheet(isPresented: $model.showsResize) { ResizeSheet() }
         .sheet(isPresented: $model.showsGestures) { GesturesSheet() }
         .sheet(isPresented: $model.showsRender) { RenderSheet() }
-        .sheet(isPresented: $model.showsConfigFile) { ConfigFileSheet() }
         .sheet(isPresented: $model.showsProblems) { ProblemsSheet() }
         .alert(model.message ?? "", isPresented: Binding(get: { model.message != nil }, set: { if !$0 { model.message = nil } })) {
             Button("OK") { model.message = nil }

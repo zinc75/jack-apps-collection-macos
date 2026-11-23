@@ -16,6 +16,7 @@ struct Sidebar: View {
             row("Analyse", "waveform.path.ecg", .impulse).disabled(!model.isOpen)
             if model.mode == .realTime { row("Connexions", "arrow.left.arrow.right", .ports, badge: model.connectionsNeedAttention && model.page != .ports ? .orange : nil).disabled(!model.isOpen) }
             if model.mode == .realTime { row("Lancement", "slider.horizontal.3", .launch).disabled(!model.isOpen) }
+            row("Fichier de configuration", "doc.plaintext", .config).disabled(!model.isOpen)
             row("Journal", "doc.text", .log, badge: logBadge).disabled(!model.isOpen)
             row("Affichage", "circle.lefthalf.filled", .display)
         }
