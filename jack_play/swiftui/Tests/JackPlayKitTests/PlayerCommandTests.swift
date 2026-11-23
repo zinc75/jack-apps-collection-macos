@@ -74,6 +74,22 @@ final class PlayerCommandTests: XCTestCase {
         }
     }
 
+    func testTheSessionNumberIsInFrontOfTheNameFromTheSecondSession() {
+        let settings = PlayerSettings(clientName: "jack_play")
+        XCTAssertEqual(settings.programName(number: 3, of: 12, session: 1), "03 of 12 - jack_play", "the first session keeps the names patchbays know")
+        XCTAssertEqual(settings.programName(number: 3, of: 12, session: 2), "2-03 of 12 - jack_play")
+        XCTAssertEqual(settings.programName(number: nil, session: 2), "2-jack_play")
+        // Two sessions that play a list, each with the program of a file and the one of the next: four names, all different in the first characters,
+        // whatever the name chosen is (JACK keeps 31 characters of "js<uid>.<server><client>").
+        let long = PlayerSettings(clientName: String(repeating: "x", count: 100))
+        var names: [String] = []
+        for session in 1...3 { for place in [5, 6] { names.append(long.programName(number: place, of: 12, session: session)) } }
+        XCTAssertEqual(Set(names.map { String($0.prefix(12)) }).count, names.count)
+        XCTAssertLessThanOrEqual(names.map(\.count).max() ?? 0, 63)
+        // With the name by default and a short server name, the name still fits where JACK cuts it.
+        XCTAssertLessThanOrEqual(settings.programName(number: 12, of: 12, session: 9).count, 25)
+    }
+
     func testTheProgramSaysWhenTheFileWillEnd() {
         var parser = PlayerLogParser()
         XCTAssertEqual(parser.feed(Data("end 4294967000\nend nonsense\n".utf8)), [.endAnnounced(4_294_967_000), .message("end nonsense")])

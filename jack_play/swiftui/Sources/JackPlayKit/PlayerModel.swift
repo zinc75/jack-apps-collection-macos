@@ -140,6 +140,9 @@ public final class PlayerModel {
     /// The place of the next file: the one the playlist says, else the one after the file that plays (the two programs live
     /// together, so they need two names).
     private var standbyNumber: Int { nextNumber ?? ((currentNumber ?? 1) + 1) }
+    /// The number of the session this player is in, from 1: it is in the names of the programs when it is 2 or more (see `PlayerSettings.programName`).
+    /// Set before a file is opened: a program keeps the name it was started with.
+    public var sessionNumber = 1
     /// Called once when the file has been played to its end, in the mode where the application plays on its own.
     @ObservationIgnored public var onFileEnded: (() -> Void)?
     /// The next file is ready to start at once.
@@ -198,6 +201,11 @@ public final class PlayerModel {
     }
 
     // MARK: Reading the state
+
+    /// A program of this player is still alive, or is leaving (the session number of the player cannot be given to another one yet).
+    public var hasProgramsAlive: Bool {
+        runner?.isRunning == true || leaving != nil || standby != nil || standbyLeaving != nil
+    }
 
     public var isPlaying: Bool { phase == .running(.playing) }
     public var hasEnded: Bool { phase == .running(.ended) }
@@ -386,7 +394,7 @@ public final class PlayerModel {
 
     private func command(for url: URL, frame: Int64?, number: Int?, fileRate: Double? = nil) -> PlayerCommand {
         var s = settings
-        s.clientName = s.programName(number: number, of: listCount)
+        s.clientName = s.programName(number: number, of: listCount, session: sessionNumber)
         return PlayerCommand(file: url, settings: s, mode: mode, initialFrame: frame, serverPeriod: server.bufferSize,
                              fileRate: fileRate ?? file?.info.sampleRate)
     }
@@ -561,7 +569,7 @@ public final class PlayerModel {
         let routing = store.routing(for: key, channels: info.channels) ?? DefaultRouting.make(channels: info.channels, playbackPorts: server.playbackPorts)
         let number = standbyNumber
         // A program that is still leaving under the name this one would have: it starts when that one is gone.
-        if let name = leaving?.clientName, name == settings.programName(number: number, of: listCount) { return }
+        if let name = leaving?.clientName, name == settings.programName(number: number, of: listCount, session: sessionNumber) { return }
         guard let runner = makeRunner(command(for: url, frame: nil, number: number, fileRate: info.sampleRate)) else { return }
         let next = Standby(file: file, runner: runner, manager: ConnectionManager(linking: server), routing: routing, number: number, count: listCount)
         runner.onEvent = { [weak self, weak runner] event in

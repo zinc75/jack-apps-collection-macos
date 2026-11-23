@@ -31,10 +31,14 @@ public struct PlayerSettings: Equatable, Sendable {
     /// 31 characters (the server is left out when it is "default"), so two clients whose names are the same up to there cannot
     /// live together. With the place at the start, the names differ whatever the name chosen and the name of the server.
     /// The words are the same in every language: it is a name in JACK, and patchbays remember connections by name.
-    public func programName(number: Int?, of count: Int? = nil) -> String {
-        guard let number else { return safeClientName }
+    /// With several sessions at once the number of the session (from 2) goes in front of all that, "2-03 of 12 - jack_play": two sessions that play a
+    /// list have each two programs alive, and without it the programs of the same place would carry the same name. The first session has no prefix, so that
+    /// its names are the ones that patchbays have always seen.
+    public func programName(number: Int?, of count: Int? = nil, session: Int = 1) -> String {
+        let front = session > 1 ? "\(session)-" : ""
+        guard let number else { return front + safeClientName }
         let place = count.map { String(format: "%02d of %02d", number, $0) } ?? String(format: "%02d", number)
-        return place + " - " + String(safeClientName.prefix(44)).trimmingCharacters(in: .whitespaces)
+        return front + place + " - " + String(safeClientName.prefix(44)).trimmingCharacters(in: .whitespaces)
     }
 
     /// A name JACK accepts: the characters it does not like are replaced, and it is not empty.

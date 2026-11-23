@@ -25,6 +25,8 @@ let package = Package(
         // The look (dark, system, light) and the accent, and the badges and glass of the matrix, MIT, shared with the other tools.
         .package(path: "../../shared/AppearanceKit"),
         .package(path: "../../shared/MatrixKit"),
+        // The sessions of an application in windows, the menu bar and the Dock, MIT, shared with the other tools.
+        .package(path: "../../shared/SessionKit"),
     ],
     targets: [
         // Logic without any UI: files, player process, connections, state. Unit tested.
@@ -46,6 +48,7 @@ let package = Package(
                 .product(name: "SoundFileKit", package: "SoundFileKit"),
                 .product(name: "AppearanceKit", package: "AppearanceKit"),
                 .product(name: "MatrixKit", package: "MatrixKit"),
+                .product(name: "SessionKit", package: "SessionKit"),
                 .product(name: "MeterKit", package: "MeterKit"),
                 .product(name: "WaveformKit", package: "WaveformKit"),
             ],

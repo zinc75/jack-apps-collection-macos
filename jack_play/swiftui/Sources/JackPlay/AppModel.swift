@@ -13,61 +13,73 @@ enum Page: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
-/// Where the output levels are shown: under the waveform, or beside the lane of each channel.
-enum LevelsPlacement: String {
-    case below, inline
-}
-
-/// What the window needs besides the player: the page shown, the settings kept between launches, opening a file.
+/// A session: what a window needs besides the player (the page shown, the settings kept between launches, opening a file). It is a player and its
+/// playlist, with their settings; the JACK client, the connections remembered for the files and the look are the hub's, which every session shares.
 @MainActor
 @Observable
 final class AppModel {
+    let id: UUID
+    let hub: PlayHub
+    /// The first session of the application, which starts from what was saved (and where the debugging aids act).
+    let usesSavedState: Bool
     var page: Page = .play
-    let graph = PlaybackGraph()
     let player: PlayerModel
     let playlist: PlaylistModel
-    var levelsPlacement: LevelsPlacement = .inline
+    /// The number of the session, from 1: it is in the names of its JACK clients from the second session on.
+    let sessionNumber: Int
+    private var numberReleased = false
     private let defaults: UserDefaults?
+    var graph: PlaybackGraph { hub.graph }
+    var levelsPlacement: LevelsPlacement { hub.levelsPlacement }
     /// A move on the waveform that is waiting to be sent: scrubbing sends at most one every 30 ms.
     @ObservationIgnored private var pendingSeek: Double?
     @ObservationIgnored private var seekTask: Task<Void, Never>?
 
     private enum Key {
         static let converter = "converter", buffer = "bufferFrames", name = "clientName", loop = "loop"
-        static let metersEnabled = "metersEnabled", levelsPlacement = "levelsPlacement"
+        static let metersEnabled = "metersEnabled"
         static let list = "playlist", listCurrent = "playlistCurrent", repeatMode = "repeatMode"
         static let mode = "mode", autoConnect = "autoConnect", commandsTransport = "commandsTransport", lastFolder = "lastFolder"
     }
 
-    /// - Parameter defaults: where the settings are kept; nil for a run that must not keep them.
-    init(defaults: UserDefaults?) {
+    /// - Parameters:
+    ///   - usesSavedState: the session starts from the settings and the list of the last one (the first window at the launch); the others start from the defaults.
+    ///   - takesNumber: false for the session that nothing shows (it plays nothing and takes no number).
+    init(hub: PlayHub, id: UUID = UUID(), usesSavedState: Bool = true, takesNumber: Bool = true) {
+        self.hub = hub
+        self.id = id
+        self.usesSavedState = usesSavedState
+        let defaults = hub.defaults
         self.defaults = defaults
-        let d = defaults ?? UserDefaults(suiteName: "jackplay.volatile.\(UUID().uuidString)")!
+        sessionNumber = takesNumber ? hub.takeSessionNumber() : 1
+        numberReleased = !takesNumber
+        let d = usesSavedState ? (defaults ?? UserDefaults(suiteName: "jackplay.volatile.\(UUID().uuidString)")!) : UserDefaults(suiteName: "jackplay.fresh.\(UUID().uuidString)")!
         var settings = PlayerSettings()
         if d.object(forKey: Key.converter) != nil { settings.converter = d.integer(forKey: Key.converter) }
         if d.object(forKey: Key.buffer) != nil, PlayerSettings.bufferSizes.contains(d.integer(forKey: Key.buffer)) { settings.bufferFrames = d.integer(forKey: Key.buffer) }
         if let name = d.string(forKey: Key.name) { settings.clientName = name }
         settings.loop = d.bool(forKey: Key.loop)
         let mode: PlayerCommand.Mode = d.string(forKey: Key.mode) == "follow" ? .followTransport : .independent
-        let graph = self.graph
-        let player = PlayerModel(server: graph, store: ConnectionStore(defaults: defaults ?? d), settings: settings, mode: mode) { command in
+        let player = PlayerModel(server: hub.graph.makeHandle(), store: hub.store, settings: settings, mode: mode) { command in
             guard let executable = PlayerHelper.executableURL() else { return nil }
             return PlayerProcess(executable: executable, command: command)
         }
+        player.sessionNumber = sessionNumber
         if d.object(forKey: Key.autoConnect) != nil { player.autoConnect = d.bool(forKey: Key.autoConnect) }
         if d.object(forKey: Key.commandsTransport) != nil { player.commandsTransport = d.bool(forKey: Key.commandsTransport) }
         if d.object(forKey: Key.metersEnabled) != nil { player.metersEnabled = d.bool(forKey: Key.metersEnabled) }
-        levelsPlacement = d.string(forKey: Key.levelsPlacement).flatMap(LevelsPlacement.init(rawValue:)) ?? .inline
         self.player = player
         let playlist = PlaylistModel(player: player)
         self.playlist = playlist
-        // The list and the place in it come back as they were left: the file waits, paused, as if it had just been opened.
-        let repeatMode = d.string(forKey: Key.repeatMode).flatMap(RepeatMode.init(rawValue:)) ?? (settings.loop ? .file : .off)
-        var items = (d.stringArray(forKey: Key.list) ?? []).map { URL(fileURLWithPath: $0) }
-        var current: Int? = d.object(forKey: Key.listCurrent) == nil ? nil : d.integer(forKey: Key.listCurrent)
-        if let c = current, !(items.indices.contains(c) && FileManager.default.isReadableFile(atPath: items[c].path)) { current = nil }
-        if defaults == nil { items = [] }
-        playlist.restore(items: items, current: current, repeatMode: repeatMode)
+        // The list and the place in it come back as they were left: the file waits, paused, as if it had just been opened. Only the first session reads them.
+        if usesSavedState {
+            let repeatMode = d.string(forKey: Key.repeatMode).flatMap(RepeatMode.init(rawValue:)) ?? (settings.loop ? .file : .off)
+            var items = (d.stringArray(forKey: Key.list) ?? []).map { URL(fileURLWithPath: $0) }
+            var current: Int? = d.object(forKey: Key.listCurrent) == nil ? nil : d.integer(forKey: Key.listCurrent)
+            if let c = current, !(items.indices.contains(c) && FileManager.default.isReadableFile(atPath: items[c].path)) { current = nil }
+            if defaults == nil { items = [] }
+            playlist.restore(items: items, current: current, repeatMode: repeatMode)
+        }
         playlist.onChange = { [weak self] in self?.saveList() }
     }
 
@@ -91,7 +103,7 @@ final class AppModel {
     }()
 
     /// The panel to choose files: any file is accepted, libsndfile says whether it can read it. A playlist file is read too.
-    private func choosePanel(message: String, multiple: Bool = true) -> [URL] {
+    func choosePanel(message: String, multiple: Bool = true) -> [URL] {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = Self.audioTypes + Self.playlistTypes
         panel.allowsOtherFileTypes = true
@@ -234,10 +246,7 @@ final class AppModel {
         defaults?.set(metersEnabled, forKey: Key.metersEnabled)
     }
 
-    func set(levelsPlacement: LevelsPlacement) {
-        self.levelsPlacement = levelsPlacement
-        defaults?.set(levelsPlacement.rawValue, forKey: Key.levelsPlacement)
-    }
+    func set(levelsPlacement: LevelsPlacement) { hub.levelsPlacement = levelsPlacement }
 
     func set(repeatMode: RepeatMode) {
         playlist.setRepeat(repeatMode)
@@ -288,6 +297,33 @@ final class AppModel {
         defaults?.set(commandsTransport, forKey: Key.commandsTransport)
     }
 
-    /// The program does not outlive the application.
-    func shutdown() { player.closeFile() }
+    /// The program does not outlive the application, nor the session: its number goes back once its programs have left.
+    func shutdown() {
+        player.closeFile()
+        guard !numberReleased else { return }
+        numberReleased = true
+        let player = player
+        hub.releaseSessionNumber(sessionNumber, whenFree: { !player.hasProgramsAlive })
+    }
+
+    // MARK: Starting over
+
+    /// Something in the session that a new session would not have: a list, a file, settings that are not the defaults.
+    var hasPreparedContent: Bool {
+        !playlist.playlist.isEmpty || player.file != nil || player.settings != PlayerSettings() || player.mode != .independent
+    }
+
+    /// Back to what a new session is: no file, the default settings.
+    func resetToDefaults() {
+        playlist.replace(with: [])
+        playlist.setRepeat(.off)
+        set(converter: PlayerSettings().converter)
+        set(bufferFrames: PlayerSettings().bufferFrames)
+        set(clientName: PlayerSettings().clientName)
+        set(mode: .independent)
+        set(autoConnect: true)
+        set(commandsTransport: true)
+        set(metersEnabled: true)
+        page = .play
+    }
 }

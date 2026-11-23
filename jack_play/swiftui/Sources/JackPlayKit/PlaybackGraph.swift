@@ -82,7 +82,24 @@ public final class PlaybackGraph: PlaybackServer {
         clientNames = Set(ports.map(\.clientName))
         sampleRate = Int(bridge.sampleRate)
         bufferSize = Int(bridge.bufferSize)
+        notifyChange()
+    }
+
+    /// What a player holds in place of the graph itself: it has its own `onChange`, so that several players (one for each session) can listen to the
+    /// one JACK client of the application. It keeps a weak reference to nothing: the graph lets go of a handle that is gone.
+    public func makeHandle() -> GraphHandle {
+        let handle = GraphHandle(graph: self)
+        handles.append(WeakHandle(handle))
+        return handle
+    }
+
+    fileprivate struct WeakHandle { weak var value: GraphHandle?; init(_ v: GraphHandle) { value = v } }
+    @ObservationIgnored fileprivate var handles: [WeakHandle] = []
+
+    func notifyChange() {
+        handles.removeAll { $0.value == nil }
         onChange?()
+        for handle in handles { handle.value?.onChange?() }
     }
 
     /// The playback ports of the system, in order: where a file goes the first time.
@@ -157,7 +174,7 @@ public final class PlaybackGraph: PlaybackServer {
         clientNames = []
         sampleRate = nil
         bufferSize = nil
-        onChange?()
+        notifyChange()
     }
 
     private func pollServerState() {
@@ -184,4 +201,28 @@ public final class PlaybackGraph: PlaybackServer {
     nonisolated static func groupClients(inputPorts: [String]) -> [JackDestinationClient] {
         JackPortClient.group(ports: inputPorts)
     }
+}
+
+/// The graph as one player sees it: everything is the graph's, except the call that says it has changed, which is the player's own.
+@MainActor
+public final class GraphHandle: PlaybackServer {
+    private let graph: PlaybackGraph
+    public var onChange: (() -> Void)?
+
+    init(graph: PlaybackGraph) { self.graph = graph }
+
+    public var isConnected: Bool { graph.isConnected }
+    public var sampleRate: Int? { graph.sampleRate }
+    public var bufferSize: Int? { graph.bufferSize }
+    public var playbackPorts: [String] { graph.playbackPorts }
+    public func transportStart() { graph.transportStart() }
+    public func transportPause() { graph.transportPause() }
+    public func transportStop() { graph.transportStop() }
+    public func transportLocate(frame: UInt32) { graph.transportLocate(frame: frame) }
+    public func outputPorts() -> Set<String> { graph.outputPorts() }
+    public func inputPorts() -> Set<String> { graph.inputPorts() }
+    public func destinations(of output: String) -> Set<String> { graph.destinations(of: output) }
+    public func allLinks() -> Set<JackLink> { graph.allLinks() }
+    public func connect(from output: String, to input: String) throws { try graph.connect(from: output, to: input) }
+    public func disconnect(from output: String, to input: String) throws { try graph.disconnect(from: output, to: input) }
 }

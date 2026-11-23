@@ -39,7 +39,7 @@ struct ContentView: View {
             model.start()
             #if DEBUG
             let env = ProcessInfo.processInfo.environment
-            if let page = env["JACKPLAY_PAGE"].flatMap(Page.init(rawValue:)) {
+            if model.usesSavedState, let page = env["JACKPLAY_PAGE"].flatMap(Page.init(rawValue:)) {
                 try? await Task.sleep(for: .milliseconds(1500))
                 model.page = page
             }
@@ -48,7 +48,7 @@ struct ContentView: View {
         #if DEBUG
         .task {
             let env = ProcessInfo.processInfo.environment
-            guard let path = env["JACKPLAY_FILE"] else { return }
+            guard model.usesSavedState, let path = env["JACKPLAY_FILE"] else { return }
             for _ in 0..<100 where !model.graph.isConnected { try? await Task.sleep(for: .milliseconds(100)) }
             // Several files, separated by "|", make a list.
             model.open(path.split(separator: "|").map { URL(fileURLWithPath: String($0)) })
@@ -80,7 +80,7 @@ struct ContentView: View {
         }
         #endif
         .onDrop(of: [.fileURL], isTargeted: nil) { model.receive($0, append: false) }
-        .navigationTitle(model.player.file?.url.lastPathComponent ?? "Jack Play")
+        .navigationTitle(model.windowTitle)
         .navigationSubtitle("Jack Apps Collection for macOS")
         .toolbar { ToolbarItem(placement: .primaryAction) { JackStatusPill() } }
     }
