@@ -6,7 +6,7 @@ import MatrixKit
 import SwiftUI
 
 /// The same on every page: under the sidebar and the page, over the whole width of the window, 98 points high. On the left, two chips side
-/// by side (the state, the mode) and under them what the configuration holds; in the middle the round button; on the right the command line.
+/// by side (the state, the mode); in the middle the round button; on the right the command line.
 struct FooterBar: View {
     var body: some View {
         HStack {
@@ -21,20 +21,17 @@ struct FooterBar: View {
     }
 }
 
-/// On the left: the state and the mode in chips, the load while the engine runs, and what the configuration holds.
+/// On the left: the state and the mode in chips, and the load while the engine runs. What the configuration holds is in the card of the sidebar.
 struct StatusColumn: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                StatusPill()
-                ModeChip()
-                if model.controller.isRunning { LoadGauges().padding(.leading, 6) }
-            }
-            .frame(height: 28)
-            ConfigurationSummary().opacity(model.isOpen ? 1 : 0).frame(height: 18)
+        HStack(spacing: 8) {
+            StatusPill()
+            ModeChip()
+            if model.controller.isRunning { LoadGauges().padding(.leading, 6) }
         }
+        .frame(height: 28)
     }
 }
 
@@ -126,23 +123,6 @@ struct LoadGauges: View {
         let cores = controller.cores ?? 0
         let all = ProcessInfo.processInfo.activeProcessorCount
         return "CPU du moteur : \(cores.formatted(.number.precision(.fractionLength(1)))) cœur sur \(all)"
-    }
-}
-
-/// What the configuration holds, in words: its inputs and outputs and its impulse responses.
-struct ConfigurationSummary: View {
-    @Environment(AppModel.self) private var model
-
-    var body: some View {
-        if let d = model.document {
-            let inputs = d.inputCount == 1 ? String(localized: "1 entrée") : String(localized: "\(d.inputCount) entrées")
-            let outputs = d.outputCount == 1 ? String(localized: "1 sortie") : String(localized: "\(d.outputCount) sorties")
-            let responses = d.placedPairs == 0 ? String(localized: "aucune réponse impulsionnelle")
-                : d.placedPairs == 1 ? String(localized: "1 réponse impulsionnelle") : String(localized: "\(d.placedPairs) réponses impulsionnelles")
-            Text(verbatim: "\(inputs) · \(outputs) · \(responses)")
-                .font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.tail)
-                .help("\(d.placedPairs) cases de la matrice ont une réponse impulsionnelle")
-        }
     }
 }
 

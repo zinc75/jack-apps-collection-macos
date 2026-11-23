@@ -103,13 +103,6 @@ struct MatrixToolbar: ToolbarContent {
                 .disabled((model.document?.placedPairs ?? 0) == 0 || model.isLocked)
                 .help("Retirer toutes les réponses impulsionnelles de la matrice (annulable)")
         }
-        ToolbarItem(placement: .primaryAction) {
-            // Save: the picture and the word together (there is no picture for it that means it alone).
-            Button { model.save() } label: { Label(model.savesAsNew ? "Enregistrer sous…" : "Enregistrer", systemImage: "square.and.arrow.down") }
-                .labelStyle(.titleAndIcon)
-                .disabled(!model.isEdited && !model.savesAsNew)
-                .help(model.savesAsNew ? "Enregistrer sous… (⌘S)" : "Enregistrer (⌘S)")
-        }
     }
 }
 

@@ -21,6 +21,8 @@ struct Sidebar: View {
             row("Affichage", "circle.lefthalf.filled", .display)
         }
         .listStyle(.sidebar)
+        // The configuration that is open, under the pages.
+        .safeAreaInset(edge: .bottom, spacing: 0) { FileCard() }
         .inactiveSidebarFill()
     }
 

@@ -4,6 +4,7 @@
 
 import MatrixKit
 import AppearanceKit
+import AppKit
 import SwiftUI
 
 /// Liquid Glass on macOS 26, a close material look on macOS 15. The only place where the two differ, so that no view has

@@ -46,11 +46,11 @@ struct ContentView: View {
         }
     }
 
-    /// The name of the window says which configuration it holds, so that windows of several configurations can be told apart in the Window menu.
+    /// The title of the window, as the system draws it: the application, the configuration that is open, and "Modifié" while it has changes that are not saved.
     private var windowTitle: String {
         guard model.isOpen else { return "Jack Convolver" }
         let name = model.fileURL?.lastPathComponent ?? String(localized: "Sans titre")
-        return "Jack Convolver · " + name + (model.isEdited ? " •" : "")
+        return "Jack Convolver · " + name + (model.isEdited ? " — " + String(localized: "Modifié") : "")
     }
 
     var body: some View {
@@ -60,6 +60,7 @@ struct ContentView: View {
             FooterBar()
         }
         .containerBackground(Color.windowFill, for: .window)
+        .background(LeavingGuard(model: model))
         .task {
             model.start()
             #if DEBUG

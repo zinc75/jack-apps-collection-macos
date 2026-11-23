@@ -145,6 +145,8 @@ final class AppModel {
     /// What the connections were when the engine stopped, if they differ from the file: the person is asked whether to write them there.
     var pendingWiring: ConvDocument?
     var showsApplyWiring = false
+    /// Set once the person said to leave (closing the window): quitting that follows must not ask again.
+    @ObservationIgnored var leavingConfirmed = false
     var showsResize = false
     var showsGestures = false
     /// The impulse responses drawn on the page of the analysis, in the order they were added, and the one of them that is edited (its zone, its
@@ -208,6 +210,8 @@ final class AppModel {
     /// The name of a configuration that has not been saved: shown in the footer and proposed when it is saved. No space in it.
     var defaultFileName: String { String(localized: "sans_titre") + ".conf" }
     var name: String { fileURL?.lastPathComponent ?? defaultFileName }
+    /// The file of the configuration, changed by a rename (the file itself is renamed on the disk).
+    func setFileURL(_ url: URL) { fileURL = url }
     /// A configuration that was never saved has no file to save to: it is saved under a name.
     var savesAsNew: Bool { fileURL == nil }
     var configDirectory: String { fileURL?.deletingLastPathComponent().path ?? NSHomeDirectory() }
@@ -223,6 +227,7 @@ final class AppModel {
 
     func open(_ url: URL) {
         guard !isLocked else { message = String(localized: "Arrêtez le moteur avant d'ouvrir une autre configuration."); return }
+        guard confirmLeaving(.open) else { return }
         guard let data = try? Data(contentsOf: url) else {
             message = String(localized: "Le fichier « \(url.lastPathComponent) » ne peut pas être lu.")
             return
@@ -245,6 +250,7 @@ final class AppModel {
 
     func newConfiguration(inputs: Int, outputs: Int) {
         guard !isLocked else { message = String(localized: "Arrêtez le moteur avant de créer une autre configuration."); return }
+        guard confirmLeaving(.new) else { return }
         document = ConvDocument(inputs: inputs, outputs: outputs)
         fileURL = nil
         resetEditing()
@@ -267,6 +273,24 @@ final class AppModel {
         if let document { selection.clamp(inputs: document.inputCount, outputs: document.outputCount) }
         refreshProblems()
         syncConnections()
+    }
+
+    /// Closes the configuration (not the window): back to the home page, after asking about what is not saved.
+    func closeConfiguration() {
+        guard isOpen else { return }
+        guard !isLocked else { message = String(localized: "Arrêtez le moteur avant de fermer la configuration."); return }
+        guard confirmLeaving(.open) else { return }
+        document = nil
+        fileURL = nil
+        resetEditing()
+        // The state of a start: no configuration, the launch options and the way to look at the responses as they are at first, the home page.
+        // The mode (real time, or on sound files) is a choice of the person and stays.
+        options = EngineCommand.Options()
+        viewMode = .matrix
+        liveWiring = nil
+        pendingWiring = nil
+        refreshProblems()
+        page = .home
     }
 
     private func resetEditing() {
@@ -345,7 +369,7 @@ final class AppModel {
         defaults.set([String](), forKey: "recentFiles")
     }
 
-    private func remember(_ url: URL) {
+    func remember(_ url: URL) {
         recents.removeAll { $0 == url }
         recents.insert(url, at: 0)
         recents = Array(recents.prefix(8))

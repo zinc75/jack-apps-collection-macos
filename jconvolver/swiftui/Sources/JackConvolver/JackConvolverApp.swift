@@ -29,6 +29,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
     func applicationDidFinishLaunching(_ notification: Notification) { Self.appearance?.applyAppearance() }
     func applicationWillTerminate(_ notification: Notification) { Self.model?.shutdown() }
+    /// Quitting asks about the changes that are not saved, and about the engine that runs (unless closing the window already did).
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard let model = Self.model, !model.leavingConfirmed else { return .terminateNow }
+        return model.confirmLeaving(.quit) ? .terminateNow : .terminateCancel
+    }
 }
 
 @main
@@ -85,8 +90,16 @@ struct JackConvolverApp: App {
                 Button("Ouvrir…") { model.openPanel() }.keyboardShortcut("o", modifiers: .command)
             }
             CommandGroup(replacing: .saveItem) {
+                // Closes the configuration, not the window (the red button closes that): back to the home page, after asking about what is not saved.
+                // With no configuration open it is the window that closes, as in the other applications.
+                Button("Fermer") { if model.isOpen { model.closeConfiguration() } else { NSApp.keyWindow?.performClose(nil) } }
+                    .keyboardShortcut("w", modifiers: .command)
+                Divider()
                 Button(model.savesAsNew ? "Enregistrer sous…" : "Enregistrer") { model.save() }.keyboardShortcut("s", modifiers: .command).disabled(!model.isOpen)
                 Button("Enregistrer sous…") { model.save(asNew: true) }.keyboardShortcut("s", modifiers: [.command, .shift]).disabled(!model.isOpen)
+                Divider()
+                Button("Renommer…") { model.renameFile() }.disabled(!model.isOpen || model.fileURL == nil || model.isLocked)
+                Button("Afficher dans le Finder") { model.revealFile() }.disabled(model.fileURL == nil)
             }
             CommandGroup(replacing: .importExport) {}
             CommandGroup(replacing: .undoRedo) {

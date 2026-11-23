@@ -446,3 +446,51 @@ extension AppModel {
         return true
     }
 }
+
+// MARK: The file of the configuration
+
+extension AppModel {
+    /// Renames the file of the configuration on the disk, from a small question with the name in a field. What was changed in the configuration and
+    /// not saved stays so; the files that the configuration names without a path are looked for in the same folder, which does not change.
+    @MainActor
+    func renameFile() {
+        guard let url = fileURL, !isLocked else { return }
+        let alert = NSAlert()
+        alert.messageText = String(localized: "Renommer « \(url.lastPathComponent) »")
+        alert.informativeText = String(localized: "Le fichier est renommé dans son dossier.")
+        let field = NSTextField(string: url.lastPathComponent)
+        field.frame = NSRect(x: 0, y: 0, width: 300, height: 24)
+        alert.accessoryView = field
+        alert.addButton(withTitle: String(localized: "Renommer"))
+        alert.addButton(withTitle: String(localized: "Annuler")).keyEquivalent = "\u{1b}"
+        alert.window.initialFirstResponder = field
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        var name = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty, name != url.lastPathComponent else { return }
+        guard !name.contains("/"), !name.contains(":") else {
+            message = String(localized: "Un nom de fichier ne contient ni « / » ni « : ».")
+            return
+        }
+        if (name as NSString).pathExtension.isEmpty { name += ".conf" }
+        let target = url.deletingLastPathComponent().appendingPathComponent(name)
+        guard !FileManager.default.fileExists(atPath: target.path) else {
+            message = String(localized: "Un fichier « \(name) » existe déjà dans ce dossier.")
+            return
+        }
+        do {
+            try FileManager.default.moveItem(at: url, to: target)
+        } catch {
+            message = String(localized: "Le fichier ne peut pas être renommé : \(error.localizedDescription)")
+            return
+        }
+        forgetRecent(url)
+        setFileURL(target)
+        remember(target)
+    }
+
+    /// Shows the file in the Finder.
+    func revealFile() {
+        guard let url = fileURL else { return }
+        NSWorkspace.shared.activateFileViewerSelecting([url])
+    }
+}
