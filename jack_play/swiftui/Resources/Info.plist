@@ -17,6 +17,27 @@
 	<key>LSMinimumSystemVersion</key><string>15.0</string>
 	<key>LSApplicationCategoryType</key><string>public.app-category.music</string>
 	<key>NSHumanReadableCopyright</key><string>Copyright © Éric Bavu. GPL-3.0.</string>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key><string>Audio file</string>
+			<key>CFBundleTypeRole</key><string>Viewer</string>
+			<key>LSHandlerRank</key><string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array><string>public.audio</string></array>
+			<key>CFBundleTypeExtensions</key>
+			<array><string>wav</string><string>wave</string><string>w64</string><string>rf64</string><string>aif</string><string>aiff</string><string>caf</string><string>flac</string><string>ogg</string><string>oga</string><string>opus</string><string>mp3</string><string>au</string></array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key><string>Playlist</string>
+			<key>CFBundleTypeRole</key><string>Viewer</string>
+			<key>LSHandlerRank</key><string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array><string>public.m3u-playlist</string><string>com.apple.mpegurl</string></array>
+			<key>CFBundleTypeExtensions</key>
+			<array><string>m3u</string><string>m3u8</string></array>
+		</dict>
+	</array>
 	<key>NSHighResolutionCapable</key><true/>
 	<key>NSPrincipalClass</key><string>NSApplication</string>
 </dict>
