@@ -38,6 +38,7 @@ extension PlotLabels {
         l.fillStyle = String(localized: "Style")
         l.fillGradient = String(localized: "Dégradé")
         l.fillFlat = String(localized: "Uni")
+        l.fillNone = String(localized: "Aucun")
         l.gradientWithSeveral = String(localized: "Aussi avec plusieurs courbes")
         l.gradientHelp = String(localized: "Le corps d'une courbe vue en enveloppe (plus d'échantillons que de pixels) est rempli, en dégradé ou d'une seule couleur. Avec plusieurs courbes il est opaque : celle du dessus cache celles du dessous. Une fois zoomé jusqu'à voir les échantillons un par un, il n'y a plus de remplissage.")
         l.channels = String(localized: "Voies")

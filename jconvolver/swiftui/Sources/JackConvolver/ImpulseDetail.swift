@@ -19,6 +19,7 @@ struct DetailTarget: Identifiable, Equatable {
 struct ImpulseDetailWindow: View {
     @Environment(AppModel.self) private var model
     @Environment(\.appAccentColor) private var accent
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismissWindow) private var dismissWindow
 
     private enum Kind: String { case time, spectrum, phase }
@@ -52,6 +53,19 @@ struct ImpulseDetailWindow: View {
         return (ConvConfig.path(of: file, directory: impulse.directory, configDirectory: model.configDirectory), channel)
     }
 
+    /// The colour of the zone the engine reads, wherever it is shown (the dotted edges and the sliders under the waveform, the bands of the two
+    /// minimaps): its own, not the accent, which the curves have.
+    private static let zoneColor = Color(white: 0.66)
+    /// In a light appearance, where a white line would not show.
+    private static let zoneColorLight = Color(white: 0.27)
+
+    /// The zone as the handles show it now, in frames (it follows the pointer while a handle is dragged): what the spectrum is computed on.
+    private var draftUsed: Range<Int>? {
+        guard let total = data?.count, total > 1 else { return nil }
+        let start = max(0, Int(zone.lowerBound.rounded())), end = Int(zone.upperBound.rounded())
+        return start..<(end >= total - 1 ? total : max(end, start + 1))
+    }
+
     /// The part of the file the engine reads, in frames.
     private var used: Range<Int>? {
         guard let impulse, let total = data?.count else { return nil }
@@ -78,8 +92,13 @@ struct ImpulseDetailWindow: View {
         changed.offset = start
         // To the end of the file is a length of 0, as the configuration files say it.
         changed.length = ImpulseZone.length(start: start, end: end, total: total)
-        model.edit(String(localized: "zone lue d'une RI")) { $0.replace(changed, at: target.index, of: target.pair) }
+        model.edit(String(localized: "troncature d'une RI")) { $0.replace(changed, at: target.index, of: target.pair) }
         self.zone = zoneOfImpulse
+        // It is a change of the configuration, not of the plot: where it is written is shown, if the inspector was closed.
+        if !controller.showsInspector {
+            controller.inspectorTab = "zone"
+            controller.showsInspector = true
+        }
     }
 
     /// A zone typed in the inspector, or set from the analysis: kept inside the file and at least one frame long.
@@ -120,7 +139,7 @@ struct ImpulseDetailWindow: View {
         // size of the window that nobody sees.
         .background(ToolbarRelayout(trigger: controller.showsInspector))
         .task(id: loadKey) { await load() }
-        .task(id: ResponseKey(load: loadKey, used: used)) { await computeResponse() }
+        .task(id: ResponseKey(load: loadKey, used: draftUsed)) { await computeResponse() }
         .onChange(of: controller.yScale) { _, new in if kind != .phase { yScales[kind] = new } }
         // The handles follow the impulse response: when it is loaded, and when the zone changes elsewhere (the history, a table).
         .onChange(of: used) { _, _ in zone = zoneOfImpulse }
@@ -188,17 +207,24 @@ struct ImpulseDetailWindow: View {
                 VStack(spacing: 8) {
                     SignalPlot(signal: pyramid, viewport: $time, sampleRate: data.sampleRate, amplitude: yScales[.time] ?? .linear, accent: accent,
                                labels: .localized, controller: controller, annotations: annotations, region: regionEditor(total: data.count))
-                    PlotOverview(signal: pyramid, viewport: $time, region: zone, regionColor: accent, accent: accent)
+                    PlotOverview(signal: pyramid, viewport: $time, region: zone, regionColor: colorScheme == .dark ? Self.zoneColor : Self.zoneColorLight, accent: accent)
                 }
             case .spectrum:
                 if response != nil {
-                    CurvePlot(curves: magnitudeCurves, viewport: $spectrum, xUnit: "Hz", yScale: yScales[.spectrum] ?? .decibels(floor: -120),
-                              accent: accent, labels: .localized, controller: controller)
+                    VStack(spacing: 8) {
+                        CurvePlot(curves: magnitudeCurves, viewport: $spectrum, xUnit: "Hz", yScale: yScales[.spectrum] ?? .decibels(floor: -120),
+                                  accent: accent, labels: .localized, controller: controller)
+                        // The zone the spectrum is computed on: it changes with the ends, and the spectrum follows.
+                        PlotZoneBar(signal: pyramid, zone: regionEditor(total: data.count), accent: accent)
+                    }
                 } else { ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity) }
             case .phase:
                 if response != nil {
-                    CurvePlot(curves: phaseCurves, viewport: $phase, xUnit: "Hz", yUnit: "°", accent: accent, labels: .localized,
-                              controller: controller, yScaleSwitchable: false)
+                    VStack(spacing: 8) {
+                        CurvePlot(curves: phaseCurves, viewport: $phase, xUnit: "Hz", yUnit: "°", accent: accent, labels: .localized,
+                                  controller: controller, yScaleSwitchable: false)
+                        PlotZoneBar(signal: pyramid, zone: regionEditor(total: data.count), accent: accent)
+                    }
                 } else { ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity) }
             }
         }
@@ -227,13 +253,13 @@ struct ImpulseDetailWindow: View {
         preview = ProcessInfo.processInfo.environment["JACKCONVOLVER_ZONE_DRAG"].flatMap { ["start": .start, "end": .end, "move": .move][$0] }
         #endif
         return PlotRegionEditor(range: $zone,
-                                style: PlotRegionStyle(color: accent, minLength: 1, bounds: 0...Double(max(total - 1, 1)), name: String(localized: "zone lue"), format: format),
+                                style: PlotRegionStyle(color: Self.zoneColor, minLength: 1, bounds: 0...Double(max(total - 1, 1)), name: String(localized: "troncature de la RI"), format: format, lightColor: Self.zoneColorLight),
                                 previewDragging: preview, onCommit: { commitZone() })
     }
 
     /// The page "Zone" of the inspector.
     private var zoneTab: PlotInspectorTab {
-        PlotInspectorTab(id: "zone", title: String(localized: "Zone")) {
+        PlotInspectorTab(id: "zone", title: String(localized: "Troncature")) {
             ZoneInspector(zone: zone, total: data?.count ?? 0, sampleRate: data?.sampleRate ?? 0,
                           attack: analysis?.attackFrame, tail: analysis?.tailFrame, apply: { applyZone(start: $0, end: $1) })
         }
@@ -261,7 +287,7 @@ struct ImpulseDetailWindow: View {
         let columns = Group {
             Grid(alignment: .leading, horizontalSpacing: 18, verticalSpacing: 4) {
                 if let info { row("Durée", time(Int(info.frames))) }
-                row("Zone lue par le moteur", impulse.length > 0 ? "\(time(impulse.offset)) → +\(time(impulse.length))" : "\(time(impulse.offset)) → " + String(localized: "fin du fichier"))
+                row("Troncature (.conf)", impulse.length > 0 ? "\(time(impulse.offset)) → +\(time(impulse.length))" : "\(time(impulse.offset)) → " + String(localized: "fin du fichier"))
             }
             .fixedSize(horizontal: true, vertical: false)
             Grid(alignment: .leading, horizontalSpacing: 18, verticalSpacing: 4) {
@@ -324,17 +350,22 @@ struct ImpulseDetailWindow: View {
 
     /// The frequency response of the part the engine reads: again when the zone changes.
     private func computeResponse() async {
-        guard let data, let range = used else { return }
+        guard let data, let range = draftUsed, range.count >= 2 else { return }
+        // While a handle is dragged the zone changes at every movement: what was asked before the last one is dropped, and the transform waits
+        // a moment to see whether another is coming.
+        try? await Task.sleep(for: .milliseconds(25))
+        guard !Task.isCancelled else { return }
         let computed = await Task.detached(priority: .userInitiated) {
             FrequencyResponse(samples: data.samples, range: range, sampleRate: data.sampleRate)
         }.value
         guard !Task.isCancelled else { return }
-        // The frequency axis is logarithmic to begin with; once the person has chosen a scale it stays.
-        let first = response == nil
+        // The first time the plots are fitted to the response; after that the person's zoom and scales stay as they are while the zone changes.
+        let first = response?.isEmpty ?? true
         response = computed
+        guard first else { return }
         series = PlotSeriesSet(count: 1, accent: accent, names: [String(localized: "voie") + " \(resolved?.channel ?? 1)"])
         controller.series = series
-        let scale: AxisScale = first ? .logarithmic : spectrum.x.scale
+        let scale: AxisScale = .logarithmic
         spectrum = PlotViewport.curves(magnitudeCurves, xScale: scale, yScale: yScales[.spectrum] ?? .decibels(floor: -120),
                                        visibleX: scale == .logarithmic ? 20...20_000 : nil)
         // The vertical axis fits what is drawn: the group delay, in milliseconds, when that is what the inspector asks for.

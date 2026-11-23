@@ -5,8 +5,9 @@ import JConvolverKit
 import PlotKit
 import SwiftUI
 
-/// The page "Zone" of the inspector of the detail window: where the engine starts reading the file and where it stops, in frames, to type
-/// or to set from what the analysis found. The handles on the curve change the same two values.
+/// The page "Troncature" of the inspector of the detail window: where the engine starts reading the file and where it stops, in frames, to type
+/// or to set from what the analysis found. It is the `offset` and the `length` of the impulse response in the .conf file, not a setting of the
+/// plot. The handles on the curve change the same two values.
 struct ZoneInspector: View {
     @Environment(\.appAccentColor) private var accent
     /// The zone in frames, from the first frame read to the last one (the end of the file when the engine reads to the end).
@@ -35,8 +36,13 @@ struct ZoneInspector: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            PlotInspectorSection(id: "zoneLimits", title: String(localized: "Limites"),
-                                 info: String(localized: "Le moteur ne lit que cette zone du fichier. Tire les poignées sur la courbe, ou tape les valeurs.")) {
+            // What follows is written in the .conf file and changes what the engine does: it is not a setting of the plot.
+            Text("Paramètres du moteur de convolution")
+                .font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 12).padding(.bottom, 2)
+            PlotInspectorSection(id: "zoneLimits", title: String(localized: "Début et fin retenus"),
+                                 info: String(localized: "Tronque la RI : le moteur ne lit que cette partie du fichier. Ces valeurs sont écrites dans le fichier .conf (offset et length). Tire les poignées sur la courbe, ou tape les valeurs.")) {
                 // Three columns that line up: the label, the value in a field of the same width for every row, and the time it makes.
                 Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 8) {
                     GridRow {
@@ -59,8 +65,8 @@ struct ZoneInspector: View {
                 }
                 .font(.callout)
             }
-            PlotInspectorSection(id: "zoneMarks", title: String(localized: "Repères de l'analyse"),
-                                 info: String(localized: "Le début de l'attaque est à −60 dB sous la crête, la fin utile à −90 dB.")) {
+            PlotInspectorSection(id: "zoneMarks", title: String(localized: "Repères"),
+                                 info: String(localized: "Repères trouvés dans le fichier, dans le domaine temporel : le début de l'attaque est à −60 dB sous la crête, la fin utile à −90 dB.")) {
                 VStack(alignment: .leading, spacing: 8) {
                     AccentLinkButton("Début à l'attaque") { if let attack { apply(attack, end) } }
                         .disabled(attack == nil || attack == start)
