@@ -98,6 +98,7 @@ typedef void (*fn_jack_transport_stop)(jack_client_t*);
 typedef int  (*fn_jack_transport_locate)(jack_client_t*, jack_nframes_t);
 typedef jack_nframes_t (*fn_jack_get_sample_rate)(jack_client_t*);
 typedef jack_nframes_t (*fn_jack_get_buffer_size)(jack_client_t*);
+typedef float (*fn_jack_cpu_load)(jack_client_t*);
 typedef int  (*fn_jack_set_timebase_callback)(jack_client_t*, int,
                   void (*)(jack_transport_state_t, jack_nframes_t,
                            jm_jack_position_t*, int, void*),
@@ -163,6 +164,7 @@ struct JMClient {
     fn_jack_transport_locate       f_transport_locate;
     fn_jack_get_sample_rate        f_get_sample_rate;
     fn_jack_get_buffer_size        f_get_buffer_size;
+    fn_jack_cpu_load               f_cpu_load;
     fn_jack_set_timebase_callback  f_set_timebase_cb;
     fn_jack_release_timebase       f_release_timebase;
     fn_jack_set_process_callback   f_set_process_cb;
@@ -266,6 +268,7 @@ static bool jm_load_symbols(JMClient *c) {
     LOAD_SYM_OPTIONAL(c, "jack_transport_locate",       f_transport_locate);
     LOAD_SYM_OPTIONAL(c, "jack_get_sample_rate",        f_get_sample_rate);
     LOAD_SYM_OPTIONAL(c, "jack_get_buffer_size",        f_get_buffer_size);
+    LOAD_SYM_OPTIONAL(c, "jack_cpu_load",               f_cpu_load);
     LOAD_SYM_OPTIONAL(c, "jack_set_timebase_callback",  f_set_timebase_cb);
     LOAD_SYM_OPTIONAL(c, "jack_release_timebase",       f_release_timebase);
     LOAD_SYM_OPTIONAL(c, "jack_set_process_callback",   f_set_process_cb);
@@ -862,6 +865,12 @@ uint32_t jm_get_buffer_size(JMClient *c) {
     if (!c || !c->jack_client || !c->f_get_buffer_size) return 0;
     if (atomic_load(&c->is_closing)) return 0;
     return (uint32_t)c->f_get_buffer_size(c->jack_client);
+}
+
+float jm_get_cpu_load(JMClient *c) {
+    if (!c || !c->jack_client || !c->f_cpu_load) return -1.0f;
+    if (atomic_load(&c->is_closing)) return -1.0f;
+    return c->f_cpu_load(c->jack_client);
 }
 
 bool jm_set_timebase_master(JMClient *c, double bpm,

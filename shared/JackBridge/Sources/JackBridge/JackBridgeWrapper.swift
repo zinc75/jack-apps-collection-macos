@@ -495,6 +495,13 @@ public final class JackBridgeWrapper {
         return jm_get_buffer_size(client)
     }
 
+    /// The audio load of the server, in percent of the time of a period (`jack_cpu_load`), or nil when the server does not say.
+    public var cpuLoad: Float? {
+        guard let client, isOpen, !isClosing else { return nil }
+        let load = jm_get_cpu_load(client)
+        return load >= 0 ? load : nil
+    }
+
     // MARK: - Timebase master
 
     /// Attempts to become the Jack timebase master.

@@ -178,6 +178,9 @@ uint32_t jm_get_sample_rate(JMClient *c);
 /// Returns the Jack server buffer size (frames per period), or 0 when unavailable.
 uint32_t jm_get_buffer_size(JMClient *c);
 
+/// Returns the audio load of the Jack server in percent of the time of a period (what `jack_cpu_load` says), or a negative value when unavailable.
+float jm_get_cpu_load(JMClient *c);
+
 /// Attempts to become the Jack timebase master.
 /// @param conditional  If true, fails silently when another master is already active.
 /// @return true if JackMate is now the timebase master.
