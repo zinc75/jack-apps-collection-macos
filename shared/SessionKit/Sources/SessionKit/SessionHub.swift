@@ -49,6 +49,8 @@ public final class SessionHub<S: HostedSession> {
         weak var window: NSWindow?
         var shownOnce = false
         var keepsRunning = false
+        /// When the window was found: for a moment it is not visible yet, and that is not a window that was hidden.
+        var attachedAt = Date.distantPast
         let created = Date()
     }
 
@@ -116,15 +118,27 @@ public final class SessionHub<S: HostedSession> {
         var state = states[session.id] ?? WindowState()
         state.window = window
         state.shownOnce = true
+        state.attachedAt = Date()
         states[session.id] = state
         presenceChanged()
+        // The window is on the screen a moment later: the application is looked at again then (it is not the menu bar's business before).
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(400))
+            self?.presenceChanged()
+        }
     }
+
+    /// How long a window that was just found is given to be on the screen.
+    @ObservationIgnored public var settlingTime: TimeInterval = 1
 
     /// Whether the window of a session is not there to be seen: closed (what runs goes on), minimized or hidden.
     public func isWindowHidden(_ session: S) -> Bool {
         guard let state = states[session.id], state.shownOnce else { return false }
         guard let window = state.window else { return true }
-        return window.isMiniaturized || !window.isVisible
+        if window.isMiniaturized { return true }
+        // A window that has just been found is not on the screen yet: it is not one that was hidden.
+        if !window.isVisible, Date().timeIntervalSince(state.attachedAt) < settlingTime { return false }
+        return !window.isVisible
     }
 
     /// The window of a session is closing: asks the session, and notes that what runs goes on without the window when it was said.
@@ -181,7 +195,13 @@ public final class SessionHub<S: HostedSession> {
         let seen = shownSessions.contains { !isWindowHidden($0) } || (sessionsWindow?.isVisible ?? false)
         // The Dock stays while something runs, even with no window: an icon of the menu bar can be hidden (by the notch, by the menus of another
         // application), and a running session, which takes the processor or the disk, must not be left without a sign that cannot be missed.
-        NSApp.setActivationPolicy(seen || sessions.isEmpty || anyRunning ? .regular : .accessory)
+        let policy: NSApplication.ActivationPolicy = seen || sessions.isEmpty || anyRunning ? .regular : .accessory
+        if NSApp.activationPolicy() != policy {
+            NSApp.setActivationPolicy(policy)
+            // An application that becomes a regular one again is not the active one: without this its menus and its name stay out of the menu bar
+            // (JackMate does the same). Only for a window that is there to be seen, never to take the focus from what the person is doing.
+            if policy == .regular, seen { NSApp.activate(ignoringOtherApps: true) }
+        }
         if configuration.showsDockBadge { NSApp.dockTile.badgeLabel = runningCount > 0 ? String(runningCount) : nil }
     }
 

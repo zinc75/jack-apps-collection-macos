@@ -36,7 +36,22 @@ final class FakeSession: HostedSession {
 final class SessionHubTests: XCTestCase {
     private func makeHub() -> SessionHub<FakeSession> {
         _ = NSApplication.shared
-        return SessionHub(configuration: SessionKitConfiguration(toolName: "Tool", showsDockBadge: false)) { FakeSession(id: $0) }
+        let hub = SessionHub(configuration: SessionKitConfiguration(toolName: "Tool", showsDockBadge: false)) { FakeSession(id: $0) }
+        // The windows of the tests are never on the screen: they are not given time to get there.
+        hub.settlingTime = 0
+        return hub
+    }
+
+    func testAWindowThatWasJustFoundIsNotOneThatWasHidden() async {
+        let hub = makeHub()
+        hub.settlingTime = 0.2
+        let session = hub.makeSession()
+        hub.attach(window(), to: session)
+        // It is not on the screen yet: if it were taken for a hidden one the application would leave the Dock and lose its menus.
+        XCTAssertFalse(hub.isWindowHidden(session))
+        XCTAssertFalse(hub.showsMenuBarIcon)
+        try? await Task.sleep(for: .milliseconds(300))
+        XCTAssertTrue(hub.isWindowHidden(session), "a window that does not come is hidden after all")
     }
 
     private func window() -> NSWindow {
