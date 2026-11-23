@@ -34,6 +34,8 @@ Both plots take the same gestures: a pinch or the wheel of a mouse zooms around 
 
 `PlotInspector` is the inspector of such a window, on the model of the inspectors of the editors of the system: text tabs at the top, and sections with a chevron that folds them, an optional box in the title and an "i" that opens the long explanation in a popover. An application adds its own pages with `PlotInspectorTab`, built from `PlotInspectorSection`s. `PlotInspectorToolbarContent` holds the help and the button that shows and hides the inspector.
 
+`plotOverlayInspector` shows an inspector as a panel of glass at the right edge of a window: over the plot when the window is narrow, or with `docked` keeping its room beside it, so that both look the same. It replaces the system's inspector where the window has to switch between the two. `plotWindowWidth` reads the width of the window itself, which does not change when the panel opens.
+
 SwiftUI lays a toolbar out once and does not do it again when an inspector opens or closes, so the items that belong to the side of the inspector stay where they were. `ToolbarRelayout`, put in the background of the content, asks the window to lay it out again by resizing it by two points and back.
 
 `PlotAnnotations` and `PlotMarker` mark places of the horizontal axis (the start of an attack, the end of a tail) with a name and a colour. `PlotLabels` holds every text the package shows, so that an application gives its own language; the default is English.
