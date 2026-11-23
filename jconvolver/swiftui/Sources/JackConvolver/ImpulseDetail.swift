@@ -25,6 +25,11 @@ struct ImpulseDetailWindow: View {
     private enum Kind: String { case time, spectrum, phase }
     /// The width of the inspector: fixed, as in Keynote.
     private static let inspectorWidth: CGFloat = 280
+    /// From this width of the window the inspector keeps its room beside the plot; under it, it floats over the plot instead of squeezing it.
+    private static let dockedFrom: CGFloat = 900
+    /// Whether the window is wide enough for the docked inspector. It is read from the window, and has a margin of its own when it goes back,
+    /// so that the nudge of the toolbar (two points) cannot make it flip at the limit.
+    @State private var isWide = true
 
     @State private var kind: Kind = .time
     @State private var data: CurveData?
@@ -125,19 +130,17 @@ struct ImpulseDetailWindow: View {
                 Text("Cette RI n'existe plus.").foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .inspector(isPresented: Bindable(controller).showsInspector) {
+        // The inspector is a panel of glass: beside the plot when the window has the room, over it when it has not.
+        .plotOverlayInspector(isPresented: controller.showsInspector, docked: isWide, width: Self.inspectorWidth) {
             PlotInspector(controller: controller, labels: .localized, accent: accent, extraTabs: [zoneTab])
-                .inspectorColumnWidth(min: Self.inspectorWidth, ideal: Self.inspectorWidth, max: Self.inspectorWidth)
-                // The help and the button of the inspector belong to its side of the toolbar: they stay at its left edge, and push the tools that
-                // are before them.
-                .toolbar { PlotInspectorToolbarContent(controller: controller, labels: .localized) }
         }
         .navigationTitle(String(localized: "Détail de la RI"))
         .navigationSubtitle(resolved.map { ($0.path as NSString).lastPathComponent } ?? "")
-        .toolbar { PlotToolbarContent(controller: controller, labels: .localized, accent: accent, includesInspectorControls: false) }
-        // The system lays the toolbar out once, and does not do it again when the inspector opens or closes: it is asked to, by a change of the
-        // size of the window that nobody sees.
-        .background(ToolbarRelayout(trigger: controller.showsInspector))
+        .toolbar { PlotToolbarContent(controller: controller, labels: .localized, accent: accent, includesInspectorControls: true) }
+        .plotWindowWidth { width in
+            let wide = isWide ? width >= Self.dockedFrom - 24 : width >= Self.dockedFrom
+            if wide != isWide { isWide = wide }
+        }
         .task(id: loadKey) { await load() }
         .task(id: ResponseKey(load: loadKey, used: draftUsed)) { await computeResponse() }
         .onChange(of: controller.yScale) { _, new in if kind != .phase { yScales[kind] = new } }

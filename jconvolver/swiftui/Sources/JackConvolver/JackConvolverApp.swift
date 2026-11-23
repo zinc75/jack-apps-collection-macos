@@ -74,7 +74,7 @@ struct JackConvolverApp: App {
                 .environment(model)
                 .environment(appearance)
                 .appAccent(appearance)
-                .frame(minWidth: 980, minHeight: 560)
+                .frame(minWidth: 720, minHeight: 560)
         }
         .defaultSize(width: 1280, height: 780)
         // The window of a response is opened from the matrix: it is not one that comes back with the application.
