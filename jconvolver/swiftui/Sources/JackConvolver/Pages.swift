@@ -102,9 +102,8 @@ struct ModeTile: View {
             }
             .padding(16)
             .frame(maxWidth: .infinity, minHeight: 170, maxHeight: 170, alignment: .topLeading)
-            .background(Color.primary.opacity(selected ? 0.08 : (hovered ? 0.06 : 0.035)), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(selected ? AnyShapeStyle(accent) : AnyShapeStyle(Color.primary.opacity(0.14)), lineWidth: selected ? 2 : 1))
+            // The same glass card as the welcome of the analysis, with the same discreet effects under the pointer and when it is the one chosen.
+            .glassCard(interactive: !locked, hovered: hovered && !locked, selected: selected)
             .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .buttonStyle(.plain)

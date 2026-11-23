@@ -239,10 +239,13 @@ struct ImpulseDetailPage: View {
             } else {
                 title
             }
-            // Always there, whatever the inspector shows: one more response on the plots.
-            AddTraceMenu { TraceGlyph(name: "plus.circle") }
-                .buttonStyle(GlyphButtonStyle())
+            // Always there, whatever the inspector shows, and said in words: one more response on the plots, or the end of the analysis.
+            AddTraceMenu { Label("Ajouter", systemImage: "plus") }
+                .controlSize(.small)
                 .help(String(localized: "Ajouter une réponse impulsionnelle aux tracés"))
+            Button { model.clearTraces() } label: { Label("Fermer l'analyse", systemImage: "xmark") }
+                .controlSize(.small)
+                .help(String(localized: "Ne plus rien tracer : retour à l'accueil de la page"))
         }
     }
 

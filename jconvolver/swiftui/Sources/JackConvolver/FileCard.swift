@@ -31,6 +31,12 @@ struct FileCard: View {
                 // Both controls are the same kind of thing and look alike: a circled symbol of the same size and weight, grey at rest, plain under the
                 // pointer. The first, the file, opens the page of the configuration file.
                 HStack(spacing: 0) {
+                    // While there is something to save, the button to do it is here (it is also in the menu of the file, and on ⌘S).
+                    if model.isEdited || model.savesAsNew {
+                        Button(model.savesAsNew ? "Enregistrer sous…" : "Enregistrer") { model.save() }
+                            .buttonStyle(.borderedProminent).controlSize(.small).accentTint()
+                            .help("Enregistrer le fichier de configuration (⌘S)")
+                    }
                     Spacer(minLength: 0)
                     Button { model.page = .config } label: { TraceGlyph(name: "doc.text") }
                         .buttonStyle(GlyphButtonStyle())

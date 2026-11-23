@@ -86,6 +86,40 @@ struct GlassTabs<Tag: Hashable>: View {
     }
 }
 
+extension View {
+    /// A card of Liquid Glass on macOS 26 (it answers the pointer when it is a button), a light panel with a border before. Under the pointer
+    /// (`hovered`) the edge takes a little of the accent.
+    /// A card that is the one chosen (`selected`) keeps a little of the accent: the edge and a faint shadow.
+    func glassCard(cornerRadius: CGFloat = 14, interactive: Bool = true, hovered: Bool = false, selected: Bool = false) -> some View {
+        modifier(GlassCard(cornerRadius: cornerRadius, interactive: interactive, hovered: hovered, selected: selected))
+    }
+}
+
+private struct GlassCard: ViewModifier {
+    let cornerRadius: CGFloat
+    let interactive: Bool
+    let hovered: Bool
+    let selected: Bool
+    @Environment(\.appAccentColor) private var accent
+
+    func body(content: Content) -> some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        Group {
+            if #available(macOS 26, *), GlassSupport.enabled {
+                content.glassEffect(interactive ? .regular.interactive() : .regular, in: shape)
+            } else {
+                content.background(Color.primary.opacity(hovered ? 0.06 : 0.035), in: shape)
+                    .overlay(shape.strokeBorder(Color.primary.opacity(0.14), lineWidth: 1))
+            }
+        }
+        // The effect of the pointer, the same on glass and on the panel that stands in for it: discreet, an edge in the accent and a faint shadow.
+        .overlay(shape.strokeBorder(accent.opacity(selected ? 0.55 : (hovered ? 0.35 : 0)), lineWidth: 1))
+        .shadow(color: accent.opacity(selected ? 0.16 : (hovered ? 0.12 : 0)), radius: selected || hovered ? 9 : 0, y: selected || hovered ? 3 : 0)
+        .animation(.easeOut(duration: 0.18), value: hovered)
+        .animation(.easeOut(duration: 0.2), value: selected)
+    }
+}
+
 /// A rounded panel, as the grouped sections of System Settings but for free-form content.
 struct Card<Content: View>: View {
     @ViewBuilder var content: Content

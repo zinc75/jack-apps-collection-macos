@@ -370,6 +370,12 @@ extension AppModel {
         page = .impulse
     }
 
+    /// Closes the analysis: no trace any more, the page shows its welcome again.
+    func clearTraces() {
+        traces = []
+        detail = nil
+    }
+
     func removeTrace(_ target: DetailTarget) {
         traces.removeAll { $0 == target }
         if detail == target { detail = traces.first }

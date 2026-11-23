@@ -187,24 +187,153 @@ struct TracesInspector: View {
     }
 }
 
-/// What the page shows when nothing is drawn: a way to draw something.
+/// What the page shows when nothing is drawn: a welcome with two cards. One response: the card turns into the list of those that can be drawn, to
+/// choose from. All the responses of the configuration: they are drawn together at once.
 struct TracesEmptyView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.appAccentColor) private var accent
+    @State private var choosing = false
+    /// The three filters of the list: the number of the input, the number of the output (a number, several separated by commas, or a range such as 2-4)
+    /// and a part of the name of the file.
+    @State private var filterInput = ""
+    @State private var filterOutput = ""
+    @State private var filterFile = ""
+    @State private var hoveredCard: Int?
 
     var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "waveform.path.ecg").font(.system(size: 34)).foregroundStyle(.tertiary)
-            Text("Aucune réponse impulsionnelle tracée").font(.headline)
-            if model.traceCandidates().isEmpty {
-                Text("Placez des fichiers sur les cases de la matrice : leurs réponses impulsionnelles pourront être tracées ici.")
-                    .foregroundStyle(.secondary).multilineTextAlignment(.center).frame(maxWidth: 360)
-            } else {
-                Text("Choisissez-en une, ou utilisez le bouton d'inspection d'une réponse dans la matrice.")
-                    .foregroundStyle(.secondary).multilineTextAlignment(.center).frame(maxWidth: 360)
-                AddTraceMenu { Label("Tracer une réponse", systemImage: "plus") }
+        let all = model.traceCandidates()
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Analyse").font(.title2).fontWeight(.semibold)
+                Text("Tracez la forme d'onde, le spectre et la phase des réponses impulsionnelles : une seule, ou plusieurs ensemble pour les comparer.")
+                    .font(.callout).foregroundStyle(.secondary)
             }
+            if all.isEmpty {
+                Text("Aucune réponse impulsionnelle issue d'un fichier. Placez des fichiers sur les cases de la matrice : elles pourront être tracées ici.")
+                    .foregroundStyle(.secondary)
+                    .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+                    .glassCard(interactive: false)
+            } else {
+                // Choosing, the list takes the height of the page (and most of its width); the other card stays as it is, at the top.
+                HStack(alignment: .top, spacing: 14) {
+                    oneCard(all)
+                    allCard(all).frame(maxWidth: choosing ? 260 : .infinity)
+                }
+                .frame(maxHeight: choosing ? .infinity : nil, alignment: .top)
+            }
+            if !choosing || all.isEmpty { Spacer(minLength: 0) }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // The width of the home page (760 points of content), so that the cards are as wide as the tiles there.
+        .padding(24)
+        .frame(maxWidth: 760, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
+    // MARK: The cards
+
+    private func tile(_ symbol: String) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 10, style: .continuous).fill(accent).frame(width: 38, height: 38)
+            Image(systemName: symbol).font(.system(size: 18, weight: .semibold)).foregroundStyle(.white)
+        }
+    }
+
+    /// The left card: one response. Its picture and its title stay; a click opens the list to choose from under them, in the same card (a click on
+    /// them closes it).
+    private func oneCard(_ all: [DetailTarget]) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Button { choosing.toggle(); if !choosing { filterInput = ""; filterOutput = ""; filterFile = "" } } label: {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        tile("waveform.path")
+                        Spacer()
+                        if choosing { Image(systemName: "chevron.up").font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary) }
+                    }
+                    Text("Une réponse impulsionnelle").font(.title3).fontWeight(.semibold)
+                    Text("Choisissez celle à tracer parmi les \(all.count) de la configuration, puis ajoutez-en d'autres au besoin.")
+                        .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            if choosing { chooser(all) }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, minHeight: 170, maxHeight: choosing ? .infinity : 170, alignment: .topLeading)
+        .glassCard(interactive: !choosing, hovered: hoveredCard == 0 && !choosing, selected: choosing)
+        .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .onHover { hoveredCard = $0 ? 0 : (hoveredCard == 0 ? nil : hoveredCard) }
+    }
+
+    /// Under the title of the card: the filter, and the responses that can be drawn.
+    private func chooser(_ all: [DetailTarget]) -> some View {
+        let shown = matches(all)
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                TextField("Entrée", text: $filterInput).textFieldStyle(.roundedBorder).frame(width: 84)
+                    .help("Numéro de l'entrée : 3, ou 1,3, ou 2-4")
+                TextField("Sortie", text: $filterOutput).textFieldStyle(.roundedBorder).frame(width: 84)
+                    .help("Numéro de la sortie : 3, ou 1,3, ou 2-4")
+                TextField("Nom du fichier", text: $filterFile).textFieldStyle(.roundedBorder)
+                Text("\(shown.count) / \(all.count)").font(.caption).foregroundStyle(.secondary).monospacedDigit()
+            }
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    ForEach(shown.prefix(200)) { target in
+                        Button { model.inspect(target) } label: {
+                            HStack(spacing: 8) {
+                                Text(verbatim: model.traceName(target)).font(.callout.weight(.semibold)).monospacedDigit().frame(width: 64, alignment: .leading)
+                                Text(verbatim: model.traceDetail(target)).font(.callout).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+                                Spacer(minLength: 0)
+                            }
+                            .padding(.vertical, 5).padding(.horizontal, 6)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        Divider()
+                    }
+                    if shown.count > 200 {
+                        Text("… et \(shown.count - 200) de plus : affinez le filtre.").font(.caption).foregroundStyle(.secondary).padding(8)
+                    }
+                }
+            }
+            .frame(minHeight: 120)
+        }
+    }
+
+    /// The right card: all the responses of the configuration, together.
+    private func allCard(_ all: [DetailTarget]) -> some View {
+        Button { model.addTraces(all) } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                tile("square.stack.3d.up")
+                Text("Toutes les réponses de la configuration").font(.title3).fontWeight(.semibold)
+                Text(all.count == 1 ? "La réponse issue d'un fichier est tracée." : "Les \(all.count) réponses issues d'un fichier sont tracées ensemble, pour les comparer.")
+                    .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                if all.count > 40 {
+                    Label("Beaucoup de réponses : le calcul peut prendre un moment.", systemImage: "clock").font(.caption).foregroundStyle(.orange)
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, minHeight: 170, maxHeight: 170, alignment: .topLeading)
+            .glassCard(hovered: hoveredCard == 1)
+            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .onHover { hoveredCard = $0 ? 1 : (hoveredCard == 1 ? nil : hoveredCard) }
+    }
+
+    /// The responses that the three filters keep. An empty filter keeps everything.
+    private func matches(_ all: [DetailTarget]) -> [DetailTarget] {
+        let inputs = NumberFilter.numbers(filterInput), outputs = NumberFilter.numbers(filterOutput)
+        let words = filterFile.lowercased().split(separator: " ").map(String.init)
+        return all.filter { target in
+            if let inputs, !inputs.contains(target.pair.input + 1) { return false }
+            if let outputs, !outputs.contains(target.pair.output + 1) { return false }
+            guard !words.isEmpty else { return true }
+            let file = model.traceDetail(target).lowercased()
+            return words.allSatisfy { file.contains($0) }
+        }
     }
 }
 
