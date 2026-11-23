@@ -29,11 +29,19 @@ let package = Package(
     targets: [
         // Runs a program in a pseudo-terminal (Swift cannot fork).
         .target(name: "CJConvolverPty"),
+        // libsamplerate, linked statically, to bring an impulse response to the rate of the server.
+        .target(
+            name: "CSamplerate",
+            publicHeadersPath: "include",
+            cSettings: [.unsafeFlags(["-I\(libs)/include"])],
+            linkerSettings: [.unsafeFlags(["-L\(libs)/lib", "-lsamplerate"])]
+        ),
         // Logic without any UI: the configuration files, what the programs say, the command lines, running them,
         // measuring their load, reading the sound files. Unit tested.
         .target(
             name: "JConvolverKit",
-            dependencies: ["CJConvolverPty", .product(name: "SoundFileKit", package: "SoundFileKit"), .product(name: "JackBridge", package: "JackBridge")],
+            dependencies: ["CJConvolverPty", "CSamplerate", .product(name: "SoundFileKit", package: "SoundFileKit"), .product(name: "CSndfile", package: "SoundFileKit"),
+                           .product(name: "JackBridge", package: "JackBridge")],
             swiftSettings: [.unsafeFlags(headers)]
         ),
         // The SwiftUI application. As in JackMate, UI code is main-actor isolated by default.

@@ -34,6 +34,7 @@ struct MatrixView: View {
                     }
                 }
                 LockBanner()
+                MissingFilesBanner()
                 if model.viewMode == .table {
                     ImpulseTable().frame(minHeight: 300)
                 } else {

@@ -130,6 +130,9 @@ final class AppModel {
     var message: String?
     var showsCommand = false
     var showsProblems = false
+    /// Where files that the configuration cannot find may be found again (next to the configuration file), and the sheet that proposes it.
+    var pathProposals: [PathProposal] = []
+    var showsResolver = false
     var showsNewConfiguration = false
     var showsPortNames = false
     /// Which side the page of the connections shows: the inputs (from JACK to jconvolver) or the outputs.
@@ -147,11 +150,19 @@ final class AppModel {
     var showsApplyWiring = false
     /// Set once the person said to leave (closing the window): quitting that follows must not ask again.
     @ObservationIgnored var leavingConfirmed = false
+    /// The name of the file that is being brought to the expected rate (nil when no conversion runs).
+    var conversionName: String?
     var showsResize = false
     var showsGestures = false
     /// The impulse responses drawn on the page of the analysis, in the order they were added, and the one of them that is edited (its zone, its
     /// markers, the inspector). A trace is a place of the matrix, not a file: one file can be placed twice, with other settings.
     var traces: [DetailTarget] = []
+    /// Files drawn with the traces for comparison, that are not a place of the matrix (the original of a file that was converted): read only.
+    var references: [ReferenceTrace] = []
+    /// The page that the analysis was opened from: closing the analysis goes back there.
+    var analysisOrigin: Page?
+    /// A conversion that is being looked at against its original: it can be kept or refused.
+    var pendingConversion: PendingConversion?
     var detail: DetailTarget?
     /// What a click on an inspect button does when other responses are already drawn.
     var inspectChoice = InspectChoice(rawValue: UserDefaults.standard.string(forKey: "inspectChoice") ?? "") ?? .ask {
@@ -295,6 +306,7 @@ final class AppModel {
 
     private func resetEditing() {
         traces = []
+        references = []
         detail = nil
         history.clear()
         zoomIsManual = false
@@ -319,6 +331,16 @@ final class AppModel {
         guard !isLocked, let document, let step = history.undo(current: document, in: page.rawValue) else { return }
         self.document = step.document
         documentChanged()
+    }
+
+    /// Undoes the last change when it is the one with this label, from wherever it was made (a change that was made in a view that is only looked at
+    /// since cannot have been followed by another one). Returns whether it was undone.
+    @discardableResult
+    func undoLast(labelled label: String) -> Bool {
+        guard !isLocked, let document, history.undoLabel == label, let step = history.undo(current: document) else { return false }
+        self.document = step.document
+        documentChanged()
+        return true
     }
 
     func redo() {
@@ -401,6 +423,27 @@ final class AppModel {
             latencyCompensation: options.latencyCompensation,
             fileInfo: { catalog.info(at: $0) })
         problems = ConvValidator.problems(in: document, context: context)
+        // Files that are not found: they may be next to the configuration file, in a folder that does not exist here under the old name.
+        if problems.contains(where: { if case .fileMissing = $0.kind { true } else { false } }) {
+            pathProposals = PathResolver.proposals(for: document, configDirectory: configDirectory, fileExists: { FileManager.default.fileExists(atPath: $0) },
+                                                   subfolders: { path in
+                var names: [String] = []
+                for name in (try? FileManager.default.contentsOfDirectory(atPath: path)) ?? [] {
+                    var isDirectory: ObjCBool = false
+                    if FileManager.default.fileExists(atPath: (path as NSString).appendingPathComponent(name), isDirectory: &isDirectory), isDirectory.boolValue { names.append(name) }
+                }
+                return names
+            })
+        } else {
+            pathProposals = []
+        }
+    }
+
+    /// Puts the files that were found again where they are, in one step of the history.
+    func applyPathProposals(_ proposals: [PathProposal]) {
+        guard !proposals.isEmpty else { return }
+        edit(String(localized: "fichiers retrouvés")) { PathResolver.apply(proposals, to: &$0) }
+        loadBin()
     }
 
     var hasErrors: Bool { problems.contains { $0.severity == .error } }

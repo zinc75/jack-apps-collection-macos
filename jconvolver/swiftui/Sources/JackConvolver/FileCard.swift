@@ -31,6 +31,12 @@ struct FileCard: View {
                 // Both controls are the same kind of thing and look alike: a circled symbol of the same size and weight, grey at rest, plain under the
                 // pointer. The first, the file, opens the page of the configuration file.
                 HStack(spacing: 0) {
+                    // Closing the configuration, alone at the left of the row, apart from the file and the menu that are at the right (it is also in
+                    // the menu, and on ⌘W).
+                    Button { model.closeConfiguration() } label: { TraceGlyph(name: "xmark.circle") }
+                        .buttonStyle(GlyphButtonStyle())
+                        .disabled(model.isLocked)
+                        .help("Fermer la configuration et revenir à l'Accueil (⌘W)")
                     // While there is something to save, the button to do it is here (it is also in the menu of the file, and on ⌘S).
                     if model.isEdited || model.savesAsNew {
                         Button(model.savesAsNew ? "Enregistrer sous…" : "Enregistrer") { model.save() }

@@ -7,10 +7,24 @@ import SwiftUI
 
 /// What the page of the analysis says of one trace: where it is in the matrix, what tells it apart, and a remark when it has another sample rate
 /// than the edited one.
+/// A file drawn with the traces to compare them, that is not a place of the matrix: the original of a file that was converted, with the part of it
+/// that the response read (in frames of that file). It is read only.
+struct ReferenceTrace: Identifiable, Equatable {
+    let path: String
+    let channel: Int
+    let offset: Int
+    let length: Int
+    let name: String
+    var id: String { "ref:\(path)#\(channel)" }
+}
+
 struct TraceRow: Identifiable {
     /// The number of the trace from 0, which is the number of its channel in the series of the plots.
     let id: Int
-    let target: DetailTarget
+    /// The place of the matrix; nil for a reference.
+    let target: DetailTarget?
+    /// The id of the reference when it is one.
+    var referenceID: String?
     let name: String
     let detail: String
     let note: String?
@@ -116,9 +130,18 @@ struct TracesInspector: View {
     @Bindable var series: PlotSeriesSet
     let rows: [TraceRow]
     @Binding var engineView: Bool
+    @Binding var showsDifference: Bool
+    /// A reference is drawn: what is only for a comparison is offered.
+    let isComparing: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            if isComparing {
+                PlotInspectorSection(id: "comparison", title: String(localized: "Comparaison"),
+                                     info: String(localized: "La courbe du résidu est la différence des deux spectres : elle montre, par douzièmes d'octave, à quelle distance sous les spectres ils sont l'un de l'autre. Les deux réponses sont moyennées dans les mêmes bandes, à la même fréquence quelle que soit celle de chacune.")) {
+                    Toggle("Afficher le spectre du résidu", isOn: $showsDifference).toggleStyle(.checkbox).accentTint().font(.callout)
+                }
+            }
             PlotInspectorSection(id: "engineView", title: String(localized: "Signal tracé"),
                                  info: String(localized: "Appliquer troncature, gain et retard : chaque trace est la partie du fichier que jconvolver lit (début et longueur du fichier .conf), multipliée par son gain, après son retard. La forme d'onde, le spectre et la phase sont ceux de la réponse en service. Les poignées de troncature et les repères du fichier sont masqués dans cette vue ; la page Troncature de l'inspecteur reste active.")) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -158,7 +181,7 @@ struct TracesInspector: View {
     }
 
     @ViewBuilder private func line(_ row: TraceRow) -> some View {
-        let edited = model.detail == row.target
+        let edited = row.target != nil && model.detail == row.target
         if series.items.indices.contains(row.id) {
             HStack(alignment: .top, spacing: 6) {
                 Toggle("", isOn: $series.items[row.id].isVisible).labelsHidden().toggleStyle(.checkbox).tint(series.items[row.id].color)
@@ -170,18 +193,28 @@ struct TracesInspector: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .opacity(series.items[row.id].isVisible ? 1 : 0.5)
-                Button { model.detail = row.target } label: {
-                    Image(systemName: edited ? "pencil.circle.fill" : "pencil.circle")
-                        .foregroundStyle(edited ? accent : Color.secondary)
+                if let target = row.target {
+                    Button { model.detail = target } label: {
+                        Image(systemName: edited ? "pencil.circle.fill" : "pencil.circle")
+                            .foregroundStyle(edited ? accent : Color.secondary)
+                    }
+                    .buttonStyle(.plain).disabled(!series.items[row.id].isVisible)
+                    .help(edited ? String(localized: "Trace éditée") : String(localized: "Éditer cette trace"))
+                } else {
+                    // A reference is only looked at: it can be taken away.
+                    Button { if let id = row.referenceID { model.removeReference(id) } } label: { Image(systemName: "xmark.circle").foregroundStyle(.secondary) }
+                        .buttonStyle(.plain).help(String(localized: "Ne plus tracer cette référence"))
                 }
-                .buttonStyle(.plain).disabled(!series.items[row.id].isVisible)
-                .help(edited ? String(localized: "Trace éditée") : String(localized: "Éditer cette trace"))
             }
             .padding(.vertical, 3)
             .contextMenu {
-                Button("Éditer cette trace") { model.detail = row.target }.disabled(edited || !series.items[row.id].isVisible)
+                if let target = row.target {
+                    Button("Éditer cette trace") { model.detail = target }.disabled(edited || !series.items[row.id].isVisible)
+                }
                 Button("Afficher seule") { series.solo(row.id) }
-                Button("Ne plus tracer", role: .destructive) { model.removeTrace(row.target) }
+                Button("Ne plus tracer", role: .destructive) {
+                    if let target = row.target { model.removeTrace(target) } else if let id = row.referenceID { model.removeReference(id) }
+                }
             }
         }
     }
@@ -343,6 +376,11 @@ struct TracesEmptyView: View {
 struct TracesLegend: View {
     @Environment(AppModel.self) private var model
     @Bindable var series: PlotSeriesSet
+    /// A comparison of a conversion with its original: three chips at most (original, converted, difference), only to tell the colours apart.
+    var comparing = false
+    /// Whether the curve of the difference is drawn; its chip is then in the legend, and a click on it hides the curve.
+    var differenceShown = false
+    var onHideDifference: () -> Void = {}
 
     /// The height of all the chips, so that the legend takes what it needs.
     @State private var contentHeight: CGFloat = 24
@@ -362,6 +400,7 @@ struct TracesLegend: View {
             // The chips go on rows, filled from the right, as many as the width takes: a few traces make one row, many make several.
             FlowLayout(spacing: 6, rowSpacing: Self.rowGap, alignment: 1) {
                 ForEach($series.items) { $item in chip($item) }
+                if differenceShown { differenceChip }
             }
             .padding(.vertical, 1)
             .onGeometryChange(for: CGFloat.self, of: { $0.size.height }) { contentHeight = $0 }
@@ -381,6 +420,21 @@ struct TracesLegend: View {
         ], startPoint: .top, endPoint: .bottom))
     }
 
+    private var differenceChip: some View {
+        let color = Color(white: 0.62)
+        return HStack(spacing: 5) {
+            Circle().fill(color).frame(width: 11, height: 11)
+            Text("Résidu").font(.callout)
+        }
+        .padding(.horizontal, 9)
+        .frame(height: Self.chipHeight)
+        .background(color.opacity(0.1), in: Capsule())
+        .overlay(Capsule().strokeBorder(color.opacity(0.4), lineWidth: 1))
+        .contentShape(Capsule())
+        .onTapGesture { onHideDifference() }
+        .help(String(localized: "Clic : masquer le spectre du résidu."))
+    }
+
     private func chip(_ item: Binding<PlotSeries>) -> some View {
         let value = item.wrappedValue
         let target = model.traces.indices.contains(value.id) ? model.traces[value.id] : nil
@@ -396,14 +450,19 @@ struct TracesLegend: View {
             .onTapGesture(count: 2) { series.solo(value.id) }
             .onTapGesture { item.isVisible.wrappedValue.toggle() }
             .help(String(localized: "Clic : afficher ou masquer. Double clic : afficher seule, puis tout réafficher."))
-            Button { if let target { model.detail = target } } label: {
-                Image(systemName: edited ? "pencil.circle.fill" : "pencil.circle").font(.system(size: 12))
-                    .foregroundStyle(edited ? Color.primary : Color.secondary.opacity(0.7))
+            if target != nil && !comparing {
+                Button { if let target { model.detail = target } } label: {
+                    Image(systemName: edited ? "pencil.circle.fill" : "pencil.circle").font(.system(size: 12))
+                        .foregroundStyle(edited ? Color.primary : Color.secondary.opacity(0.7))
+                }
+                .buttonStyle(.plain)
+                // A trace that is not shown cannot be edited.
+                .disabled(!value.isVisible)
+                .help(edited ? String(localized: "Trace éditée") : String(localized: "Éditer cette trace"))
+            } else if !comparing {
+                // A reference is only looked at.
+                Text("réf.").font(.system(size: 10)).foregroundStyle(.secondary)
             }
-            .buttonStyle(.plain)
-            // A trace that is not shown cannot be edited.
-            .disabled(!value.isVisible)
-            .help(edited ? String(localized: "Trace éditée") : String(localized: "Éditer cette trace"))
         }
         .padding(.leading, 9).padding(.trailing, 6)
         .frame(height: Self.chipHeight)

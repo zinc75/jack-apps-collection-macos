@@ -52,10 +52,16 @@ struct ImpulseDetailPage: View {
     @State private var seriesKeys: [String] = []
     /// The traces other than the edited one: their samples, their peaks and their frequency response on the zone they read.
     @State private var others: [String: LoadedTrace] = [:]
+    /// The references (the original of a file that was converted), loaded: their samples and their frequency response on the part that was read.
+    @State private var refs: [String: LoadedTrace] = [:]
     /// The files already read, by path and channel, so that a trace whose zone changes is not read again.
     @State private var fileCache: [String: (CurveData, PeakPyramid)] = [:]
     /// Whether the traces are drawn with the zone, the gain and the delay of their place applied, instead of as the files are, and those traces.
     @State private var engineView = false
+    /// Whether the difference of the two spectra is drawn when a comparison is looked at.
+    @State private var showsDifference = false
+    /// The vertical axes are to be fitted when the traces of the engine are made (the switch to "Appliquer troncature, gain et retard").
+    @State private var fitsAfterEngine = false
     @State private var engineTraces: [String: LoadedTrace] = [:]
     @State private var engineEntries: [String: EngineEntry] = [:]
     @State private var time = PlotViewport.signal(count: 2)
@@ -122,7 +128,7 @@ struct ImpulseDetailPage: View {
 
     /// Sets the zone of the impulse response from the handles (one change in the history of the matrix).
     private func commitZone(_ z: ClosedRange<Double>? = nil) {
-        guard !model.isLocked else { self.zone = zoneOfImpulse; return }
+        guard !model.isLocked, !isComparing else { self.zone = zoneOfImpulse; return }
         guard let target = model.detail, let impulse, let total = data?.count, total > 1 else { return }
         let zone = z ?? self.zone
         let start = max(0, Int(zone.lowerBound.rounded())), end = Int(zone.upperBound.rounded())
@@ -160,7 +166,29 @@ struct ImpulseDetailPage: View {
                         // With several traces, what each colour is, beside the title and without the inspector.
                         HStack(alignment: .top, spacing: 16) {
                             header(resolved, target).layoutPriority(1)
-                            if model.traces.count > 1 { TracesLegend(series: series).frame(maxWidth: .infinity) }
+                            let differenceShown = showsDifference && kind == .spectrum && isComparing
+                            if series.items.count > 1 || differenceShown {
+                                TracesLegend(series: series, comparing: isComparing, differenceShown: differenceShown,
+                                             onHideDifference: { showsDifference = false }).frame(maxWidth: .infinity)
+                            }
+                        }
+                        rateBanner
+                        conversionBanner
+                        if let line = deviationLine {
+                            HStack(spacing: 10) {
+                                Label(line, systemImage: "chart.xyaxis.line").font(.callout).foregroundStyle(.secondary).lineLimit(2)
+                                Spacer(minLength: 8)
+                                // The curve of this difference, on the spectra, is one click away from the sentence.
+                                // The difference is a curve of the spectra: showing it goes to the view of the frequency, from the other two.
+                                let visible = showsDifference && kind == .spectrum
+                                Button(visible ? "Masquer le spectre du résidu" : "Afficher le spectre du résidu") {
+                                    if visible { showsDifference = false } else { showsDifference = true; kind = .spectrum }
+                                }
+                                    .controlSize(.small)
+                                    .help("Le résidu : la différence des deux spectres, par douzièmes d'octave, dans la vue Fréquence")
+                            }
+                            .padding(.horizontal, 12).padding(.vertical, 6)
+                            .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                         }
                         tabs(impulse)
                     }
@@ -194,9 +222,25 @@ struct ImpulseDetailPage: View {
         // The time axis follows the longest trace that is shown.
         .task(id: TimeFit(length: timeLength, load: loadKey)) { fitTime() }
         .onChange(of: model.traces) { _, _ in syncSeries() }
+        .onChange(of: model.references) { _, _ in syncSeries() }
+        .onChange(of: model.pendingConversion) { _, _ in syncSeries() }
+        // The residual is far below the spectra: showing it or hiding it fits the vertical axis again to what is drawn, so that the spectra
+        // keep the whole height when it is not there.
+        .onChange(of: showsDifference) { _, _ in
+            guard response?.isEmpty == false else { return }
+            fitFrequencyAxes()
+        }
+        // The signal as the engine reads it has another level, another length, another delay: the vertical axes of the spectrum and of the phase
+        // are fitted again to it, and to the file again when it is left. The traces of the engine are made a moment after the switch.
+        .onChange(of: engineView) { _, on in
+            if on { fitsAfterEngine = true } else { fitFrequencyAxes(); fitTimeAmplitude(force: true) }
+        }
+        .task(id: model.references) { await loadReferences() }
         // What is edited is always a trace that is shown: when the edited one is hidden (alone-view of another, the eye of the list), the edition goes to
         // the first one that is.
         .onChange(of: series.visible.map(\.id)) { _, shown in
+            // With the gain applied the vertical axes follow what is drawn, so showing or hiding a trace fits them again.
+            if engineView { fitFrequencyAxes(); fitTimeAmplitude(force: true) }
             guard let edited = editedIndex, !shown.contains(edited), let first = shown.first, model.traces.indices.contains(first) else { return }
             model.detail = model.traces[first]
         }
@@ -243,9 +287,45 @@ struct ImpulseDetailPage: View {
             AddTraceMenu { Label("Ajouter", systemImage: "plus") }
                 .controlSize(.small)
                 .help(String(localized: "Ajouter une réponse impulsionnelle aux tracés"))
-            Button { model.clearTraces() } label: { Label("Fermer l'analyse", systemImage: "xmark") }
-                .controlSize(.small)
-                .help(String(localized: "Ne plus rien tracer : retour à l'accueil de la page"))
+            // While a conversion is looked at, the way out is the banner (keep it, or refuse it): a second one would not say which.
+            if model.pendingConversion == nil {
+                Button { model.closeAnalysis() } label: { Label("Fermer l'analyse", systemImage: "xmark") }
+                    .controlSize(.small)
+                    .help(String(localized: "Ne plus rien tracer et revenir à la page d'où l'analyse a été ouverte"))
+            }
+        }
+    }
+
+    /// A conversion that is looked at against its original: it is kept, or refused (the matrix goes back to the original).
+    @ViewBuilder private var conversionBanner: some View {
+        if let pending = model.pendingConversion {
+            HStack(spacing: 10) {
+                Label("Conversion à \(pending.rate.formatted(.number.precision(.fractionLength(0...1)))) Hz : à comparer avec l'original.", systemImage: "arrow.triangle.2.circlepath")
+                    .font(.callout).lineLimit(2)
+                Spacer(minLength: 8)
+                Button("Refuser") { model.refuseConversion() }.controlSize(.small)
+                    .help(pending.created ? "Revient à l'original dans la matrice et met le fichier converti à la corbeille." : "Revient à l'original dans la matrice.")
+                Button("Garder la conversion") { model.keepConversion() }.controlSize(.small).buttonStyle(.borderedProminent).accentTint()
+            }
+            .padding(.horizontal, 12).padding(.vertical, 7)
+            .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+        }
+    }
+
+    /// A file at another rate than the one that is expected: said, with the way to bring it to it.
+    @ViewBuilder private var rateBanner: some View {
+        if let expected = model.expectedRate, let rate = data?.sampleRate, abs(rate - expected) > 0.5, let path = resolved?.path {
+            let hz: (Double) -> String = { $0.formatted(.number.precision(.fractionLength(0...1))) }
+            HStack(spacing: 10) {
+                Label(model.mode == .realTime ? "Ce fichier est à \(hz(rate)) Hz, le serveur JACK à \(hz(expected)) Hz."
+                                              : "Ce fichier est à \(hz(rate)) Hz, le fichier d'entrée à \(hz(expected)) Hz.",
+                      systemImage: "exclamationmark.triangle.fill")
+                    .font(.callout).foregroundStyle(.orange).lineLimit(2)
+                Spacer(minLength: 8)
+                ConvertButton(path: path, rate: expected)
+            }
+            .padding(.horizontal, 12).padding(.vertical, 7)
+            .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
         }
     }
 
@@ -295,10 +375,10 @@ struct ImpulseDetailPage: View {
                 VStack(spacing: 8) {
                     // With the zone, the gain and the delay applied, the zone is not drawn on the file: no handles, no markers of the file.
                     SignalPlot(traces: timeTraces, viewport: $time, sampleRate: data.sampleRate, amplitude: yScales[.time] ?? .linear, accent: accent,
-                               labels: .localized, controller: controller, annotations: engineView ? PlotAnnotations() : annotations,
+                               labels: .localized, controller: controller, annotations: engineView || isComparing ? PlotAnnotations() : annotations,
                                region: showsHandles ? regionEditor(total: data.count) : nil)
                         .trackPlotBottom(below: PlotLayout.bottom + (showsHandles ? PlotLayout.regionRail : 0), in: Self.pageSpace) { plotBottom = $0 }
-                    PlotOverview(signal: engineView ? (editedEngine?.pyramid ?? pyramid) : pyramid, viewport: $time, region: engineView ? nil : zone,
+                    PlotOverview(signal: engineView ? (editedEngine?.pyramid ?? pyramid) : pyramid, viewport: $time, region: engineView || isComparing ? nil : zone,
                                  regionColor: colorScheme == .dark ? Self.zoneColor : Self.zoneColorLight, accent: editedColor)
                 }
             case .spectrum:
@@ -325,7 +405,10 @@ struct ImpulseDetailPage: View {
     }
 
     /// The handles of the zone, its bar and its rail: only to change it, so not with the zone applied to the traces, nor while the engine runs.
-    private var showsHandles: Bool { !engineView && !model.isLocked }
+    private var showsHandles: Bool { !engineView && !model.isLocked && !isComparing }
+
+    /// A comparison with a reference is only looked at: no markers of the analysis, no handles, no zone to change.
+    private var isComparing: Bool { !model.references.isEmpty }
 
     /// The attack and the end of the tail are marked (the zone the engine reads has its own handles).
     private var annotations: PlotAnnotations {
@@ -359,9 +442,13 @@ struct ImpulseDetailPage: View {
         PlotInspectorTab(id: "zone", title: String(localized: "Troncature")) {
             VStack(alignment: .leading, spacing: 8) {
                 LockBanner().padding(.top, 8)
+                if isComparing {
+                    Label("Comparaison : consultation seulement. Fermez-la pour régler la troncature.", systemImage: "eye")
+                        .font(.callout).foregroundStyle(.secondary).padding(.top, 8)
+                }
                 ZoneInspector(zone: zone, total: data?.count ?? 0, sampleRate: data?.sampleRate ?? 0,
                               attack: analysis?.attackFrame, tail: analysis?.tailFrame, apply: { applyZone(start: $0, end: $1) })
-                    .disabled(model.isLocked)
+                    .disabled(model.isLocked || isComparing)
             }
         }
     }
@@ -387,6 +474,12 @@ struct ImpulseDetailPage: View {
 
     /// What the plots need of a trace: its samples, its peaks and its frequency response, when they are there.
     private func loadedTrace(_ id: Int) -> (data: CurveData, pyramid: PeakPyramid, response: FrequencyResponse?)? {
+        // After the traces of the matrix come the references.
+        if id >= model.traces.count {
+            let index = id - model.traces.count
+            guard model.references.indices.contains(index) else { return nil }
+            return refs[model.references[index].id].map { ($0.data, $0.pyramid, $0.response) }
+        }
         guard model.traces.indices.contains(id) else { return nil }
         let trace = model.traces[id]
         if engineView { return engineTraces[trace.id].map { ($0.data, $0.pyramid, $0.response) } }
@@ -408,10 +501,19 @@ struct ImpulseDetailPage: View {
     }
 
     private var magnitudeCurves: [PlotCurve] {
-        drawOrder.compactMap { s in
+        var curves: [PlotCurve] = drawOrder.compactMap { s in
             guard let r = loadedTrace(s.id)?.response else { return nil }
             return PlotCurve(name: s.name, x: r.frequencies, y: r.magnitudes, color: tint(s), isMagnitude: true)
         }
+        // A comparison also draws the difference of the two spectra, under them: how far they are from each other.
+        if showsDifference, let reference = model.references.first, let edited = response, !edited.isEmpty, let other = refs[reference.id]?.response, !other.isEmpty {
+            let difference = SpectrumComparison.difference(edited, other)
+            if !difference.frequencies.isEmpty {
+                curves.append(PlotCurve(name: String(localized: "résidu"), x: difference.frequencies, y: difference.magnitudes, color: Color(white: 0.62),
+                                        filled: false, isMagnitude: true))
+            }
+        }
+        return curves
     }
 
     private var phaseCurves: [PlotCurve] {
@@ -458,39 +560,83 @@ struct ImpulseDetailPage: View {
         }
         engineTraces = next
         engineEntries = made
+        // The signal as the engine reads it: the vertical axes follow what is drawn, whatever was changed (the switch, a gain, a zone).
+        fitsAfterEngine = false
+        fitFrequencyAxes()
+        fitTimeAmplitude(force: true)
+    }
+
+    /// The vertical axis of the waveform is not limited to the full scale: a signal with a gain above 1 is shown whole, and one with a gain of
+    /// -15 dB is not drawn in a corner. The bounds follow the largest sample of the traces that are shown; for the file as it is, never less than
+    /// the full scale (a quiet recording is seen as quiet), for the signal as the engine reads it (the gain applied), nothing more than it needs.
+    /// The view is fitted to the bounds when it was, when they grew, or when `force` says so (the switch between the two). A scale in decibels
+    /// keeps its range.
+    private func fitTimeAmplitude(force: Bool = false) {
+        guard yScales[.time] ?? .linear == .linear else { return }
+        let peak = series.visible.compactMap { loadedTrace($0.id)?.data.samples.lazy.map { abs(Double($0)) }.max() }.max() ?? 0
+        guard peak.isFinite else { return }
+        let m = engineView ? peak * 1.05 : max(1.05, peak * 1.05)
+        guard m > 0 else { return }
+        let current = time.y.bounds.upperBound
+        guard force || abs(current - m) > 1e-9 else { return }
+        time.y = force || time.y.isFitted || m > current ? AxisState(bounds: -m...m, minSpan: 1e-9) : time.y.withBounds(-m...m)
+    }
+
+    /// Fits the vertical axes of the spectrum and of the phase to the curves that are drawn, the horizontal ones staying where the person put them.
+    private func fitFrequencyAxes() {
+        let scale: AxisScale = .logarithmic
+        let fitted = PlotViewport.curves(magnitudeCurves, xScale: scale, yScale: yScales[.spectrum] ?? .decibels(floor: -120), visibleX: 20...20_000)
+        spectrum = PlotViewport(x: spectrum.x, y: fitted.y)
+        let drawn = controller.display.showGroupDelay ? phaseCurves.map { $0.groupDelay() } : phaseCurves
+        if !drawn.isEmpty { phase = PlotViewport(x: phase.x, y: PlotViewport.curves(drawn, xScale: scale, visibleX: 20...20_000).y) }
     }
 
     /// The rows of the list of traces in the inspector.
     private var traceRows: [TraceRow] {
         let rate = data?.sampleRate
-        return model.traces.enumerated().map { i, trace in
+        var rows = model.traces.enumerated().map { i, trace in
             var note: String?
             if let rate, let other = loadedTrace(i)?.data.sampleRate, abs(other - rate) > 0.5 {
                 note = String(localized: "\(Int(other)) Hz : placée sur l'axe du temps de la trace éditée.")
             }
             return TraceRow(id: i, target: trace, name: model.traceName(trace), detail: model.traceDetail(trace), note: note)
         }
+        for (j, reference) in model.references.enumerated() {
+            rows.append(TraceRow(id: model.traces.count + j, target: nil, referenceID: reference.id, name: reference.name,
+                                 detail: (reference.path as NSString).lastPathComponent,
+                                 note: String(localized: "Référence : pour comparer, en lecture seule.")))
+        }
+        return rows
     }
 
     /// The page "Tracés" of the inspector.
     private var tracesTab: PlotInspectorTab {
-        PlotInspectorTab(id: "traces", title: String(localized: "Tracés")) { TracesInspector(series: series, rows: traceRows, engineView: $engineView) }
+        PlotInspectorTab(id: "traces", title: String(localized: "Tracés")) { TracesInspector(series: series, rows: traceRows, engineView: $engineView, showsDifference: $showsDifference, isComparing: isComparing) }
     }
 
     /// Makes the channels of the plots follow the traces: one each, with the colour and the visibility it had.
     private func syncSeries() {
-        let traces = model.traces
+        let traces = model.traces, references = model.references
+        let keys = traces.map(\.id) + references.map(\.id)
         let old = series.items, oldKeys = seriesKeys
-        let next = PlotSeriesSet(count: traces.count, accent: accent, names: traces.map { model.traceName($0) })
-        for (i, trace) in traces.enumerated() {
-            if let k = oldKeys.firstIndex(of: trace.id), let item = old.first(where: { $0.id == k }) {
+        // While a conversion is compared with its original, the colours are named for what they are, not for the places of the matrix.
+        let converted = model.pendingConversion.map { Self.kilohertz($0.rate) }
+        let names = traces.map { trace -> String in
+            guard let converted, !references.isEmpty, trace == model.detail else { return model.traceName(trace) }
+            return String(localized: "Ré-échantillonné · \(converted) kHz")
+        } + references.map(\.name)
+        let next = PlotSeriesSet(count: keys.count, accent: accent, names: names)
+        for (i, key) in keys.enumerated() {
+            if let k = oldKeys.firstIndex(of: key), let item = old.first(where: { $0.id == k }) {
                 next.items[i].color = item.color
                 next.items[i].isVisible = item.isVisible
             }
         }
         series = next
-        seriesKeys = traces.map(\.id)
+        seriesKeys = keys
     }
+
+    private static func kilohertz(_ rate: Double) -> String { (rate / 1000).formatted(.number.precision(.fractionLength(0...1))) }
 
     /// What decides whether the traces other than the edited one have to be loaded again.
     private var othersKey: [OtherKey] {
@@ -529,6 +675,43 @@ struct ImpulseDetailPage: View {
         others = next
     }
 
+    /// Reads the references and computes their frequency response on the part of the file that was read.
+    private func loadReferences() async {
+        var next: [String: LoadedTrace] = [:]
+        for reference in model.references {
+            let fileKey = "\(reference.path)#\(reference.channel)"
+            var file = fileCache[fileKey]
+            if file == nil {
+                file = await ImpulseLoading.load(path: reference.path, channel: reference.channel)
+                fileCache[fileKey] = file
+            }
+            guard !Task.isCancelled else { return }
+            guard let (curve, pyramid) = file else { continue }
+            let total = curve.count
+            let start = min(reference.offset, total)
+            let end = reference.length > 0 ? min(reference.offset + reference.length, total) : total
+            let range = start..<max(end, start)
+            var computed: FrequencyResponse?
+            if range.count >= 2 {
+                computed = await Task.detached(priority: .userInitiated) { FrequencyResponse(samples: curve.samples, range: range, sampleRate: curve.sampleRate) }.value
+            }
+            guard !Task.isCancelled else { return }
+            next[reference.id] = LoadedTrace(key: OtherKey(id: reference.id, path: reference.path, channel: reference.channel, offset: reference.offset, length: reference.length),
+                                             data: curve, pyramid: pyramid, response: computed)
+        }
+        refs = next
+    }
+
+    /// How far the response that is edited is from the first reference, over the band where both are known.
+    private var deviationLine: String? {
+        guard let reference = model.references.first, let edited = response, !edited.isEmpty, let other = refs[reference.id]?.response,
+              let deviation = SpectrumComparison.maxDeviation(edited, other) else { return nil }
+        let db = deviation.decibels.formatted(.number.precision(.fractionLength(2)))
+        let upper = (deviation.band.upperBound / 1000).formatted(.number.precision(.fractionLength(1)))
+        let at = (deviation.hertz < 1000 ? Int(deviation.hertz.rounded()).formatted() + " Hz" : (deviation.hertz / 1000).formatted(.number.precision(.fractionLength(1))) + " kHz")
+        return String(localized: "Écart avec l'original : \(db) dB au plus (vers \(at)), de 20 Hz à \(upper) kHz, par douzièmes d'octave.")
+    }
+
     /// The length of the time axis, in frames of the edited trace: the longest of the traces that are shown (hidden ones do not count, so that
     /// showing one alone fits the axis to it).
     private var timeLength: Int {
@@ -547,6 +730,7 @@ struct ImpulseDetailPage: View {
         let length = timeLength
         guard length >= 2 else { return }
         time = PlotViewport.signal(count: length, amplitude: yScales[.time] ?? .linear)
+        fitTimeAmplitude()
         #if DEBUG
         // JACKCONVOLVER_ZOOM=<first>,<last> shows that part of the waveform (to look at the minimap).
         if let z = ProcessInfo.processInfo.environment["JACKCONVOLVER_ZOOM"]?.split(separator: ",").compactMap({ Double($0) }), z.count == 2 {

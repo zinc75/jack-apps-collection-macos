@@ -130,6 +130,15 @@ struct ProblemList: View {
                         Text(problem.message).fixedSize(horizontal: false, vertical: true)
                     }
                     Spacer(minLength: 0)
+                    // A file at another rate than the one that is expected: it can be brought to it.
+                    if case .sampleRateMismatch(let path, _, let expected) = problem.kind {
+                        ConvertButton(path: path, rate: expected)
+                    }
+                    // A file that is not found, that may be next to the configuration file.
+                    if case .fileMissing(let path) = problem.kind {
+                        if !model.pathProposals.isEmpty { Button("Chercher…") { model.showsResolver = true }.controlSize(.small).disabled(model.isLocked) }
+                        LocateButton(path: path)
+                    }
                 }
                 .padding(.horizontal, 14).padding(.vertical, 8)
             }
@@ -237,5 +246,28 @@ struct DisplayView: View {
                 }
             }
         }
+    }
+}
+
+/// "Convertir à 48 kHz": brings a file to the rate that is expected (a new file next to it).
+struct ConvertButton: View {
+    @Environment(AppModel.self) private var model
+    let path: String
+    let rate: Double
+
+    var body: some View {
+        let busy = model.conversionName != nil
+        Button {
+            model.convertToExpectedRate(path: path)
+        } label: {
+            if busy && model.conversionName == (path as NSString).lastPathComponent {
+                HStack(spacing: 6) { ProgressView().controlSize(.small); Text("Conversion…") }
+            } else {
+                Text("Convertir à \(rate.formatted(.number.precision(.fractionLength(0...1)))) Hz")
+            }
+        }
+        .controlSize(.small)
+        .disabled(busy || model.isLocked)
+        .help("Écrit une copie à cette fréquence à côté du fichier (l'original n'est pas touché) et la place dans la matrice, à la place de l'original.")
     }
 }

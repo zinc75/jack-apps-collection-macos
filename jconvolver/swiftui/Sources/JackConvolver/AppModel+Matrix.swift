@@ -323,6 +323,12 @@ extension AppModel {
     /// The pairs with an error: they are outlined in red.
     var pairsInError: Set<ConvPair> { Set(problems.filter { $0.severity == .error }.compactMap(\.pair)) }
 
+    /// What is wrong with one impulse response: the problems that are about its place (not the ones of the whole matrix).
+    func problems(at pair: ConvPair, index: Int) -> [ConvProblem] {
+        let place = ConvProblem.Place(pair: pair, index: index)
+        return problems.filter { $0.places.contains(place) }
+    }
+
     /// The impulse responses with an error: only these are marked in red in the lists, not the others of the same pair.
     var impulsesInError: Set<ConvProblem.Place> { Set(problems.filter { $0.severity == .error }.flatMap(\.places)) }
 }
@@ -348,8 +354,9 @@ extension AppModel {
 
     /// Draws a response on the page of the analysis and edits it: alone, or with the ones that are already drawn.
     func inspect(_ target: DetailTarget, adding: Bool = false) {
-        if !adding || traces.isEmpty { traces = [target] } else if !traces.contains(target) { traces.append(target) }
+        if !adding || traces.isEmpty { traces = [target]; references = []; pendingConversion = nil } else if !traces.contains(target) { traces.append(target) }
         detail = target
+        if page != .impulse { analysisOrigin = page }
         page = .impulse
     }
 
@@ -367,13 +374,35 @@ extension AppModel {
     func addTraces(_ targets: [DetailTarget]) {
         for target in targets where !traces.contains(target) { traces.append(target) }
         if detail == nil { detail = traces.first }
+        if page != .impulse { analysisOrigin = page }
         page = .impulse
     }
 
     /// Closes the analysis: no trace any more, the page shows its welcome again.
     func clearTraces() {
         traces = []
+        references = []
+        pendingConversion = nil
         detail = nil
+    }
+
+    /// Closes the analysis from its page: nothing is drawn any more, and the page that it was opened from is shown again (the matrix when there is
+    /// none known), not the welcome of the analysis.
+    func closeAnalysis() {
+        clearTraces()
+        page = analysisOrigin ?? .matrix
+        analysisOrigin = nil
+    }
+
+    /// Draws a response with a file that is not in the matrix, to compare them.
+    func compare(_ target: DetailTarget, with reference: ReferenceTrace) {
+        inspect(target)
+        references = [reference]
+    }
+
+    func removeReference(_ id: String) {
+        references.removeAll { $0.id == id }
+        if references.isEmpty { pendingConversion = nil }
     }
 
     func removeTrace(_ target: DetailTarget) {

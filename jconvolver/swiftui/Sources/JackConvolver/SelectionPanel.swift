@@ -105,6 +105,8 @@ struct ImpulseRowFields: View {
     var showsPair = false
     /// The block that asks whether to add the response to the ones that are drawn, or to draw it alone.
     @State private var asking = false
+    /// What is wrong with it, said in a block under its name.
+    @State private var showsProblem = false
 
     private var isFile: Bool { if case .file = impulse.source { return true } else { return false } }
     private var isCopy: Bool { if case .copy = impulse.source { return true } else { return false } }
@@ -118,11 +120,18 @@ struct ImpulseRowFields: View {
             } else {
                 Text("\(model.inputLabel(pair.input)) → \(model.outputLabel(pair.output))").lineLimit(1).frame(width: 150, alignment: .leading)
             }
-            HStack(spacing: 4) {
-                Text(model.label(of: impulse)).foregroundStyle(bad ? Color.red : Color.primary).lineLimit(1).truncationMode(.middle)
-                if bad { Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.red).font(.caption) }
+            // An impulse response that has a problem says it when it is clicked, as the list of what is to settle does.
+            Button { if bad { showsProblem = true } } label: {
+                HStack(spacing: 4) {
+                    Text(model.label(of: impulse)).foregroundStyle(bad ? Color.red : Color.primary).lineLimit(1).truncationMode(.middle)
+                    if bad { Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.red).font(.caption) }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .buttonStyle(.plain)
+            .help(bad ? String(localized: "Voir ce qui ne va pas") : "")
+            .popover(isPresented: $showsProblem, arrowEdge: .bottom) { ImpulseProblemsView(pair: pair, index: index) }
             ValueField(text: gainText, enabled: !isCopy) { commit(gain: $0) }
             ValueField(text: "\(impulse.delay)", enabled: !isCopy) { commit(delay: $0) }
             ValueField(text: "\(impulse.offset)", enabled: isFile) { commit(offset: $0) }
@@ -250,5 +259,41 @@ struct AdaptiveText: View {
             Text(verbatim: long).lineLimit(1)
             Text(verbatim: short).lineLimit(1)
         }
+    }
+}
+
+/// What is wrong with one impulse response, as the list of what is to settle says it, with the way to put it right when there is one.
+struct ImpulseProblemsView: View {
+    @Environment(AppModel.self) private var model
+    let pair: ConvPair
+    let index: Int
+
+    var body: some View {
+        let list = model.problems(at: pair, index: index)
+        VStack(alignment: .leading, spacing: 10) {
+            if list.isEmpty {
+                Text("Plus rien à régler ici.").foregroundStyle(.secondary)
+            } else {
+                ForEach(Array(list.enumerated()), id: \.offset) { _, problem in
+                    HStack(alignment: .top, spacing: 8) {
+                        Image(systemName: problem.severity == .error ? "exclamationmark.circle.fill" : "exclamationmark.triangle.fill")
+                            .foregroundStyle(problem.severity == .error ? Color.red : Color.orange)
+                        Text(problem.message).fixedSize(horizontal: false, vertical: true).frame(maxWidth: 340, alignment: .leading)
+                        Spacer(minLength: 0)
+                        if case .sampleRateMismatch(let path, _, let expected) = problem.kind { ConvertButton(path: path, rate: expected) }
+                        if case .fileMissing(let path) = problem.kind {
+                            if !model.pathProposals.isEmpty { Button("Chercher…") { model.showsResolver = true }.controlSize(.small).disabled(model.isLocked) }
+                            LocateButton(path: path)
+                        }
+                    }
+                }
+            }
+            if model.problems.count > list.count {
+                Divider()
+                Button("Voir tous les problèmes (\(model.problems.count))") { model.showsProblems = true }.buttonStyle(.link)
+            }
+        }
+        .padding(14)
+        .frame(minWidth: 320)
     }
 }
