@@ -182,20 +182,24 @@ public struct PlotInspector: View {
     var labels: PlotLabels
     var accent: Color
     var extraTabs: [PlotInspectorTab]
+    var leadingTabs: [PlotInspectorTab]
 
     /// - Parameters:
     ///   - accent: the accent of the application, for the boxes and the links (the system's keeps its own).
     ///   - extraTabs: pages of the application, after those of the plot.
-    public init(controller: PlotController, labels: PlotLabels = PlotLabels(), accent: Color = .accentColor, extraTabs: [PlotInspectorTab] = []) {
+    ///   - leadingTabs: pages of the application that come before those of the plot, the first one being the page that is open at first.
+    public init(controller: PlotController, labels: PlotLabels = PlotLabels(), accent: Color = .accentColor, extraTabs: [PlotInspectorTab] = [],
+                leadingTabs: [PlotInspectorTab] = []) {
         self.controller = controller
         self.labels = labels
         self.accent = accent
         self.extraTabs = extraTabs
+        self.leadingTabs = leadingTabs
     }
 
     /// The pages that mean something now.
     private var tabs: [PlotInspectorTab] {
-        var out: [PlotInspectorTab] = []
+        var out: [PlotInspectorTab] = leadingTabs
         if let series = controller.series, series.items.count > 1 {
             out.append(PlotInspectorTab(id: "channels", title: labels.channels) { PlotChannelList(series: series, labels: labels, inInspector: true) })
         }

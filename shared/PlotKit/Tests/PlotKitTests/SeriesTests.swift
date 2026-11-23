@@ -24,7 +24,8 @@ final class SeriesTests: XCTestCase {
     func testDefaultColoursAreThoseOfThePalette() {
         let set = PlotSeriesSet(count: 2, accent: .purple)
         XCTAssertEqual(set.items[0].color, .purple)
-        XCTAssertEqual(set.items[1].color, PlotPalette(accent: .purple, isDark: false).trace(1))
+        // After the accent, the colours of the sequence that follow the appearance.
+        XCTAssertEqual(set.items[1].color, PlotTraceColors.adaptive[0])
         XCTAssertEqual(PlotSeriesSet.defaultColor(1, accent: .purple), set.items[1].color)
     }
 

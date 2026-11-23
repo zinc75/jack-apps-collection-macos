@@ -68,7 +68,8 @@ struct PlotView: View {
                                     region: region.map { PlotRegionDraw(range: $0.range.wrappedValue, style: $0.style, dragging: regionDragPart) })
                             .draw(&context, size: size, cache: cache)
                     }
-                    PlotInteractionLayer(layout: layout, mode: mode, events: events(layout), cursors: regionCursors(layout))
+                    PlotInteractionLayer(layout: layout, mode: mode, events: events(layout), cursors: regionCursors(layout),
+                                         isHandle: { regionPart(at: $0, layout) != nil })
                 }
                 .onGeometryChange(for: CGSize.self, of: { $0.size }) { plotSize = $0 }
                 .onChange(of: mode) { _, new in if new != .measure { measure = nil } }

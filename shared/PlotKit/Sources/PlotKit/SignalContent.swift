@@ -8,10 +8,14 @@ public struct PlotTrace {
     public var signal: PlotSignal
     /// `nil`: a colour of the palette.
     public var color: Color?
-    public init(name: String, signal: PlotSignal, color: Color? = nil) {
+    /// Where sample `i` is on the horizontal axis: at `i × timeScale`. It is 1 when the signal has the sample rate of the axis; for a signal
+    /// with another rate, it is the rate of the axis over its own, so that the traces are placed by time and not by sample number.
+    public var timeScale: Double
+    public init(name: String, signal: PlotSignal, color: Color? = nil, timeScale: Double = 1) {
         self.name = name
         self.signal = signal
         self.color = color
+        self.timeScale = timeScale > 0 ? timeScale : 1
     }
 }
 
@@ -23,7 +27,7 @@ struct SignalContent: PlotContent {
     var amplitude: AmplitudeScale
     var gradient = PlotGradient()
 
-    private var length: Int { traces.map { $0.signal.count }.max() ?? 0 }
+    private var length: Int { traces.map { Int((Double($0.signal.count) * $0.timeScale).rounded(.up)) }.max() ?? 0 }
     /// How the body of a trace is filled, as the display options say: by default a gradient for one trace, and for several an opaque
     /// body, so that the trace on top is the one that is seen where they overlap (the first is drawn last, on top).
     private func shading(_ colour: Color, _ plot: CGRect, _ stops: [(opacity: Double, at: Double)], _ palette: PlotPalette) -> GraphicsContext.Shading {
@@ -70,26 +74,26 @@ struct SignalContent: PlotContent {
         let pixelsPerSample = t.rect.width / CGFloat(span)
         // The first trace is drawn last, over the others.
         for i in traces.indices.reversed() {
-            let signal = traces[i].signal, colour = palette.trace(i, traces[i].color)
+            let signal = traces[i].signal, colour = palette.trace(i, traces[i].color), k = traces[i].timeScale
             if pixelsPerSample >= Self.stemThreshold {
-                drawStems(&ctx, t, palette, signal, colour, pixelsPerSample)
+                drawStems(&ctx, t, palette, signal, colour, pixelsPerSample, k)
             } else if pixelsPerSample >= Self.lineThreshold {
-                drawSampleLine(&ctx, t, palette, signal, colour)
+                drawSampleLine(&ctx, t, palette, signal, colour, k)
             } else {
-                drawEnvelope(&ctx, t, palette, scale, cache, signal, colour)
+                drawEnvelope(&ctx, t, palette, scale, cache, signal, colour, k)
             }
         }
     }
 
     /// The samples joined by a line: what a signal looks like between the envelope, where a column holds many samples (and the body
     /// is filled), and the stems, where each sample can be seen alone.
-    private func drawSampleLine(_ ctx: inout GraphicsContext, _ t: PlotTransform, _ palette: PlotPalette, _ signal: PlotSignal, _ colour: Color) {
+    private func drawSampleLine(_ ctx: inout GraphicsContext, _ t: PlotTransform, _ palette: PlotPalette, _ signal: PlotSignal, _ colour: Color, _ k: Double) {
         let range = t.viewport.x.range
-        let first = max(0, Int(floor(range.lowerBound)) - 1), last = min(signal.count - 1, Int(ceil(range.upperBound)) + 1)
+        let first = max(0, Int(floor(range.lowerBound / k)) - 1), last = min(signal.count - 1, Int(ceil(range.upperBound / k)) + 1)
         guard first < last else { return }
         var line = Path()
         for i in first...last {
-            let p = CGPoint(x: t.x(Double(i)), y: t.y(amplitude.value(signal.sample(at: i))))
+            let p = CGPoint(x: t.x(Double(i) * k), y: t.y(amplitude.value(signal.sample(at: i))))
             if i == first { line.move(to: p) } else { line.addLine(to: p) }
         }
         // No fill here: it stands in for the oscillations that the envelope does not draw, and every point is drawn now.
@@ -97,15 +101,15 @@ struct SignalContent: PlotContent {
     }
 
     /// One sample per stem with a head, as an audio editor shows them when it is zoomed in.
-    private func drawStems(_ ctx: inout GraphicsContext, _ t: PlotTransform, _ palette: PlotPalette, _ signal: PlotSignal, _ colour: Color, _ pixelsPerSample: CGFloat) {
+    private func drawStems(_ ctx: inout GraphicsContext, _ t: PlotTransform, _ palette: PlotPalette, _ signal: PlotSignal, _ colour: Color, _ pixelsPerSample: CGFloat, _ k: Double) {
         let plot = t.rect, range = t.viewport.x.range
-        let first = max(0, Int(floor(range.lowerBound)) - 1), last = min(signal.count - 1, Int(ceil(range.upperBound)) + 1)
+        let first = max(0, Int(floor(range.lowerBound / k)) - 1), last = min(signal.count - 1, Int(ceil(range.upperBound / k)) + 1)
         guard first <= last else { return }
         let baseline = amplitude.isDecibels ? plot.maxY : t.y(0)
         let radius: CGFloat = pixelsPerSample >= 16 ? 3.6 : 3
         var stems = Path(), heads = Path()
         for i in first...last {
-            let px = t.x(Double(i)), py = t.y(amplitude.value(signal.sample(at: i)))
+            let px = t.x(Double(i) * k), py = t.y(amplitude.value(signal.sample(at: i)))
             stems.move(to: CGPoint(x: px, y: baseline)); stems.addLine(to: CGPoint(x: px, y: py))
             heads.addEllipse(in: CGRect(x: px - radius, y: py - radius, width: 2 * radius, height: 2 * radius))
         }
@@ -116,11 +120,11 @@ struct SignalContent: PlotContent {
 
     /// The envelope of the columns: the band between the smallest and the largest sample of each (or the line of the largest
     /// magnitude in decibels), with a gradient, and a stroke on its edges.
-    private func drawEnvelope(_ ctx: inout GraphicsContext, _ t: PlotTransform, _ palette: PlotPalette, _ scale: CGFloat, _ cache: EnvelopeCache, _ signal: PlotSignal, _ colour: Color) {
+    private func drawEnvelope(_ ctx: inout GraphicsContext, _ t: PlotTransform, _ palette: PlotPalette, _ scale: CGFloat, _ cache: EnvelopeCache, _ signal: PlotSignal, _ colour: Color, _ k: Double) {
         let plot = t.rect
         let columns = min(4000, max(2, Int(plot.width * scale)))
         let range = t.viewport.x.range
-        signal.envelope(from: range.lowerBound, to: range.upperBound, columns: columns, into: &cache.envelope)
+        signal.envelope(from: range.lowerBound / k, to: range.upperBound / k, columns: columns, into: &cache.envelope)
         let e = cache.envelope
         guard !e.valid.isEmpty else { return }
         let step = plot.width / CGFloat(columns)
@@ -169,14 +173,16 @@ struct SignalContent: PlotContent {
     /// the pointer (the only one, when there is one).
     private func snapped(_ p: CGPoint, _ t: PlotTransform) -> (index: Int, trace: Int)? {
         let span = t.viewport.x.range.upperBound - t.viewport.x.range.lowerBound
-        let i = Int(t.xValue(p.x).rounded())
-        guard span > 0, t.rect.width / CGFloat(span) >= Self.lineThreshold, i >= 0 else { return nil }
-        var best: (trace: Int, distance: CGFloat)?
-        for (k, trace) in traces.enumerated() where i < trace.signal.count {
+        guard span > 0, t.rect.width / CGFloat(span) >= Self.lineThreshold else { return nil }
+        // Each trace has its own sample under the pointer: its rate may not be the one of the axis.
+        var best: (index: Int, trace: Int, distance: CGFloat)?
+        for (k, trace) in traces.enumerated() {
+            let i = Int((t.xValue(p.x) / trace.timeScale).rounded())
+            guard i >= 0, i < trace.signal.count else { continue }
             let d = abs(t.y(amplitude.value(trace.signal.sample(at: i))) - p.y)
-            if best == nil || d < best!.distance { best = (k, d) }
+            if best == nil || d < best!.distance { best = (i, k, d) }
         }
-        return best.map { (i, $0.trace) }
+        return best.map { ($0.index, $0.trace) }
     }
 
     func probe(at p: CGPoint, _ t: PlotTransform) -> PlotProbe {
@@ -185,21 +191,21 @@ struct SignalContent: PlotContent {
             amplitude.isDecibels ? TickLabels.number(v, decimals: 1) + " dB" : TickLabels.number(v, decimals: abs(v) < 0.1 ? 4 : 3)
         }
         if let (i, k) = snapped(p, t) {
-            let signal = traces[k].signal
+            let signal = traces[k].signal, at = Double(i) * traces[k].timeScale
             let v = Double(signal.sample(at: i)), shown = amplitude.value(signal.sample(at: i))
             var card = [String]()
             if traces.count > 1 { card.append(traces[k].name) }
-            if let sr = sampleRate, sr > 0 { card.append("t = " + TickLabels.engineering(Double(i) / sr, unit: "s")) }
+            if let sr = sampleRate, sr > 0 { card.append("t = " + TickLabels.engineering(at / sr, unit: "s")) }
             card.append("n = \(i)")
             card.append(TickLabels.number(v, decimals: 4) + "  (" + (v == 0 ? "−∞" : TickLabels.number(20 * log10(abs(v)), decimals: 1)) + " dB)")
-            return PlotProbe(point: CGPoint(x: t.x(Double(i)), y: t.y(shown)), xFlag: seconds(Double(i)), yFlag: level(shown), card: card, onData: true,
+            return PlotProbe(point: CGPoint(x: t.x(at), y: t.y(shown)), xFlag: seconds(at), yFlag: level(shown), card: card, onData: true,
                              trace: k, customColor: traces[k].color)
         }
         return PlotProbe(point: p, xFlag: seconds(t.xValue(p.x)), yFlag: level(t.yValue(p.y)), card: [], onData: false)
     }
 
     func measurePoint(at p: CGPoint, _ t: PlotTransform) -> (x: Double, y: Double) {
-        if let (i, k) = snapped(p, t) { return (Double(i), amplitude.value(traces[k].signal.sample(at: i))) }
+        if let (i, k) = snapped(p, t) { return (Double(i) * traces[k].timeScale, amplitude.value(traces[k].signal.sample(at: i))) }
         return (t.xValue(p.x), t.yValue(p.y))
     }
 
@@ -221,7 +227,7 @@ struct SignalContent: PlotContent {
         var lo = Float.infinity, hi = -Float.infinity, any = false
         for trace in traces {
             var e = Envelope()
-            trace.signal.envelope(from: v.x.range.lowerBound, to: v.x.range.upperBound, columns: 1, into: &e)
+            trace.signal.envelope(from: v.x.range.lowerBound / trace.timeScale, to: v.x.range.upperBound / trace.timeScale, columns: 1, into: &e)
             guard !e.valid.isEmpty else { continue }
             lo = min(lo, e.lo[0]); hi = max(hi, e.hi[0]); any = true
         }

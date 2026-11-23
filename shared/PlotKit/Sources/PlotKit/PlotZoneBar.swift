@@ -66,6 +66,7 @@ public struct PlotZoneBar: View {
                 .onEnded { _ in ended() })
         }
         .frame(height: height + Self.railHeight)
+        .background(PlotHandleArea())
         .accessibilityLabel("Range")
     }
 

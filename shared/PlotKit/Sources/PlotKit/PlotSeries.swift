@@ -27,10 +27,10 @@ public struct PlotSeries: Identifiable, Equatable {
 public final class PlotSeriesSet {
     public var items: [PlotSeries]
 
-    /// The colours channels get by default: the accent of the application, then colours that are neither the box's nor the
-    /// measure's. The same as the traces of a plot get by position.
+    /// The colours channels get by default: the accent of the application, then the sequence of Plotly in the order that reads best on the
+    /// background of the appearance (the colours follow it when it changes). The same as the traces of a plot get by position.
     public static func defaultColor(_ channel: Int, accent: Color) -> Color {
-        PlotPalette(accent: accent, isDark: true).trace(channel)
+        channel <= 0 ? accent : PlotTraceColors.adaptive[(channel - 1) % PlotTraceColors.adaptive.count]
     }
 
     public init(count: Int, accent: Color = .accentColor, names: [String] = []) {

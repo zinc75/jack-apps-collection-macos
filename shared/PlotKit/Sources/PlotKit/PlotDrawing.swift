@@ -16,11 +16,13 @@ struct PlotPalette {
     var spike: Color { isDark ? Color.white.opacity(0.42) : Color.black.opacity(0.42) }
     var tooltip: Color { isDark ? Color(white: 0.12, opacity: 0.94) : Color(white: 1, opacity: 0.95) }
     var tooltipText: Color { isDark ? .white : .black }
-    /// The colour of the i-th trace (a channel, a curve): the accent first, then colours that are neither the box's nor the measure's.
+    /// The colour of the i-th trace (a channel, a curve): the accent first, then the qualitative sequence of Plotly, in the order that reads best on
+    /// the background of the appearance, so that up to ten traces all differ.
     func trace(_ i: Int, _ custom: Color? = nil) -> Color {
         if let custom { return custom }
-        let others: [Color] = [Color(red: 0.25, green: 0.78, blue: 0.68), Color(red: 1.0, green: 0.45, blue: 0.62), Color(red: 0.48, green: 0.84, blue: 0.36)]
-        return i == 0 ? accent : others[(i - 1) % others.count]
+        guard i > 0 else { return accent }
+        let order = isDark ? PlotTraceColors.dark : PlotTraceColors.light
+        return PlotTraceColors.color(order[(i - 1) % order.count])
     }
 
     /// The box of a zoom has a colour of its own too: neither the signal's nor the measure's.

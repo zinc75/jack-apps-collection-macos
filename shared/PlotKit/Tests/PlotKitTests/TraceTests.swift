@@ -45,11 +45,31 @@ final class TraceTests: XCTestCase {
         XCTAssertEqual(probe.card.first, "R")
     }
 
+    func testATraceAtAnotherRateIsPlacedByTime() {
+        // The second trace has half the rate of the axis: its samples are two units of the axis apart (0, 2, 4).
+        let c = SignalContent(traces: [PlotTrace(name: "fast", signal: PeakPyramid(samples: [0.1, 0.1, 0.1, 0.1, 0.1])),
+                                       PlotTrace(name: "slow", signal: PeakPyramid(samples: [0.9, 0.9, 0.9]), timeScale: 2)],
+                              sampleRate: 1000, amplitude: .linear)
+        let t = transform(c, count: 5)
+        let probe = c.probe(at: CGPoint(x: t.x(2), y: t.y(0.9)), t)
+        XCTAssertEqual(probe.card, ["slow", "t = 2 ms", "n = 1", "0.9000  (−0.9 dB)"])
+        XCTAssertEqual(c.measurePoint(at: CGPoint(x: t.x(4), y: t.y(0.9)), t).x, 4)
+        XCTAssertEqual(PlotTrace(name: "", signal: PeakPyramid(samples: [0, 0]), timeScale: 0).timeScale, 1)
+    }
+
     func testPaletteGivesEachTraceItsColour() {
         let palette = PlotPalette(accent: .purple, isDark: true)
         XCTAssertEqual(palette.trace(0), .purple)
         XCTAssertNotEqual(palette.trace(1), palette.trace(0))
         XCTAssertNotEqual(palette.trace(1), palette.trace(2))
         XCTAssertEqual(palette.trace(7, .red), .red)
+        // Ten traces, ten colours.
+        XCTAssertEqual(Set((0..<10).map { palette.trace($0) }).count, 10)
+        // Each appearance starts with the colours that read best on its background, and has the same ten.
+        let light = PlotPalette(accent: .purple, isDark: false)
+        XCTAssertEqual(Set((0..<10).map { light.trace($0) }).count, 10)
+        XCTAssertNotEqual(palette.trace(1), light.trace(1))
+        XCTAssertEqual(Set(PlotTraceColors.dark), Set(PlotTraceColors.light))
+        XCTAssertEqual(PlotTraceColors.adaptive.count, 9)
     }
 }

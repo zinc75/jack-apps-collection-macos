@@ -45,6 +45,8 @@ struct PlotInteractionLayer: NSViewRepresentable {
     var mode: PlotMode
     var events: PlotPointerEvents
     var cursors: [PlotCursorRect] = []
+    /// Whether a point of the view is on a handle of a region (its knobs, its rail, its edges in the plot).
+    var isHandle: (CGPoint) -> Bool = { _ in false }
 
     func makeNSView(context: Context) -> PlotInteractionView { PlotInteractionView() }
 
@@ -52,12 +54,22 @@ struct PlotInteractionLayer: NSViewRepresentable {
         view.events = events
         view.mode = mode
         view.cursors = cursors
+        view.isHandle = isHandle
         if view.layout != layout { view.layout = layout }
     }
 }
 
-final class PlotInteractionView: NSView {
+final class PlotInteractionView: NSView, PlotHandleHitTesting {
     var events = PlotPointerEvents()
+    var isHandle: (CGPoint) -> Bool = { _ in false }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if window != nil { PlotHandles.register(self) }
+    }
+
+    func hitsHandle(atWindowPoint p: NSPoint) -> Bool { isHandle(convert(p, from: nil)) }
+
     var mode: PlotMode = .zoomBox { didSet { if mode != oldValue { window?.invalidateCursorRects(for: self) } } }
     var layout = PlotLayout(size: .zero) { didSet { window?.invalidateCursorRects(for: self) } }
     var cursors: [PlotCursorRect] = [] { didSet { if cursors != oldValue { window?.invalidateCursorRects(for: self) } } }
