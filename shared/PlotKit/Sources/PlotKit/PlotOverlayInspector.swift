@@ -6,7 +6,9 @@ extension View {
     /// The inspector of a window as a panel of glass that floats at the right edge: rounded, with a hairline and a shadow, sliding in. On macOS 26
     /// it is glass (a material before). In a narrow window it floats over the view; with `docked` it keeps its room instead, and the view gives it the
     /// width it needs (animated), so that the panel looks the same in both and the plot is not hidden when the window has the room.
-    public func plotOverlayInspector<Panel: View>(isPresented: Bool, docked: Bool = false, width: CGFloat = 280,
+    /// `bottomInset` stops a floating panel that far above the bottom of the view, to leave free what is under the plot (the sliders of a region,
+    /// the minimap): the view says how far, from the bottom of its plot area.
+    public func plotOverlayInspector<Panel: View>(isPresented: Bool, docked: Bool = false, width: CGFloat = 280, bottomInset: CGFloat = 0,
                                                   @ViewBuilder panel: () -> Panel) -> some View {
         let content = panel()
         return ZStack(alignment: .trailing) {
@@ -16,12 +18,13 @@ extension View {
                     .frame(width: width)
                     .frame(maxHeight: .infinity)
                     .modifier(PlotPanelGlass())
-                    .padding(10)
+                    .padding(EdgeInsets(top: 10, leading: 10, bottom: 10 + (docked ? 0 : max(bottomInset, 0)), trailing: 10))
                     .transition(.move(edge: .trailing).combined(with: .opacity))
             }
         }
         .animation(.easeOut(duration: 0.2), value: isPresented)
         .animation(.easeOut(duration: 0.2), value: docked)
+        .animation(.easeOut(duration: 0.2), value: bottomInset)
     }
 }
 

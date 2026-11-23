@@ -16,6 +16,8 @@ public struct PlotLayout: Equatable, Sendable {
     public var yAxis: CGRect
 
     public static let left: CGFloat = 66, bottom: CGFloat = 42, top: CGFloat = 12, right: CGFloat = 18
+    /// The height of the strip of the sliders under the plot of a region (see `PlotRegionEditor`).
+    public static let regionRail: CGFloat = PlotRegionMath.railHeight
 
     /// - Parameter railHeight: the height of the strip of the sliders of a region, between the plot and the labels of its axis.
     public init(size: CGSize, railHeight: CGFloat = 0) {
