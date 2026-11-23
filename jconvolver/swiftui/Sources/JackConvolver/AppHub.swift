@@ -113,7 +113,7 @@ final class AppHub {
     /// Follows the engines: the Dock is kept while one runs, and let go of when the last one ends with no window to show.
     private func trackRunning() {
         withObservationTracking {
-            _ = anyRunning
+            _ = runningCount
         } onChange: { [weak self] in
             Task { @MainActor in
                 self?.presenceChanged()
@@ -144,10 +144,15 @@ final class AppHub {
         // The Dock stays while an engine runs, even with no window: an icon of the menu bar can be hidden (by the notch, by the menus of another
         // application), and a running engine, which takes the processor or the disk, must not be left without a sign that cannot be missed.
         NSApp.setActivationPolicy(seen || sessions.isEmpty || anyRunning ? .regular : .accessory)
+        // The number of engines that run, on the icon of the Dock, whether their windows are seen or not.
+        NSApp.dockTile.badgeLabel = runningCount > 0 ? String(runningCount) : nil
     }
 
+    /// The engines that run.
+    var runningCount: Int { sessions.filter { $0.controller.isRunning }.count }
+
     /// Whether an engine runs.
-    var anyRunning: Bool { sessions.contains { $0.controller.isRunning } }
+    var anyRunning: Bool { runningCount > 0 }
 
     /// The icon of the menu bar is there while something is to be reached from it: an engine that runs, a window that is not seen, or several sessions.
     var showsMenuBarIcon: Bool {
