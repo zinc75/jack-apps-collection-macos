@@ -69,6 +69,8 @@ public struct CaptureSettings: Equatable, Sendable, Codable {
     /// `-Rf`, in seconds of audio.
     public var rotationSeconds = 600
     public var bufferSeconds = 4
+    /// Free space, in gigabytes (10^9 bytes), that the disk keeps: a recording is refused below it and stopped when the disk gets to it; 0 for no limit.
+    public var diskReserveGigabytes = 10
     public var oscEnabled = false
     public var oscPort = 7777
     /// The applications behind the clients seen so far (client name to bundle identifier), so that a client that is

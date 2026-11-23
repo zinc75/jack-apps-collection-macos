@@ -183,7 +183,8 @@ struct RecordingView: View {
             MetersCard()
             HStack(spacing: 12) {
                 tile("Tampon mémoire", bufferText, bufferSub)
-                tile("Écrit sur le disque", SizeText.bytes(Double(model.bytesWritten)), "environ \(SizeText.bytes(RecordingEstimate.bytesPerSecond(model.settings, sampleRate: model.sampleRate))) par seconde")
+                tile("Écrit sur le disque", SizeText.bytes(Double(model.bytesWritten)), "environ \(SizeText.bytes(RecordingEstimate.bytesPerSecond(model.settings, sampleRate: model.sampleRate))) par seconde",
+                     extra: model.diskSecondsLeft.flatMap { $0 < 48 * 3600 ? String(localized: "disque : reste \(RecorderModel.remaining($0))") : nil })
                 tile("Incidents", "\(model.status?.xruns ?? 0) xrun", "\(model.status?.overruns ?? 0) débordement")
                 tile("Thread disque", (model.status?.diskThreadHighPriority ?? false) ? String(localized: "Priorité haute") : String(localized: "Normale"),
                      "Priorité élevée quand le tampon se remplit.")
@@ -245,12 +246,13 @@ struct RecordingView: View {
         .background(stopping || armed ? Color.orange : Color.red, in: .capsule)
     }
 
-    private func tile(_ title: LocalizedStringKey, _ value: String, _ sub: LocalizedStringKey) -> some View {
+    private func tile(_ title: LocalizedStringKey, _ value: String, _ sub: LocalizedStringKey, extra: String? = nil) -> some View {
         Card {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title).font(.caption).foregroundStyle(.secondary)
                 Text(value).font(.title3).fontWeight(.medium).monospacedDigit()
                 Text(sub).font(.caption).foregroundStyle(.secondary)
+                if let extra { Text(verbatim: extra).font(.caption).foregroundStyle(.secondary) }
             }
         }
     }

@@ -26,6 +26,19 @@ public final class CaptureHub {
         isConfigured = defaults == nil || defaults?.data(forKey: Self.settingsKey) != nil || defaults?.bool(forKey: Self.configuredKey) == true
     }
 
+    /// The files that sessions are writing under a name that is fixed (without numbering jack_capture would write over it): one session, one file.
+    @ObservationIgnored private var reserved: [UUID: URL] = [:]
+
+    /// Reserves a file for a session; false when another session has it.
+    public func reserve(_ url: URL, for session: UUID) -> Bool {
+        let path = url.standardizedFileURL.path
+        if reserved.contains(where: { $0.key != session && $0.value.path == path }) { return false }
+        reserved[session] = url.standardizedFileURL
+        return true
+    }
+
+    public func release(for session: UUID) { reserved[session] = nil }
+
     @ObservationIgnored private var savedSettingsClaimed = false
 
     /// The first session of the application starts from the settings of the last one; the others start from the defaults. True once, for the first caller.

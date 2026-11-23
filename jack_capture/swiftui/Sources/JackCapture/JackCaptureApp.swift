@@ -75,7 +75,11 @@ struct JackCaptureApp: App {
         let hub = CaptureHub(defaults: Self.keepsSettings ? .standard : nil)
         let sessions = CaptureSessions(
             configuration: SessionKitConfiguration(toolName: "Jack Capture", showsDockBadge: true, runningNoun: "enregistrement", runningNounPlural: "enregistrements"),
-            makeSession: { id in RecorderModel(hub: hub, id: id, usesSavedSettings: hub.claimSavedSettings()) },
+            makeSession: { id in
+                let session = RecorderModel(hub: hub, id: id, usesSavedSettings: hub.claimSavedSettings())
+                session.notify = { CaptureNotifier.post(title: $0, body: $1) }
+                return session
+            },
             makeIdleSession: { RecorderModel(hub: hub, usesSavedSettings: false) })
         _sessions = State(initialValue: sessions)
         AppDelegate.sessions = sessions

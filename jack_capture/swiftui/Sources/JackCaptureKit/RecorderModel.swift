@@ -92,7 +92,7 @@ public final class RecorderModel {
     public var bytesPerMinute: Double { RecordingEstimate.bytesPerSecond(settings, sampleRate: sampleRate) * 60 }
     /// Looks at the disk: call it when the view is built, not in a loop.
     public func nextFileName() -> String { FileNaming.nextName(settings) }
-    public func availableBytes() -> Int64? { RecordingEstimate.availableBytes(at: settings.folderURL) }
+    public func availableBytes() -> Int64? { freeBytes?() ?? RecordingEstimate.availableBytes(at: settings.folderURL) }
 
     /// Seams for the tests: where the program is, and whether JACK is running.
     var executable: () -> URL? = { CaptureHelper.executableURL() }
@@ -102,6 +102,12 @@ public final class RecorderModel {
     /// jack_capture said that the JACK server went away under it.
     private var jackLost = false
     private var lowDiskWarned = false
+    /// Said to the person when they are not looking at the window: a title and a text. Set by the application (a notification of the system).
+    public var notify: ((String, String) -> Void)?
+    /// The seconds of recording that the disk can still take before it gets to the reserve; nil when unknown or when nothing is written.
+    public private(set) var diskSecondsLeft: Double?
+    /// The room left on the disk, for the tests.
+    var freeBytes: (() -> Int64?)?
     /// What to do once jack_capture has ended: the application is waiting to quit.
     private var afterExit: (() -> Void)?
     private var ticker: Task<Void, Never>?
@@ -342,6 +348,18 @@ public final class RecorderModel {
             errorMessage = FolderCheck.message(problem, folder: settings.folderURL)
             return
         }
+        // The disk keeps a reserve: a recording that would be stopped at once is not started.
+        let reserve = DiskGuard.reserveBytes(gigabytes: settings.diskReserveGigabytes)
+        if reserve > 0, let free = availableBytes(), free < reserve {
+            errorMessage = String(localized: "Moins de \(settings.diskReserveGigabytes) Go libres sur ce disque : l'enregistrement s'arrêterait aussitôt. La réserve se règle dans la page Avancé.")
+            return
+        }
+        // Under a fixed name two sessions would write the same file: one session, one file.
+        let fixedTarget = settings.numbering ? nil : settings.folderURL.appendingPathComponent("\(settings.baseName).\(settings.format.fileExtension)")
+        if let fixedTarget, !hub.reserve(fixedTarget, for: id) {
+            errorMessage = String(localized: "Un autre enregistrement écrit déjà dans ce fichier. Changer le nom, ou activer la numérotation.")
+            return
+        }
         resetReport()
         // Another jack_capture may already hold the name: take a free one, as JACK would rename the client otherwise.
         graph.refresh()
@@ -358,6 +376,7 @@ public final class RecorderModel {
             let reason: String
             if case CaptureRunner.LaunchError.cannotStart(let message) = error { reason = message } else { reason = error.localizedDescription }
             errorMessage = String(localized: "Impossible de lancer jack_capture : \(reason)")
+            hub.release(for: id)
             return
         }
         self.runner = runner
@@ -415,6 +434,8 @@ public final class RecorderModel {
             waiting?()
         }
         ticker?.cancel()
+        hub.release(for: id)
+        diskSecondsLeft = nil
         meters = []
         runner = nil
         armedReason = nil
@@ -514,7 +535,7 @@ public final class RecorderModel {
                 if self.phase == .recording, let t0 = self.startedAt { self.elapsed = Date().timeIntervalSince(t0) }
                 n += 1
                 if n % 3 == 0 { self.pollFile() }
-                if n % 50 == 0 { self.watchDisk() }
+                if n % 10 == 0 { self.watchDisk() }
             }
         }
     }
@@ -527,12 +548,30 @@ public final class RecorderModel {
         if phase == .armed, case .jack? = armedReason, size > (initialSize ?? 0) + 2048 { beginClock() }
     }
 
-    /// Warns once when the disk is about to be full: jack_capture then stops by itself.
-    private func watchDisk() {
-        guard !lowDiskWarned, phase == .recording, let free = availableBytes() else { return }
-        if free < max(FolderCheck.minimumFreeBytes / 2, Int64(bytesPerMinute)) {
+    /// Looks at the room left once a second while the file is written: says when little time is left, and stops the recording (its file closed properly) when the
+    /// disk gets to the reserve. Several recordings on one disk are stopped together: the room left is the same for all.
+    func watchDisk() {
+        guard phase == .recording, let run = launched?.settings, let free = freeBytes?() ?? RecordingEstimate.availableBytes(at: run.folderURL) else {
+            if phase != .recording { diskSecondsLeft = nil }
+            return
+        }
+        let reserve = DiskGuard.reserveBytes(gigabytes: run.diskReserveGigabytes)
+        let rate = RecordingEstimate.bytesPerSecond(run, sampleRate: launched?.sampleRate ?? sampleRate)
+        diskSecondsLeft = DiskGuard.secondsLeft(free: free, reserve: reserve, bytesPerSecond: rate)
+        switch DiskGuard.verdict(free: free, reserve: reserve, bytesPerSecond: rate) {
+        case .fine: break
+        case .low:
+            guard !lowDiskWarned else { return }
             lowDiskWarned = true
-            warnings.append(String(localized: "Espace disque presque épuisé : l'enregistrement va s'arrêter."))
+            let minutes = max(1, Int(((diskSecondsLeft ?? 0) / 60).rounded(.up)))
+            let text = String(localized: "Il reste de la place pour environ \(minutes) min d'enregistrement.")
+            warnings.append(text)
+            notify?(String(localized: "Disque presque plein"), text)
+        case .stop:
+            let text = String(localized: "Le disque est arrivé à sa réserve de \(run.diskReserveGigabytes) Go : l'enregistrement a été arrêté et le fichier refermé.")
+            warnings.append(text)
+            notify?(String(localized: "Enregistrement arrêté : disque presque plein"), text)
+            stop()
         }
     }
 
@@ -549,6 +588,7 @@ public final class RecorderModel {
         warnings = []
         jackLost = false
         lowDiskWarned = false
+        diskSecondsLeft = nil
         elapsed = 0
         startedAt = nil
         initialSize = nil

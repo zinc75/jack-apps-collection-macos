@@ -335,6 +335,10 @@ SettingsGroup("Avancé") {
                               "Taille du tampon entre JACK et le disque, en secondes. À augmenter si le disque est lent.") {
                         NumberField(value: $model.settings.bufferSeconds, range: 1...60, unit: "s")
                     }
+                    OptionRow("Réserve de disque",
+                              "Place libre que le disque garde, en gigaoctets. En dessous, un enregistrement ne démarre pas, et celui qui tourne est arrêté et son fichier refermé. 0 : aucune limite.") {
+                        NumberField(value: $model.settings.diskReserveGigabytes, range: 0...100_000, unit: "Go")
+                    }
                     OptionRow("Contrôle par OSC",
                               "Permet de piloter l'enregistrement depuis un autre logiciel, par messages OSC.") {
                         Toggle("", isOn: $model.settings.oscEnabled).labelsHidden().toggleStyle(.switch).accentTint()

@@ -71,6 +71,8 @@ extension RecorderModel: HostedSession {
                 gauges.append(SessionGauge(String(localized: "Durée"), value: elapsed / Double(max(launched, 1)), text: Self.clock(Double(launched) - elapsed)))
             }
             badges.append(SessionBadge(text, symbol: "record.circle"))
+            // The room the disk has left for it, when it is not for days.
+            if let left = diskSecondsLeft, left < 48 * 3600 { badges.append(SessionBadge(String(localized: "disque : reste \(Self.remaining(left))"), symbol: "internaldrive")) }
         } else if phase == .armed, let reason = armedReason {
             badges.append(SessionBadge(reason == .timemachine ? String(localized: "timemachine") : String(localized: "attend le départ"), symbol: "hourglass"))
         }
@@ -82,6 +84,12 @@ extension RecorderModel: HostedSession {
     private var subtitle: String {
         let channels = settings.channels == 1 ? String(localized: "1 voie") : String(localized: "\(settings.channels) voies")
         return "\(channels) · \(settings.format.fileExtension.uppercased()) · \((Double(sampleRate) / 1000).formatted(.number.precision(.fractionLength(0...1)))) kHz"
+    }
+
+    /// "3 h 20", "45 min" for a duration in seconds.
+    static func remaining(_ seconds: Double) -> String {
+        let minutes = max(0, Int((seconds / 60).rounded(.down)))
+        return minutes >= 60 ? "\(minutes / 60) h \(String(format: "%02d", minutes % 60))" : "\(max(minutes, 1)) min"
     }
 
     /// "01:23:45" for a duration in seconds.
