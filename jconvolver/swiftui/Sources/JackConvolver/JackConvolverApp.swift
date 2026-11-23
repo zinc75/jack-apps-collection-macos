@@ -97,6 +97,7 @@ struct JackConvolverApp: App {
                 Divider()
                 Button(model.savesAsNew ? "Enregistrer sous…" : "Enregistrer") { model.save() }.keyboardShortcut("s", modifiers: .command).disabled(!model.isOpen)
                 Button("Enregistrer sous…") { model.save(asNew: true) }.keyboardShortcut("s", modifiers: [.command, .shift]).disabled(!model.isOpen)
+                Button("Exporter en version portable…") { model.showsPortable = true }.disabled(!model.canExportPortable)
                 Divider()
                 Button("Renommer…") { model.renameFile() }.disabled(!model.isOpen || model.fileURL == nil || model.isLocked)
                 Button("Afficher dans le Finder") { model.revealFile() }.disabled(model.fileURL == nil)

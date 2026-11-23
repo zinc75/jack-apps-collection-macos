@@ -166,6 +166,7 @@ struct ContentView: View {
         .sheet(isPresented: $model.showsRender) { RenderSheet() }
         .sheet(isPresented: $model.showsProblems) { ProblemsSheet() }
         .sheet(isPresented: $model.showsResolver) { ResolvePathsSheet() }
+        .sheet(isPresented: $model.showsPortable) { PortableExportSheet() }
         .alert(model.message ?? "", isPresented: Binding(get: { model.message != nil }, set: { if !$0 { model.message = nil } })) {
             Button("OK") { model.message = nil }
         }

@@ -54,6 +54,8 @@ struct FileCard: View {
                         Button(model.savesAsNew ? "Enregistrer sous…" : "Enregistrer") { model.save() }.disabled(!model.isEdited && !model.savesAsNew)
                         if !model.savesAsNew { Button("Enregistrer sous…") { model.save(asNew: true) } }
                         Divider()
+                        Button("Exporter en version portable…") { model.showsPortable = true }.disabled(!model.canExportPortable)
+                        Divider()
                         Button("Afficher dans le Finder") { model.revealFile() }.disabled(model.fileURL == nil)
                         Button("Fermer") { model.closeConfiguration() }
                     } label: {

@@ -133,6 +133,7 @@ final class AppModel {
     /// Where files that the configuration cannot find may be found again (next to the configuration file), and the sheet that proposes it.
     var pathProposals: [PathProposal] = []
     var showsResolver = false
+    var showsPortable = false
     var showsNewConfiguration = false
     var showsPortNames = false
     /// Which side the page of the connections shows: the inputs (from JACK to jconvolver) or the outputs.
