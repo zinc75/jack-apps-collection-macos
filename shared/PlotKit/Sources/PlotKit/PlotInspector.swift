@@ -268,7 +268,7 @@ public struct PlotInspector: View {
                             Spacer(minLength: 8)
                             Picker(labels.fillStyle, selection: $options.gradient.enabled) {
                                 Text(labels.fillGradient).tag(true)
-                                Text(labels.fillFlat).tag(false)
+                                Text(controller.fillCanBeNone ? labels.fillNone : labels.fillFlat).tag(false)
                             }
                             .labelsHidden().fixedSize()
                         }

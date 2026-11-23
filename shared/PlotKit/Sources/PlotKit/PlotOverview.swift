@@ -233,10 +233,15 @@ public struct PlotOverview: View {
         }
         inner.stroke(body, with: .color(accent.opacity(0.85)), lineWidth: 1)
 
-        // The region of the plot, as a band along the bottom of the strip.
+        // The region of the plot (not editable here): a fine dotted frame, as the plot draws the edges of a region, a little inside the strip so
+        // that it is not mistaken for the frame of the window.
         if let region {
             let a = strip.minX + pixel(region.lowerBound, strip.width), b = strip.minX + pixel(region.upperBound, strip.width)
-            inner.fill(Path(roundedRect: CGRect(x: a, y: strip.maxY - 7, width: max(b - a, 1), height: 3), cornerRadius: 1.5), with: .color(regionColor))
+            let box = CGRect(x: a, y: strip.minY + 4, width: max(b - a, 2), height: strip.height - 8)
+            let line: CGFloat = 1.4
+            let path = Path(roundedRect: box.insetBy(dx: line / 2, dy: line / 2), cornerRadius: 3)
+            inner.stroke(path, with: .color(Color.black.opacity(0.35)), style: StrokeStyle(lineWidth: line + 1, dash: [3, 3]))
+            inner.stroke(path, with: .color(regionColor), style: StrokeStyle(lineWidth: line, dash: [3, 3]))
         }
 
         // The window: what is outside it is dimmed.

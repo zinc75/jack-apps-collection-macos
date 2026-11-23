@@ -85,6 +85,7 @@ public struct CurvePlot: View {
                 guard let controller else { return }
                 controller.hasPhase = curves.contains { $0.phase != nil }
                 controller.hasMagnitude = curves.contains { $0.isMagnitude }
+                controller.fillCanBeNone = true
                 updateDelays()
                 controller.scaleSupport = yScaleSwitchable ? [.x, .y] : [.x]
                 controller.xScale = viewport.x.scale

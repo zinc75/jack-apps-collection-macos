@@ -29,6 +29,9 @@ public final class PlotController {
     public var hasPhase = false
     /// The plot shows magnitudes: the inspector then offers to smooth them.
     public var hasMagnitude = false
+    /// The plot draws curves (a spectrum): without a gradient they have no fill at all, where a signal in time has a flat one. The inspector
+    /// says "None" instead of "Flat" then.
+    public var fillCanBeNone = false
     /// The delay of each phase curve, which "Remove delay" takes out: the plot says it, the inspector shows it.
     public struct PhaseDelay: Equatable, Sendable {
         public var name: String

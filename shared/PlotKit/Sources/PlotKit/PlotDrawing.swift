@@ -225,8 +225,8 @@ struct PlotDrawing {
         }
     }
 
-    func flag(_ ctx: inout GraphicsContext, _ text: String, at p: CGPoint, anchor: UnitPoint, colour: Color) {
-        let resolved = ctx.resolve(Text(verbatim: text).font(font(10.5, weight: .semibold)).foregroundColor(.white))
+    func flag(_ ctx: inout GraphicsContext, _ text: String, at p: CGPoint, anchor: UnitPoint, colour: Color, text ink: Color = .white) {
+        let resolved = ctx.resolve(Text(verbatim: text).font(font(10.5, weight: .semibold)).foregroundColor(ink))
         let size = resolved.measure(in: CGSize(width: 300, height: 30))
         let box = CGRect(x: p.x - size.width * anchor.x - 6, y: p.y - size.height * anchor.y - 2, width: size.width + 12, height: size.height + 4)
         ctx.fill(Path(roundedRect: box, cornerRadius: 4), with: .color(colour))

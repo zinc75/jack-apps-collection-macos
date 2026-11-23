@@ -92,6 +92,7 @@ public struct PlotLabels: Sendable {
     public var fillStyle = "Style"
     public var fillGradient = "Gradient"
     public var fillFlat = "Flat"
+    public var fillNone = "None"
     public var gradientWithSeveral = "Also with several curves"
     public var gradientHelp = "The body of a curve seen as an envelope (more samples than pixels) is filled, with a gradient or in one colour. With several curves it is opaque by default: the one on top hides the ones under it, and gradients over each other compete. Zoomed in until the samples are drawn one by one, there is no fill."
     public var channels = "Channels"

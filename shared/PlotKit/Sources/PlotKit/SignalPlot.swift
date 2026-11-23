@@ -62,6 +62,7 @@ public struct SignalPlot: View {
                 // The inspector shows what a signal has: no phase, no spectrum.
                 controller.hasPhase = false
                 controller.hasMagnitude = false
+                controller.fillCanBeNone = false
                 controller.phaseDelays = []
                 controller.scaleSupport = [.y]
                 controller.yScale = amplitude

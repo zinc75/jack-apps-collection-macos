@@ -5,6 +5,8 @@ import SwiftUI
 /// How an editable region looks and what it may be.
 public struct PlotRegionStyle {
     public var color: Color
+    /// The colour in a light appearance, when `color` (a light one, for instance) would not show there.
+    public var lightColor: Color?
     /// The smallest length, in the units of the horizontal axis.
     public var minLength: Double
     /// What the region cannot leave, in the units of the horizontal axis; `nil` for no limit.
@@ -18,8 +20,9 @@ public struct PlotRegionStyle {
     public var format: (@Sendable (Double) -> String)?
 
     public init(color: Color = .accentColor, minLength: Double = 1, bounds: ClosedRange<Double>? = nil, snapsToIntegers: Bool = true, name: String = "",
-                format: (@Sendable (Double) -> String)? = nil) {
+                format: (@Sendable (Double) -> String)? = nil, lightColor: Color? = nil) {
         self.color = color
+        self.lightColor = lightColor
         self.minLength = minLength
         self.bounds = bounds
         self.snapsToIntegers = snapsToIntegers
@@ -28,6 +31,16 @@ public struct PlotRegionStyle {
     }
 
     func text(_ value: Double) -> String { format?(value) ?? String(Int(value.rounded())) }
+
+    func color(isDark: Bool) -> Color { isDark ? color : (lightColor ?? color) }
+
+    /// What is written on the colour (the bubbles, the knobs): dark on a light colour, white on a dark one.
+    func onColor(isDark: Bool) -> Color { Self.isLight(color(isDark: isDark)) ? Color.black.opacity(0.78) : .white }
+
+    static func isLight(_ color: Color) -> Bool {
+        guard let c = NSColor(color).usingColorSpace(.sRGB) else { return false }
+        return 0.2126 * c.redComponent + 0.7152 * c.greenComponent + 0.0722 * c.blueComponent > 0.62
+    }
 }
 
 /// A range of the horizontal axis that the person can change in the plot: two sliders on a rail under the plot, as the levels of the color
@@ -115,7 +128,7 @@ extension PlotDrawing {
     /// In the plot: the dimming outside the region, its dotted edges and its name.
     func drawRegion(_ ctx: inout GraphicsContext, _ t: PlotTransform, _ plot: CGRect, _ palette: PlotPalette) {
         guard let region else { return }
-        let color = region.style.color
+        let color = region.style.color(isDark: palette.isDark)
         let lo = t.x(region.range.lowerBound), hi = t.x(region.range.upperBound)
         let dim = palette.isDark ? Color.black.opacity(0.38) : Color.black.opacity(0.12)
         if lo > plot.minX { ctx.fill(Path(CGRect(x: plot.minX, y: plot.minY, width: min(lo, plot.maxX) - plot.minX, height: plot.height)), with: .color(dim)) }
@@ -136,7 +149,8 @@ extension PlotDrawing {
     /// Under the plot: the rail, the part of it that is the region, the two knobs, and the bubbles of a drag.
     func drawRail(_ ctx: inout GraphicsContext, _ t: PlotTransform, _ plot: CGRect, _ rail: CGRect, _ palette: PlotPalette) {
         guard let region, rail.height > 0 else { return }
-        let color = region.style.color
+        let color = region.style.color(isDark: palette.isDark)
+        let ink = region.style.onColor(isDark: palette.isDark)
         let lo = t.x(region.range.lowerBound), hi = t.x(region.range.upperBound)
         let trackY = rail.midY + 2, trackHeight: CGFloat = 4
         let track = CGRect(x: plot.minX, y: trackY - trackHeight / 2, width: plot.width, height: trackHeight)
@@ -145,22 +159,22 @@ extension PlotDrawing {
         let a = min(max(lo, plot.minX), plot.maxX), b = min(max(hi, plot.minX), plot.maxX)
         if b > a { ctx.fill(Path(roundedRect: CGRect(x: a, y: trackY - 3, width: b - a, height: 6), cornerRadius: 3), with: .color(color.opacity(region.dragging == .move ? 1 : 0.8))) }
         for (x, part) in [(lo, PlotRegionPart.start), (hi, PlotRegionPart.end)] where x >= plot.minX - 1 && x <= plot.maxX + 1 {
-            knob(&ctx, at: x, in: rail, color: color, isActive: region.dragging == part)
+            knob(&ctx, at: x, in: rail, color: color, ink: ink, isActive: region.dragging == part)
         }
         if let dragging = region.dragging {
             // Where the ends are, in the units the .conf file uses, and how long the region is.
             let bubbleY = plot.maxY - 8
-            flag(&ctx, region.style.text(region.range.lowerBound), at: CGPoint(x: lo - 4, y: bubbleY), anchor: .bottomTrailing, colour: color)
-            flag(&ctx, region.style.text(region.range.upperBound), at: CGPoint(x: hi + 4, y: bubbleY), anchor: .bottomLeading, colour: color)
+            flag(&ctx, region.style.text(region.range.lowerBound), at: CGPoint(x: lo - 4, y: bubbleY), anchor: .bottomTrailing, colour: color, text: ink)
+            flag(&ctx, region.style.text(region.range.upperBound), at: CGPoint(x: hi + 4, y: bubbleY), anchor: .bottomLeading, colour: color, text: ink)
             if dragging == .move || hi - lo > 150 {
-                flag(&ctx, "↔ " + region.style.text(region.range.upperBound - region.range.lowerBound), at: CGPoint(x: (lo + hi) / 2, y: bubbleY - 28), anchor: .bottom, colour: color)
+                flag(&ctx, "↔ " + region.style.text(region.range.upperBound - region.range.lowerBound), at: CGPoint(x: (lo + hi) / 2, y: bubbleY - 28), anchor: .bottom, colour: color, text: ink)
             }
         }
     }
 
     /// A knob of the rail: a pentagon that points up to the plot, like the sliders of the levels of Preview, in the colour of the region, with a
     /// white edge and a bar that says it is a slider.
-    private func knob(_ ctx: inout GraphicsContext, at x: CGFloat, in rail: CGRect, color: Color, isActive: Bool) {
+    private func knob(_ ctx: inout GraphicsContext, at x: CGFloat, in rail: CGRect, color: Color, ink: Color, isActive: Bool) {
         let half: CGFloat = isActive ? 10 : 9
         let tip = rail.minY + 0.5, shoulder = rail.minY + 10, bottom = rail.maxY - 1
         var shape = Path()
@@ -174,8 +188,13 @@ extension PlotDrawing {
         shape.closeSubpath()
         ctx.fill(shape.offsetBy(dx: 0, dy: 1), with: .color(.black.opacity(0.35)))
         ctx.fill(shape, with: .color(color))
-        ctx.stroke(shape, with: .color(.white.opacity(0.9)), style: StrokeStyle(lineWidth: 1.2, lineJoin: .round))
+        ctx.stroke(shape, with: .color(StrokeInk.edge(for: color)), style: StrokeStyle(lineWidth: 1.2, lineJoin: .round))
         // The bar inside, as the knobs of Preview have.
-        ctx.fill(Path(roundedRect: CGRect(x: x - 4.5, y: bottom - 7, width: 9, height: 3), cornerRadius: 1.5), with: .color(.white))
+        ctx.fill(Path(roundedRect: CGRect(x: x - 4.5, y: bottom - 7, width: 9, height: 3), cornerRadius: 1.5), with: .color(ink))
     }
+}
+
+/// The edge of a knob: white round a dark colour, a dark line round a light one.
+private enum StrokeInk {
+    static func edge(for color: Color) -> Color { PlotRegionStyle.isLight(color) ? Color.black.opacity(0.35) : Color.white.opacity(0.9) }
 }
