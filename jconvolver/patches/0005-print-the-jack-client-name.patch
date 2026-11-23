@@ -1,0 +1,12 @@
+--- a/source/jclient.cc
++++ b/source/jclient.cc
+@@ -104,6 +104,9 @@
+     }
+ 
+     _jname = jack_get_client_name (_jack_client);
++    // Tell which name JACK gave the client (it adds a suffix to a name that is taken), for the program that started this one.
++    printf ("client %s\n", _jname);
++    fflush (stdout);
+     _fsamp = jack_get_sample_rate (_jack_client);
+     _fragm = jack_get_buffer_size (_jack_client);
+     if (_fragm < 32)
