@@ -293,6 +293,10 @@ final class AppHub {
             guard let self else { return }
             for session in self.sessions { for _ in 0..<count { session.controller.recordXrun() } }
         }
+        // A connection made or removed elsewhere: every engine that runs adopts what the graph has.
+        jack.onLinksChanged = { [weak self] in
+            self?.sessions.forEach { $0.adoptRealConnections() }
+        }
         jack.start()
     }
 

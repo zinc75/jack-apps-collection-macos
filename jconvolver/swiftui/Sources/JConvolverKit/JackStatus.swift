@@ -19,6 +19,13 @@ public final class JackStatus {
     /// The audio load of the server, in percent of the time of a period; nil while the server does not say.
     public private(set) var cpuLoad: Double?
 
+    /// The audio ports of the graph and the connections between them, as they really are: whoever made them.
+    public private(set) var audioOutputs: Set<String> = []
+    public private(set) var audioInputs: Set<String> = []
+    public private(set) var links: Set<JackLink> = []
+    /// Called when the connections have changed (after the graph was read again).
+    @ObservationIgnored public var onLinksChanged: (() -> Void)?
+
     /// Clients with audio output ports: what can feed an input of jconvolver.
     public private(set) var sources: [JackPortClient] = []
     /// Clients with audio input ports: where an output of jconvolver can go.
@@ -61,6 +68,7 @@ public final class JackStatus {
         pending?.cancel(); pending = nil
         bridge.close()
         sources = []; destinations = []
+        links = []; audioOutputs = []; audioInputs = []
         isConnected = false
         sampleRate = nil
         bufferSize = nil
@@ -84,6 +92,7 @@ public final class JackStatus {
         bridge.close()
         isConnected = false
         sources = []; destinations = []
+        links = []; audioOutputs = []; audioInputs = []
         sampleRate = nil
         bufferSize = nil
         cpuLoad = nil
@@ -122,6 +131,14 @@ public final class JackStatus {
         decorate(&outs); decorate(&ins)
         sources = outs
         destinations = ins
+        let outputNames = Set(audio.filter { $0.direction == .output }.map(\.id)), inputNames = Set(audio.filter { $0.direction == .input }.map(\.id))
+        let found = Set(bridge.getConnections().filter { outputNames.contains($0.from) && inputNames.contains($0.to) }.map { JackLink(output: $0.from, input: $0.to) })
+        audioOutputs = outputNames
+        audioInputs = inputNames
+        if found != links {
+            links = found
+            onLinksChanged?()
+        }
     }
 
     /// The ports of the sound card, in order: the capture ports where an input gets its sound, the playback ports where an

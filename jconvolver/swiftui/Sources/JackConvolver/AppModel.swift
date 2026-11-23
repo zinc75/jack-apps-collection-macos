@@ -126,6 +126,9 @@ final class AppModel {
     private(set) var fileURL: URL?
     /// The name the engine was given as a JACK client for its last run (the one of the configuration unless another engine had it).
     private(set) var runClientName: String?
+    /// Whether the connections of the configuration have been made for this run: until then nothing that is read of the graph is adopted (the ports are
+    /// there and the connections are not yet, which would look as if they had been removed elsewhere).
+    @ObservationIgnored private(set) var wiringApplied = false
     /// The clients that JACK had when the engine was started: one that is not among them, while the name of the engine is not known yet, is the engine.
     @ObservationIgnored private var clientsBeforeStart: Set<String> = []
     private(set) var problems: [ConvProblem] = []
@@ -551,6 +554,10 @@ final class AppModel {
         runClientName = name
         appliedLinks = []
         syncConnections()
+        // The connections of the configuration are made: from now on what the graph has is what the wiring is.
+        wiringApplied = true
+        jack.refresh()
+        adoptRealConnections()
     }
 
     /// Whether a client of the graph is this session's engine: by its name when it is known, else (just after the start) any client that was not there before.
@@ -589,6 +596,7 @@ final class AppModel {
             controller.acknowledgeEnd()
             runCount += 1
             runClientName = plan.known
+            wiringApplied = false
             clientsBeforeStart = Set((jack.sources + jack.destinations).map(\.name))
             try controller.start(command, executable: executable)
             liveWiring = mode == .realTime ? document : nil

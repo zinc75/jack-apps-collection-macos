@@ -99,6 +99,27 @@ extension AppModel {
         appliedLinks = wanted
     }
 
+    /// While the engine runs, a connection made or removed elsewhere (JackMate, a patchbay) is adopted: **the reality is the wiring**. A connection whose other
+    /// port is not in the graph keeps its place, and is made when the port comes. Nothing is adopted before the connections of the configuration have been made.
+    func adoptRealConnections() {
+        guard wiringApplied, isLocked, mode == .realTime, let own = runningClientName, var live = liveWiring else { return }
+        let wanted = wantedLinks
+        let adopted = WiringAdoption.adopted(wanted: wanted, links: jack.links, ownClient: own, outputs: jack.audioOutputs, inputs: jack.audioInputs)
+        guard adopted != wanted else { return }
+        let ordered = WiringAdoption.ordered
+        for i in 0..<live.inputCount {
+            let port = ownPort(.input, i)
+            live.setConnections(ordered(live.connections(.input, i), Set(adopted.filter { $0.input == port }.map(\.output))), .input, i)
+        }
+        for o in 0..<live.outputCount {
+            let port = ownPort(.output, o)
+            live.setConnections(ordered(live.connections(.output, o), Set(adopted.filter { $0.output == port }.map(\.input))), .output, o)
+        }
+        liveWiring = live
+        // What is in the graph is already made: only the ones that wait for a port are left to make.
+        appliedLinks = adopted.intersection(jack.links)
+    }
+
     /// The channels of a side that are connected to nothing, from 1.
     func unconnected(_ side: PortSide) -> [Int] { (document?.unconnectedChannels(side) ?? []).map { $0 + 1 } }
 
