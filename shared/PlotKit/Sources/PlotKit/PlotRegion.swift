@@ -168,25 +168,31 @@ extension PlotDrawing {
         }
     }
 
-    /// A knob of the rail: a pentagon that points up to the plot, like the sliders of the levels of Preview, in the colour of the region, with a
-    /// white edge and a bar that says it is a slider.
     private func knob(_ ctx: inout GraphicsContext, at x: CGFloat, in rail: CGRect, color: Color, ink: Color, isActive: Bool) {
-        let half: CGFloat = isActive ? 10 : 9
-        let tip = rail.minY + 0.5, shoulder = rail.minY + 10, bottom = rail.maxY - 1
+        PlotRegionKnob.draw(&ctx, at: x, in: rail, color: color, ink: ink, isActive: isActive, scale: 1)
+    }
+}
+
+/// A knob of the rail: a pentagon that points up to the plot, like the sliders of the levels of Preview, in the colour of the region, with a
+/// white edge and a bar that says it is a slider. `scale` makes it smaller for a rail that is lower than the one of a plot.
+enum PlotRegionKnob {
+    static func draw(_ ctx: inout GraphicsContext, at x: CGFloat, in rail: CGRect, color: Color, ink: Color, isActive: Bool, scale s: CGFloat) {
+        let half: CGFloat = (isActive ? 10 : 9) * s, round = 2 * s
+        let tip = rail.minY + 0.5, shoulder = rail.minY + 10 * s, bottom = rail.maxY - 1
         var shape = Path()
         shape.move(to: CGPoint(x: x, y: tip))
         shape.addLine(to: CGPoint(x: x + half, y: shoulder))
-        shape.addLine(to: CGPoint(x: x + half, y: bottom - 2))
-        shape.addQuadCurve(to: CGPoint(x: x + half - 2, y: bottom), control: CGPoint(x: x + half, y: bottom))
-        shape.addLine(to: CGPoint(x: x - half + 2, y: bottom))
-        shape.addQuadCurve(to: CGPoint(x: x - half, y: bottom - 2), control: CGPoint(x: x - half, y: bottom))
+        shape.addLine(to: CGPoint(x: x + half, y: bottom - round))
+        shape.addQuadCurve(to: CGPoint(x: x + half - round, y: bottom), control: CGPoint(x: x + half, y: bottom))
+        shape.addLine(to: CGPoint(x: x - half + round, y: bottom))
+        shape.addQuadCurve(to: CGPoint(x: x - half, y: bottom - round), control: CGPoint(x: x - half, y: bottom))
         shape.addLine(to: CGPoint(x: x - half, y: shoulder))
         shape.closeSubpath()
         ctx.fill(shape.offsetBy(dx: 0, dy: 1), with: .color(.black.opacity(0.35)))
         ctx.fill(shape, with: .color(color))
         ctx.stroke(shape, with: .color(StrokeInk.edge(for: color)), style: StrokeStyle(lineWidth: 1.2, lineJoin: .round))
         // The bar inside, as the knobs of Preview have.
-        ctx.fill(Path(roundedRect: CGRect(x: x - 4.5, y: bottom - 7, width: 9, height: 3), cornerRadius: 1.5), with: .color(ink))
+        ctx.fill(Path(roundedRect: CGRect(x: x - 4.5 * s, y: bottom - 7 * s, width: 9 * s, height: 3 * s), cornerRadius: 1.5 * s), with: .color(ink))
     }
 }
 

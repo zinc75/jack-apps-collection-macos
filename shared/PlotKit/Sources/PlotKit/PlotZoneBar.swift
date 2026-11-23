@@ -4,9 +4,10 @@ import SwiftUI
 
 /// A small picture of a whole signal with a range of it that the person can change: the zone a spectrum is computed on, for instance. It looks
 /// as the minimap of `PlotOverview` does (a rounded container), but its frame is the range itself: a fine dotted line, as the plot draws the
-/// edges of a region, with plain slim grips at the ends, all in the colour of the range,
-/// but what it edits is the range, not the part of the signal that a plot shows: drag the ends to move the start or the end, the part between
-/// them to slide the range. While it is dragged, bubbles say where the ends are, in the units of `PlotRegionStyle.format`.
+/// edges of a region, in the colour of the range. Under it is a rail with the same sliders as the ones under the plot of a region (smaller), so the
+/// range is edited the same way in both. What it edits is the range, not the part of the signal that a plot shows: drag the sliders to move the
+/// start or the end, the part of the rail or of the frame between them to slide the range. While it is dragged, bubbles say where the ends are,
+/// in the units of `PlotRegionStyle.format`.
 public struct PlotZoneBar: View {
     let signal: PlotSignal
     let editor: PlotRegionEditor
@@ -21,8 +22,9 @@ public struct PlotZoneBar: View {
     private static let inset: CGFloat = 6
     private static let containerRadius: CGFloat = 14
     private static let frameRadius: CGFloat = containerRadius - inset
-    private static let gripWidth: CGFloat = 3.5
     private static let hitWidth: CGFloat = 10
+    /// The rail of the sliders under the container: lower than the one under a plot, with smaller sliders.
+    private static let railHeight: CGFloat = 20
     private static let line: CGFloat = 1.4
 
     /// - Parameters:
@@ -43,23 +45,27 @@ public struct PlotZoneBar: View {
         GeometryReader { geometry in
             let strip = max(geometry.size.width - 2 * Self.inset, 1)
             let lo = pixel(range.lowerBound, strip), hi = pixel(range.upperBound, strip)
+            let hit = PlotRegionMath.knobHit
             ZStack(alignment: .topLeading) {
                 Canvas { context, size in draw(&context, size) }
-                // The part between the ends slides the range; the ends stretch it.
-                Color.clear
-                    .frame(width: max(hi - lo, 0), height: height)
-                    .offset(x: lo)
-                    .contentShape(Rectangle())
-                    .pointerStyle(draggedPart == nil ? .grabIdle : .grabActive)
-                cap(left: true).offset(x: lo, y: Self.inset)
-                cap(left: false).offset(x: hi - Self.hitWidth, y: Self.inset)
+                // The part between the ends slides the range, in the frame and on the rail; the ends stretch it.
+                let grab: PointerStyle = draggedPart == nil ? .grabIdle : .grabActive
+                Color.clear.frame(width: max(hi - lo, 0), height: height).offset(x: lo).contentShape(Rectangle()).pointerStyle(grab)
+                Color.clear.frame(width: max(hi - lo - 2 * hit, 0), height: Self.railHeight).offset(x: lo + hit, y: height)
+                    .contentShape(Rectangle()).pointerStyle(grab)
+                ForEach(Array([lo, hi].enumerated()), id: \.offset) { _, x in
+                    Color.clear.frame(width: 2 * PlotRegionMath.tolerance, height: height - 2 * Self.inset).offset(x: x - PlotRegionMath.tolerance, y: Self.inset)
+                        .contentShape(Rectangle()).pointerStyle(.columnResize)
+                    Color.clear.frame(width: 2 * hit, height: Self.railHeight).offset(x: x - hit, y: height)
+                        .contentShape(Rectangle()).pointerStyle(.columnResize)
+                }
             }
             .contentShape(Rectangle())
             .gesture(DragGesture(minimumDistance: 0)
                 .onChanged { value in changed(value, strip: strip, lo: lo, hi: hi, size: geometry.size) }
                 .onEnded { _ in ended() })
         }
-        .frame(height: height)
+        .frame(height: height + Self.railHeight)
         .accessibilityLabel("Range")
     }
 
@@ -77,8 +83,12 @@ public struct PlotZoneBar: View {
 
     private func changed(_ value: DragGesture.Value, strip width: CGFloat, lo: CGFloat, hi: CGFloat, size: CGSize) {
         if case .idle = gesture {
-            let stripRect = CGRect(x: Self.inset, y: Self.inset, width: width, height: size.height - 2 * Self.inset)
-            if let part = PlotRegionMath.part(at: value.startLocation, lo: lo, hi: hi, plot: stripRect, rail: stripRect) {
+            let stripRect = CGRect(x: Self.inset, y: Self.inset, width: width, height: height - 2 * Self.inset)
+            let rail = CGRect(x: Self.inset, y: height, width: width, height: Self.railHeight)
+            // The sliders and the rail as under a plot; in the frame, the ends, and the part between them slides the range.
+            var part = PlotRegionMath.part(at: value.startLocation, lo: lo, hi: hi, plot: stripRect, rail: rail)
+            if part == nil, stripRect.contains(value.startLocation), value.startLocation.x > lo, value.startLocation.x < hi { part = .move }
+            if let part {
                 gesture = .dragging(part, original: range, startValue: self.value(value.startLocation.x, width))
             } else {
                 gesture = .ignored
@@ -94,25 +104,13 @@ public struct PlotZoneBar: View {
         gesture = .idle
     }
 
-    // MARK: The ends
-
-    /// A grip at an end of the frame: a plain solid bar in the colour of the range, in an area wide enough to take with the pointer.
-    private func cap(left: Bool) -> some View {
-        Capsule()
-            .fill(editor.style.color(isDark: colorScheme == .dark))
-            .frame(width: Self.gripWidth, height: height - 2 * Self.inset - 12)
-            .frame(width: Self.hitWidth, height: height - 2 * Self.inset, alignment: left ? .leading : .trailing)
-            .contentShape(Rectangle())
-            .pointerStyle(.columnResize)
-    }
-
     // MARK: Drawing
 
     private func draw(_ context: inout GraphicsContext, _ size: CGSize) {
         let isDark = colorScheme == .dark
         let color = editor.style.color(isDark: isDark)
-        let frame = CGRect(origin: .zero, size: size)
-        let strip = CGRect(x: Self.inset, y: Self.inset, width: max(size.width - 2 * Self.inset, 1), height: max(size.height - 2 * Self.inset, 1))
+        let frame = CGRect(x: 0, y: 0, width: size.width, height: height)
+        let strip = CGRect(x: Self.inset, y: Self.inset, width: max(size.width - 2 * Self.inset, 1), height: max(height - 2 * Self.inset, 1))
         let container = Path(roundedRect: frame, cornerRadius: Self.containerRadius)
         context.fill(container, with: .color(isDark ? Color.black.opacity(0.36) : Color.black.opacity(0.07)))
         context.stroke(container, with: .color(isDark ? Color.white.opacity(0.10) : Color.black.opacity(0.10)), lineWidth: 0.75)
@@ -145,6 +143,22 @@ public struct PlotZoneBar: View {
         let box = CGRect(x: lo, y: strip.minY, width: max(hi - lo, 2), height: strip.height)
         context.stroke(Path(roundedRect: box.insetBy(dx: Self.line / 2, dy: Self.line / 2), cornerRadius: Self.frameRadius - Self.line / 2),
                        with: .color(color), style: StrokeStyle(lineWidth: Self.line, dash: [3, 3]))
+
+        // The rail under the container: its track, the part of it that is the range, and the two sliders.
+        let ink = editor.style.onColor(isDark: isDark)
+        let rail = CGRect(x: strip.minX, y: height, width: strip.width, height: Self.railHeight)
+        let trackY = rail.midY + 1
+        context.fill(Path(roundedRect: CGRect(x: rail.minX, y: trackY - 1.5, width: rail.width, height: 3), cornerRadius: 1.5),
+                     with: .color(isDark ? Color.white.opacity(0.16) : Color.black.opacity(0.14)))
+        let a = min(max(lo, rail.minX), rail.maxX), b = min(max(hi, rail.minX), rail.maxX)
+        if b > a {
+            context.fill(Path(roundedRect: CGRect(x: a, y: trackY - 2.5, width: b - a, height: 5), cornerRadius: 2.5),
+                         with: .color(color.opacity(draggedPart == .move ? 1 : 0.8)))
+        }
+        let scale = Self.railHeight / PlotRegionMath.railHeight
+        for (x, part) in [(lo, PlotRegionPart.start), (hi, PlotRegionPart.end)] {
+            PlotRegionKnob.draw(&context, at: x, in: rail, color: color, ink: ink, isActive: draggedPart == part, scale: scale)
+        }
 
         // While it is dragged: where the ends are.
         if draggedPart != nil {

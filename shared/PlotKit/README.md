@@ -26,7 +26,7 @@ Both plots take the same gestures: a pinch or the wheel of a mouse zooms around 
 
 `PlotRegionEditor` makes a range editable in the plot itself: two sliders on a rail under the plot, as the levels of the color adjustment of Preview have, dotted lines across the plot, and what is outside dimmed. While a slider is dragged, bubbles say where the ends are, in the units `PlotRegionStyle.format` gives (a sample number and the time it makes, for instance). The range is updated during the drag and `onCommit` is called when it ends, so an application with an undo history records one change. A style gives the colour (with another for a light appearance if needed), the smallest length, the bounds and whether the ends are whole numbers.
 
-`PlotZoneBar` edits the same kind of range under a plot of something else. It looks like the minimap, but its frame is the range, a fine dotted line with plain grips, and what it changes is the range itself, not the part that a plot shows. A spectrum computed on a part of a signal is the typical use: the bar under it moves the part, and the spectrum follows.
+`PlotZoneBar` edits the same kind of range under a plot of something else. It looks like the minimap, but its frame is the range, a fine dotted line, and what it changes is the range itself, not the part that a plot shows. Under it is a rail with the same sliders as the ones under the plot of a region, a little smaller, so the range is edited the same way in both. A spectrum computed on a part of a signal is the typical use: the bar under it moves the part, and the spectrum follows.
 
 ## A window around a plot
 
