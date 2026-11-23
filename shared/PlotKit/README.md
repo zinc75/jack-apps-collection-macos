@@ -1,22 +1,49 @@
 # PlotKit
 
-The parts of a scientific plot that do not draw anything: the data reduction that lets a signal of millions of samples plot at the pace of the screen, the graduations of the axes, and the state of the view. MIT licence.
+Scientific plots for SwiftUI on macOS: a signal of millions of samples that plots at the pace of the screen, curves for the frequency domain, and what a window needs around a plot (a toolbar, an inspector, a minimap, a range that can be edited). The package knows nothing about audio files or about any tool: the application gives it samples, curves and names. macOS 15, MIT licence.
 
-## What is in it
+## Plots
 
-- `PeakPyramid`: a min/max pyramid over the samples of a signal. Built once (about 4 ms for a million samples, about 170 ms for fifty million), it gives the smallest and the largest sample of each column of a window in a few microseconds, whatever the zoom. A single sample far above the rest is never lost at any zoom.
-- `Ticks`, `TickLabels`: graduations at 1, 2 or 5 times a power of ten with minor ticks, logarithmic graduations, labels with one unit prefix (µ, m, k, M) and the number of decimals the step needs.
-- `AxisState`, `PlotViewport`, `PlotTransform`: one range per axis, linear or logarithmic, with independent zoom around a point, sliding, zoom to a box, autoscale of the vertical axis to what the horizontal range shows, and the conversion between values and positions. Every operation stays inside the bounds of the data.
+`SignalPlot` draws a signal in time. Up to one pixel per sample it draws the envelope of each column of pixels, with a gradient or a flat fill; from one pixel between two samples it joins them by a line, and from seven pixels it draws stems with a head. The vertical axis is linear or in decibels, the horizontal one is in samples or in time. A crosshair gives the values on the axes and a card at the nearest sample, a box zoom and a measure give a time, a level and the frequency of the interval. Several signals can share a plot, each in its own colour.
 
-- `SignalPlot`: a SwiftUI view that draws a signal with them. The envelope of the columns with a gradient, the samples joined by a line from one pixel between two of them, and as stems with a head from seven, in linear amplitude or in decibels, graduated axes in samples or in time, a crosshair with the values on the axes and a card at the nearest sample, a box zoom, a measure of a time and a level (with the frequency of the interval), and the controls of Plotly: a toolbar of modes, zoom, autoscale and reset, with an "i" that lists the gestures. A window that has a toolbar of its own gives the plot a `PlotController` and puts `PlotToolbarContent` in it, so the buttons look like those of the other tools of the window; without one, the plot has a strip of its own. A pinch, the wheel of a mouse and the zoom buttons zoom (with ⌥ the vertical axis only, with ⇧ both), a precise scroll slides (with ⌘ it zooms), a drag on an axis slides it or changes its scale, a double click shows everything. The events come from an AppKit layer because SwiftUI gestures cannot tell a wheel from a trackpad or read the modifier keys of a scroll.
-- `CurvePlot`: the same plot for curves whose abscissas are not regular, for the frequency domain (the magnitude of a spectrum, its phase, a group delay). The horizontal axis is linear or logarithmic and the vertical one linear or in decibels; a window that has a `PlotController` gets menus for both in its toolbar. A curve is drawn as it is, or reduced to the extremes of each column of pixels when it has many more points than the view has pixels. The measure gives the ratio of two frequencies in octaves.
-- Options of the inspector for the curves of a spectrum: smoothing of the magnitude in a fraction of an octave (1/24 to 1 octave, the power averaged in the band, with the raw spectrum kept behind it), unwrapping of a phase, and removal of its delay.
-- `PlotSignal`: what the view reads, so that a signal that grows while it is recorded can take the place of the pyramid of a finished one.
+`CurvePlot` is the same plot for curves whose abscissas are not regular: the magnitude of a spectrum, its phase, a group delay. The horizontal axis is linear or logarithmic, the vertical one linear or in decibels. A curve with many more points than the view has pixels is reduced to the extremes of each column. The measure gives the ratio of two frequencies in octaves. For a phase the display options can unwrap it, take its delay out, or show the group delay instead (from the transform of n·h[n], not from the slope of the phase). For a magnitude and a group delay they can smooth it in a fraction of an octave, from 1/24 to 1 octave, with the raw curve kept behind it, thin and pale.
 
-An axis can be linear or logarithmic, and `AxisState.switched(to:)` changes it while keeping the range as close as it can (a logarithmic axis starts where the data does, and the bounds come back on the return). The graduations and the labels of the view follow the scale of each axis.
+Both plots take the same gestures: a pinch or the wheel of a mouse zooms around the pointer (with ⌥ on the vertical axis only, with ⇧ on both), a precise scroll slides, with ⌘ it zooms, a drag on an axis slides it or changes its scale, a double click shows everything. The events come from an AppKit layer, because SwiftUI gestures cannot tell a wheel from a trackpad or read the modifier keys of a scroll.
+
+## Data
+
+`PeakPyramid` is a min/max pyramid over the samples of a signal. It is built once (about 4 ms for a million samples, about 170 ms for fifty million) and gives the smallest and the largest sample of each column of a window in a few microseconds, whatever the zoom: a single sample far above the rest is never lost. `PlotSignal` is the protocol the views read, so that a signal that grows while it is recorded can take the place of the pyramid of a finished one.
+
+`AxisState`, `PlotViewport` and `PlotTransform` hold one range per axis, linear or logarithmic, with zoom around a point, sliding, zoom to a box, autoscale of the vertical axis to what the horizontal range shows, and the conversion between values and positions. Every operation stays inside the bounds of the data, and `AxisState.switched(to:)` changes the scale of an axis while keeping the range as close as it can. `Ticks` and `TickLabels` give graduations at 1, 2 or 5 times a power of ten with minor ticks, logarithmic graduations, and labels with one unit prefix and the number of decimals the step needs.
+
+## Channels
+
+`PlotSeriesSet` holds the channels of a file: a name, a colour the person can choose and whether it is shown. The same set feeds the plot in time, the spectrum and the phase, so a channel keeps its colour in every view. `PlotChannelList` lists them one under the other (show or hide, colour, show alone, reorder by dragging) and fits an inspector. `PlotLegend` is the same selector as a row of chips.
+
+## A range of the horizontal axis
+
+`PlotOverview` is a minimap of the whole signal that follows the horizontal axis of the plot: a rounded container, the signal, and a frame that is the part the plot shows, with solid ends to drag. Drag the ends to zoom, the part between them to slide, or press outside it to bring the plot there. A second range can be shown in it without being editable. Two styles exist, `trim` (the frame of the trim control of QuickTime) and `glass`.
+
+`PlotRegionEditor` makes a range editable in the plot itself: two sliders on a rail under the plot, as the levels of the color adjustment of Preview have, dotted lines across the plot, and what is outside dimmed. While a slider is dragged, bubbles say where the ends are, in the units `PlotRegionStyle.format` gives (a sample number and the time it makes, for instance). The range is updated during the drag and `onCommit` is called when it ends, so an application with an undo history records one change. A style gives the colour (with another for a light appearance if needed), the smallest length, the bounds and whether the ends are whole numbers.
+
+`PlotZoneBar` edits the same kind of range under a plot of something else. It looks like the minimap, but its frame is the range, a fine dotted line with plain grips, and what it changes is the range itself, not the part that a plot shows. A spectrum computed on a part of a signal is the typical use: the bar under it moves the part, and the spectrum follows.
+
+## A window around a plot
+
+`PlotController` is the state a plot shares with the window around it: the mode of the drag, the commands, the scales, the display options and the state of the inspector. A window that gives its plot a controller puts `PlotToolbarContent` in its toolbar, so the buttons look like those of the other tools of the window; without a controller the plot has a strip of its own.
+
+`PlotInspector` is the inspector of such a window, on the model of the inspectors of the editors of the system: text tabs at the top, and sections with a chevron that folds them, an optional box in the title and an "i" that opens the long explanation in a popover. An application adds its own pages with `PlotInspectorTab`, built from `PlotInspectorSection`s. `PlotInspectorToolbarContent` holds the help and the button that shows and hides the inspector.
+
+SwiftUI lays a toolbar out once and does not do it again when an inspector opens or closes, so the items that belong to the side of the inspector stay where they were. `ToolbarRelayout`, put in the background of the content, asks the window to lay it out again by resizing it by two points and back.
+
+`PlotAnnotations` and `PlotMarker` mark places of the horizontal axis (the start of an attack, the end of a tail) with a name and a colour. `PlotLabels` holds every text the package shows, so that an application gives its own language; the default is English.
 
 ## Tests
 
 ```bash
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 ```
+
+## Licence
+
+MIT, see `LICENSE`.
