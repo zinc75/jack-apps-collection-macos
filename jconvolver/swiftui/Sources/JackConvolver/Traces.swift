@@ -119,6 +119,15 @@ struct TracesInspector: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            PlotInspectorSection(id: "engineView", title: String(localized: "Signal tracé"),
+                                 info: String(localized: "Appliquer troncature, gain et retard : chaque trace est la partie du fichier que jconvolver lit (début et longueur du fichier .conf), multipliée par son gain, après son retard. La forme d'onde, le spectre et la phase sont ceux de la réponse en service. Les poignées de troncature et les repères du fichier sont masqués dans cette vue ; la page Troncature de l'inspecteur reste active.")) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Toggle("Appliquer troncature, gain et retard", isOn: $engineView).toggleStyle(.checkbox).accentTint().font(.callout)
+                    if engineView {
+                        Text("Poignées et repères du fichier masqués.").font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+            }
             PlotInspectorSection(id: "traces", title: String(localized: "Réponses tracées"),
                                  info: String(localized: "Une trace est un emplacement de la matrice : un même fichier placé deux fois, avec d'autres réglages, donne deux traces. Une seule est éditée à la fois : ses poignées, sa troncature et ses repères sont ceux qu'on voit et qu'on change. Les autres sont tracées plus pâles.")) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -135,15 +144,6 @@ struct TracesInspector: View {
                         Spacer()
                     }
                     .padding(.top, 4)
-                }
-            }
-            PlotInspectorSection(id: "engineView", title: String(localized: "Représentation"),
-                                 info: String(localized: "Tel que le moteur le lit : chaque trace est la partie du fichier que le moteur lit (début et longueur du fichier .conf), multipliée par son gain, après son retard. La forme d'onde, le spectre et la phase sont ceux de la réponse en service. Les poignées de troncature et les repères du fichier sont masqués dans cette vue ; la page Troncature de l'inspecteur reste active.")) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Toggle("Tel que le moteur le lit", isOn: $engineView).toggleStyle(.checkbox).accentTint().font(.callout)
-                    if engineView {
-                        Text("Poignées et repères du fichier masqués.").font(.caption).foregroundStyle(.secondary)
-                    }
                 }
             }
             PlotInspectorSection(id: "inspectChoice", title: String(localized: "Quand j'inspecte une réponse")) {

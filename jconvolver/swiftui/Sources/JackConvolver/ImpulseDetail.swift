@@ -33,7 +33,7 @@ struct ImpulseDetailPage: View {
     /// under the plot stay within reach.
     @State private var pageHeight: CGFloat = 0
     @State private var plotBottom: CGFloat = 0
-    /// Where the container of the plot starts in the page: a floating inspector starts there, below the title and the legend.
+    /// Where a floating inspector starts in the page: under the tabs of the views, which are under the title and the legend.
     @State private var plotTop: CGFloat = 0
     private static let pageSpace = "impulsePage"
 
@@ -54,7 +54,7 @@ struct ImpulseDetailPage: View {
     @State private var others: [String: LoadedTrace] = [:]
     /// The files already read, by path and channel, so that a trace whose zone changes is not read again.
     @State private var fileCache: [String: (CurveData, PeakPyramid)] = [:]
-    /// Whether the traces are drawn as the engine reads them (zone, gain and delay applied) instead of as the files are, and those traces.
+    /// Whether the traces are drawn with the zone, the gain and the delay of their place applied, instead of as the files are, and those traces.
     @State private var engineView = false
     @State private var engineTraces: [String: LoadedTrace] = [:]
     @State private var engineEntries: [String: EngineEntry] = [:]
@@ -162,7 +162,6 @@ struct ImpulseDetailPage: View {
                             if model.traces.count > 1 { TracesLegend(series: series).frame(maxWidth: .infinity) }
                         }
                         tabs(impulse)
-                            .onGeometryChange(for: CGFloat.self, of: { $0.frame(in: .named(Self.pageSpace)).minY }) { plotTop = $0 }
                     }
                     .padding([.top, .horizontal], 14)
                     .coordinateSpace(name: Self.pageSpace)
@@ -286,6 +285,8 @@ struct ImpulseDetailPage: View {
     private func tabs(_ impulse: ConvImpulse) -> some View {
         VStack(spacing: 8) {
             kindStrip.padding(.top, 10).padding(.horizontal, 8)
+                // A floating inspector starts under the tabs of the views, so that they can all be reached.
+                .onGeometryChange(for: CGFloat.self, of: { $0.frame(in: .named(Self.pageSpace)).maxY + 8 }) { plotTop = $0 }
             Group {
                 if data != nil, pyramid != nil { plot } else if failed {
                     Text("Ce fichier ne peut pas être lu.").foregroundStyle(.red).frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -305,7 +306,7 @@ struct ImpulseDetailPage: View {
             switch kind {
             case .time:
                 VStack(spacing: 8) {
-                    // As the engine reads them, the zone is not drawn on the file: no handles, no markers of the file.
+                    // With the zone, the gain and the delay applied, the zone is not drawn on the file: no handles, no markers of the file.
                     SignalPlot(traces: timeTraces, viewport: $time, sampleRate: data.sampleRate, amplitude: yScales[.time] ?? .linear, accent: accent,
                                labels: .localized, controller: controller, annotations: engineView ? PlotAnnotations() : annotations,
                                region: engineView ? nil : regionEditor(total: data.count))
