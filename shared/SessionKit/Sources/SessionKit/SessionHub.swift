@@ -39,6 +39,7 @@ public struct SessionKitConfiguration: Sendable {
 public final class SessionHub<S: HostedSession> {
     public let configuration: SessionKitConfiguration
     private let makeSessionWithID: (UUID) -> S
+    private let makeIdle: (() -> S)?
 
     /// The sessions, in the order they were made.
     public private(set) var sessions: [S] = []
@@ -63,15 +64,18 @@ public final class SessionHub<S: HostedSession> {
     /// Counts the changes of what is seen of the windows (they are not observable): the menu bar reads it.
     public private(set) var presence = 0
 
-    public init(configuration: SessionKitConfiguration, makeSession: @escaping (UUID) -> S) {
+    /// - Parameter makeIdleSession: how to make the session that no window shows (the one that commands act on while no window has the focus); by default
+    ///   `makeSession` makes it, which a tool whose first session is special (it reads saved settings) does not want.
+    public init(configuration: SessionKitConfiguration, makeSession: @escaping (UUID) -> S, makeIdleSession: (() -> S)? = nil) {
         self.configuration = configuration
         self.makeSessionWithID = makeSession
+        self.makeIdle = makeIdleSession
     }
 
     // MARK: The sessions
 
     /// A session that no window shows: what the commands of the menus act on while no window has the focus, so that they do nothing. It is not one of the sessions.
-    @ObservationIgnored public lazy var idleSession: S = makeSessionWithID(UUID())
+    @ObservationIgnored public lazy var idleSession: S = makeIdle?() ?? makeSessionWithID(UUID())
 
     /// A new session, for a window.
     @discardableResult

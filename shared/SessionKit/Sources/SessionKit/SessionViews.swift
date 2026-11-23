@@ -388,10 +388,10 @@ private struct SessionRowView<S: HostedSession>: View {
         .onHover { hovered = $0 }
     }
 
-    /// What the session is doing: its state, and while it runs the first badge (the JACK client, the time of a recording).
+    /// What the session is doing: its state, and while it runs its badges (the JACK client, the time of a recording).
     private func line(_ card: SessionCard) -> String {
-        guard card.state == .active, let badge = card.badges.first else { return card.stateText }
-        return card.stateText + " · " + badge.text
+        guard card.state == .active, !card.badges.isEmpty else { return card.stateText }
+        return ([card.stateText] + card.badges.map(\.text)).joined(separator: " · ")
     }
 
     private func glyph(_ name: String, help: String, enabled: Bool = true, _ action: @escaping () -> Void) -> some View {
