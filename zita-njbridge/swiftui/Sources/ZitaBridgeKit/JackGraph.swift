@@ -98,6 +98,12 @@ public final class JackGraph: JackLinking {
         Set(bridge.getConnections().filter { $0.from == output }.map(\.to))
     }
 
+    /// Every audio connection, read at once (the default would read the graph again for each output).
+    public func allLinks() -> Set<JackLink> {
+        let outputs = outputPorts(), inputs = inputPorts()
+        return Set(bridge.getConnections().filter { outputs.contains($0.from) && inputs.contains($0.to) }.map { JackLink(output: $0.from, input: $0.to) })
+    }
+
     public func connect(from output: String, to input: String) throws {
         try bridge.connect(from: output, to: input, fromType: .audio, toType: .audio)
     }

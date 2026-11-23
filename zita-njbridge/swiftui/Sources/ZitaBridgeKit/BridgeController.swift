@@ -15,6 +15,10 @@ public final class BridgeController {
     /// Where each channel is wired, by direction; kept between launches.
     public private(set) var receiveWiring: ChannelWiring
     public private(set) var sendWiring: ChannelWiring
+    /// What the graph really holds for the ports of each program, compared with the wiring above: a connection made or removed by another tool.
+    /// Empty while the program does not run.
+    public private(set) var receiveDifferences = WiringDifferences.none
+    public private(set) var sendDifferences = WiringDifferences.none
     /// Which directions the round button starts and stops. Disarming a direction that runs stops it.
     public var receiveArmed: Bool { didSet { if !receiveArmed { stop(.receive) } } }
     public var sendArmed: Bool { didSet { if !sendArmed { stop(.send) } } }
@@ -114,6 +118,14 @@ public final class BridgeController {
     // MARK: Wiring
 
     public func wiring(for direction: LinkDirection) -> ChannelWiring { direction == .receive ? receiveWiring : sendWiring }
+    public func differences(for direction: LinkDirection) -> WiringDifferences { direction == .receive ? receiveDifferences : sendDifferences }
+
+    /// Reads the connections of the programs in the graph again.
+    private func refreshReality() {
+        let r = receiving.refreshReality(), s = sending.refreshReality()
+        if r != receiveDifferences { receiveDifferences = r }
+        if s != sendDifferences { sendDifferences = s }
+    }
 
     /// The channels of a direction as they are set now (what the matrix shows).
     public func channels(for direction: LinkDirection) -> [Int] {
@@ -140,6 +152,7 @@ public final class BridgeController {
         case .send: sendWiring = wiring; sending.update(wiring: wiring)
         }
         wiringStore.remember(wiring, for: direction)
+        refreshReality()
     }
 
     // MARK: What the model and the graph say
@@ -156,6 +169,7 @@ public final class BridgeController {
             manager.detach()
             if pendingRestart.remove(direction) != nil { start(direction) }
         }
+        refreshReality()
     }
 
     /// A sender is heard. An automatic receiver takes all of its channels: when the sender has another number than the one the program
@@ -171,6 +185,7 @@ public final class BridgeController {
     private func graphChanged() {
         receiving.graphChanged()
         sending.graphChanged()
+        refreshReality()
         applyDefaultWiringTheFirstTime()
     }
 

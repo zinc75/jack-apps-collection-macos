@@ -40,6 +40,7 @@ struct LanesBlock: View {
         let channels = controller.channels(for: direction)
         let clients = direction == .receive ? controller.graph.destinations : controller.graph.sources
         let wiring = controller.wiring(for: direction)
+        let differences = controller.differences(for: direction)
         DirectionContainer(direction: direction, detail: direction == .receive ? "Du réseau vers JACK" : "De JACK vers le réseau") {
             Text(direction == .receive
                  ? "Chaque sortie de zita-n2j est reliée aux ports JACK de votre choix. Les voies que l'émetteur n'envoie pas restent silencieuses."
@@ -71,9 +72,9 @@ struct LanesBlock: View {
             if clients.isEmpty {
                 Text(direction == .receive ? "Aucune entrée audio dans le graphe JACK." : "Aucune sortie audio dans le graphe JACK.").foregroundStyle(.secondary)
             } else {
-                matrix(clients: clients, channels: channels, wiring: wiring).frame(height: min(400, height(clients))).blockBackground()
+                matrix(clients: clients, channels: channels, wiring: wiring, differences: differences).frame(height: min(400, height(clients))).blockBackground()
             }
-            hint(channels: channels, wiring: wiring)
+            hint(channels: channels, wiring: wiring, differences: differences)
         }
         .sheet(isPresented: $showsChannels) { ReceivedChannelsSheet() }
         #if DEBUG
@@ -91,7 +92,7 @@ struct LanesBlock: View {
         clients.reduce(CGFloat(40)) { $0 + 44 + (collapsed.contains($1.name) ? 0 : CGFloat($1.ports.count) * 31) }
     }
 
-    private func matrix(clients: [JackPortClient], channels: [Int], wiring: ChannelWiring) -> some View {
+    private func matrix(clients: [JackPortClient], channels: [Int], wiring: ChannelWiring, differences: WiringDifferences) -> some View {
         let controller = model.controller
         let width = Self.nameWidth + Self.cellWidth * CGFloat(channels.count)
         let portName = direction == .receive ? "out" : "in"
@@ -139,7 +140,9 @@ struct LanesBlock: View {
                                     Text(verbatim: port).font(.system(size: 12.5)).lineLimit(1)
                                         .padding(.leading, 30).frame(width: Self.nameWidth, alignment: .leading)
                                     ForEach(channels, id: \.self) { channel in
-                                        AccentLED(isOn: wiring.contains(channel: channel, port: full)) {
+                                        let difference: AccentLED.Difference = differences.missing.contains(channel: channel, port: full) ? .removedElsewhere
+                                            : differences.foreign.contains(channel: channel, port: full) ? .madeElsewhere : .none
+                                        AccentLED(isOn: wiring.contains(channel: channel, port: full), difference: difference) {
                                             controller.toggleWire(direction, channel: channel, port: full)
                                         }
                                     }
@@ -163,7 +166,7 @@ struct LanesBlock: View {
         n == 1 ? String(localized: "1 port") : String(localized: "\(n) ports")
     }
 
-    private func hint(channels: [Int], wiring: ChannelWiring) -> some View {
+    private func hint(channels: [Int], wiring: ChannelWiring, differences: WiringDifferences) -> some View {
         let unwired = wiring.unwired(in: channels)
         let base: Text
         if unwired.isEmpty {
@@ -185,6 +188,17 @@ struct LanesBlock: View {
                 ? Text("Voie \(list) : l'émetteur n'en envoie que \(sent), elle reste silencieuse.")
                 : Text("Voies \(list) : l'émetteur n'en envoie que \(sent), elles restent silencieuses."))
         }
-        return text.font(.callout).foregroundStyle(unwired.isEmpty && beyond.isEmpty ? Color.secondary : .orange)
+        // What another tool changed in JACK while the link runs: told, not corrected.
+        if differences.foreignCount > 0 {
+            let n = differences.foreignCount
+            text = text + Text(" ") + (n == 1 ? Text("1 connexion faite par un autre outil (anneau orange) : un clic l'ajoute au branchement.")
+                                              : Text("\(n) connexions faites par un autre outil (anneaux orange) : un clic les ajoute au branchement."))
+        }
+        if differences.missingCount > 0 {
+            let n = differences.missingCount
+            text = text + Text(" ") + (n == 1 ? Text("1 connexion du branchement a été défaite dans JACK (cercle en pointillés) : un clic la retire du branchement.")
+                                              : Text("\(n) connexions du branchement ont été défaites dans JACK (cercles en pointillés) : un clic les retire du branchement."))
+        }
+        return text.font(.callout).foregroundStyle(unwired.isEmpty && beyond.isEmpty && differences.isEmpty ? Color.secondary : .orange)
     }
 }

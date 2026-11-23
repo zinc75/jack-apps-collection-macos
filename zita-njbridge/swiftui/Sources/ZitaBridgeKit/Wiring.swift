@@ -71,6 +71,52 @@ public enum DefaultWiring {
     }
 }
 
+extension ChannelWiring {
+    /// The wiring that some links make for a program: the links that end on `in_N` of the client (the sender) or start at `out_N` of it (the receiver), for the
+    /// channels N that the program has. Links of other ports are not the program's.
+    public init(links: Set<JackLink>, direction: LinkDirection, client: String, channels: [Int]) {
+        var ports: [Int: [String]] = [:]
+        let word = direction == .send ? "in" : "out"
+        for channel in channels {
+            let own = "\(client):\(word)_\(channel)"
+            let others = links.compactMap { link -> String? in
+                if direction == .send { return link.input == own ? link.output : nil }
+                return link.output == own ? link.input : nil
+            }
+            if !others.isEmpty { ports[channel] = others.sorted() }
+        }
+        self.init(ports: ports)
+    }
+}
+
+/// How the connections that are really in JACK differ from the wiring of the matrix. The matrix shows what the person wants; JACK can hold something else
+/// because another tool (a patchbay, JackMate) made or removed a connection.
+public struct WiringDifferences: Equatable, Sendable {
+    /// In the wiring, not in JACK, although both ports are there: the connection was removed elsewhere.
+    public var missing = ChannelWiring.empty
+    /// In JACK on a port of the program, not in the wiring: the connection was made elsewhere.
+    public var foreign = ChannelWiring.empty
+    public static let none = WiringDifferences()
+    public init(missing: ChannelWiring = .empty, foreign: ChannelWiring = .empty) { self.missing = missing; self.foreign = foreign }
+    public var isEmpty: Bool { missing.ports.isEmpty && foreign.ports.isEmpty }
+    public var missingCount: Int { missing.ports.values.reduce(0) { $0 + $1.count } }
+    public var foreignCount: Int { foreign.ports.values.reduce(0) { $0 + $1.count } }
+
+    /// - Parameters:
+    ///   - actual: what the graph holds for the ports of the program.
+    ///   - bothPortsExist: whether the port of the program and the other one are in the graph. A connection that is not made because a port is not there (a device
+    ///     that is unplugged, an application that is not running) is not a difference: it is made when the port comes.
+    public init(wiring: ChannelWiring, actual: ChannelWiring, channels: [Int], bothPortsExist: (_ channel: Int, _ port: String) -> Bool) {
+        var missing = ChannelWiring(), foreign = ChannelWiring()
+        for channel in channels {
+            let wanted = Set(wiring.ports[channel] ?? []), real = Set(actual.ports[channel] ?? [])
+            for port in wanted.subtracting(real).sorted() where bothPortsExist(channel, port) { missing.toggle(channel: channel, port: port) }
+            for port in real.subtracting(wanted).sorted() { foreign.toggle(channel: channel, port: port) }
+        }
+        self.init(missing: missing, foreign: foreign)
+    }
+}
+
 /// Keeps the connections of the ports of one program as the wiring says: it turns the wiring of the channels into the links
 /// that are wanted, and the reconciler of JackBridge makes them as far as the graph allows (see `ConnectionReconciler`).
 @MainActor
@@ -87,9 +133,13 @@ public final class WiringManager {
     public var failures: [String] { reconciler.failures }
 
     private let reconciler: ConnectionReconciler
+    private let linking: JackLinking
+    /// What the graph holds that the wiring does not say, and the reverse; read again by `refreshReality`.
+    public private(set) var differences = WiringDifferences.none
 
     public init(direction: LinkDirection, linking: JackLinking) {
         self.direction = direction
+        self.linking = linking
         // The sender's inputs are fed by other clients; the receiver's outputs feed other clients.
         reconciler = ConnectionReconciler(linking: linking, own: direction == .send ? .input : .output)
     }
@@ -122,6 +172,23 @@ public final class WiringManager {
     public func detach() {
         clientName = nil
         reconciler.reset()
+        differences = .none
+    }
+
+    /// Reads the connections of the program in the graph, and compares them with the wiring. Only while the program runs: the wiring of a program that does not
+    /// run is prepared in advance, and there is nothing to compare it with.
+    @discardableResult
+    public func refreshReality() -> WiringDifferences {
+        guard let client = clientName else { differences = .none; return .none }
+        let actual = ChannelWiring(links: reconciler.actualLinks(ownClient: client), direction: direction, client: client, channels: channels)
+        let outputs = linking.outputPorts(), inputs = linking.inputPorts()
+        let sends = direction == .send
+        let result = WiringDifferences(wiring: wiring, actual: actual, channels: channels) { channel, other in
+            let own = self.port(channel: channel, client: client)
+            return sends ? inputs.contains(own) && outputs.contains(other) : outputs.contains(own) && inputs.contains(other)
+        }
+        differences = result
+        return result
     }
 
     private func reconcile() {

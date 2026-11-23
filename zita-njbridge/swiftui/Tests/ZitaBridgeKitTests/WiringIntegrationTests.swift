@@ -90,5 +90,24 @@ final class WiringIntegrationTests: XCTestCase {
         XCTAssertFalse(after.contains("zita-n2j:out_3→system:playback_2"))
         XCTAssertTrue(after.contains("zita-n2j:out_3→system:playback_1"), "two channels summed on one port")
         XCTAssertEqual(rx.summedPorts(in: [1, 3]), ["system:playback_1"])
+
+        // What another tool does to the graph is read back: a connection removed, a connection made. Nothing is corrected.
+        XCTAssertTrue(sending.refreshReality().isEmpty, "what the application made is the wiring")
+        XCTAssertTrue(receiving.refreshReality().isEmpty)
+        try probe.disconnect(from: "system:capture_2", to: "zita-j2n:in_2")
+        try probe.connect(from: "system:capture_1", to: "zita-j2n:in_2", fromType: .audio, toType: .audio)
+        let seen = sending.refreshReality()
+        var removed = ChannelWiring(); removed.toggle(channel: 2, port: "system:capture_2")
+        var added = ChannelWiring(); added.toggle(channel: 2, port: "system:capture_1")
+        XCTAssertEqual(seen.missing, removed, "wired, and gone from the server")
+        XCTAssertEqual(seen.foreign, added, "on the server, and not wired")
+        XCTAssertTrue(receiving.refreshReality().isEmpty, "the other direction is untouched")
+        let untouched = Set(probe.getConnections().map { "\($0.from)→\($0.to)" })
+        XCTAssertFalse(untouched.contains("system:capture_2→zita-j2n:in_2"), "it is told, not made again")
+        XCTAssertTrue(untouched.contains("system:capture_1→zita-j2n:in_2"), "and not taken away")
+        // The wiring is then made to say what the server holds: both differences go.
+        tx.toggle(channel: 2, port: "system:capture_2"); tx.toggle(channel: 2, port: "system:capture_1")
+        sending.update(wiring: tx)
+        XCTAssertTrue(sending.refreshReality().isEmpty)
     }
 }

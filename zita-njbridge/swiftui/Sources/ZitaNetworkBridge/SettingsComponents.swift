@@ -144,14 +144,27 @@ struct NumberField: View {
 /// A point of the matrix, lit in the accent of the application. Drawn flat on every system: Liquid Glass tinted with the
 /// accent would read as grey, and the lit point must show the accent.
 struct AccentLED: View {
+    /// How a connection that is really in JACK differs from the wiring: removed elsewhere (a dotted circle in the colour of the accent), or made elsewhere
+    /// (a ring in orange).
+    enum Difference { case none, removedElsewhere, madeElsewhere }
+
     let isOn: Bool
+    var difference: Difference = .none
     let action: () -> Void
     @Environment(\.appAccentColor) private var accent
     @Environment(\.colorScheme) private var scheme
     @State private var isHovered = false
 
-    private var fill: Color { isOn ? accent : (scheme == .dark ? .ledOffFill : Color(white: 0, opacity: 0.07)) }
+    private var fill: Color {
+        switch difference {
+        case .removedElsewhere: return .clear
+        case .madeElsewhere: return Color.orange.opacity(0.28)
+        case .none: return isOn ? accent : (scheme == .dark ? .ledOffFill : Color(white: 0, opacity: 0.07))
+        }
+    }
     private var outline: Color {
+        if difference == .madeElsewhere { return Color.orange.opacity(isHovered ? 1 : 0.85) }
+        if difference == .removedElsewhere { return accent.opacity(isHovered ? 1 : 0.85) }
         if isOn { return accent.opacity(isHovered ? 0.9 : 0.5) }
         let base = scheme == .dark ? Color.white : Color.black
         return base.opacity(isHovered ? 0.35 : (scheme == .dark ? 0.06 : 0.14))
@@ -159,8 +172,10 @@ struct AccentLED: View {
 
     var body: some View {
         Button(action: action) {
-            Circle().fill(fill).overlay(Circle().strokeBorder(outline, lineWidth: 1)).frame(width: 16, height: 16)
-                .shadow(color: isOn ? accent.opacity(isHovered ? 0.8 : 0.55) : .clear, radius: isHovered ? 5 : 4)
+            Circle().fill(fill)
+                .overlay(Circle().strokeBorder(outline, style: StrokeStyle(lineWidth: difference == .none ? 1 : 1.5, dash: difference == .removedElsewhere ? [3, 2] : [])))
+                .frame(width: 16, height: 16)
+                .shadow(color: isOn && difference == .none ? accent.opacity(isHovered ? 0.8 : 0.55) : .clear, radius: isHovered ? 5 : 4)
                 .scaleEffect(isHovered ? 1.2 : 1)
                 .frame(width: 40, height: 30)
                 .contentShape(Rectangle())
@@ -168,7 +183,24 @@ struct AccentLED: View {
         .buttonStyle(.plain)
         .onHover { hovering in withAnimation(.spring(duration: 0.2, bounce: 0.35)) { isHovered = hovering } }
         .accessibilityAddTraits(.isToggle)
-        .accessibilityValue(isOn ? Text("activé") : Text("désactivé"))
+        .accessibilityValue(accessibilityText)
+        .help(helpText)
+    }
+
+    private var accessibilityText: Text {
+        switch difference {
+        case .removedElsewhere: return Text("branchement voulu, défait dans JACK")
+        case .madeElsewhere: return Text("connexion faite ailleurs")
+        case .none: return isOn ? Text("activé") : Text("désactivé")
+        }
+    }
+
+    private var helpText: LocalizedStringKey {
+        switch difference {
+        case .removedElsewhere: return "Voulu, mais la connexion a été défaite dans JACK par un autre outil. Un clic retire ce branchement."
+        case .madeElsewhere: return "Cette connexion existe dans JACK, faite par un autre outil, mais n'est pas dans le branchement. Un clic l'ajoute."
+        case .none: return ""
+        }
     }
 }
 

@@ -2,6 +2,230 @@
   "sourceLanguage": "fr",
   "version": "1.0",
   "strings": {
+    "branchement voulu, défait dans JACK": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbindung gewollt, in JACK aufgehoben"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "wanted connection, undone in JACK"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "conexión deseada, deshecha en JACK"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "collegamento voluto, disfatto in JACK"
+          }
+        }
+      }
+    },
+    "connexion faite ailleurs": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "anderswo hergestellte Verbindung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "connection made elsewhere"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "conexión hecha en otro lugar"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "connessione fatta altrove"
+          }
+        }
+      }
+    },
+    "Voulu, mais la connexion a été défaite dans JACK par un autre outil. Un clic retire ce branchement.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gewollt, aber die Verbindung wurde in JACK von einem anderen Werkzeug aufgehoben. Ein Klick entfernt diese Verdrahtung."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wanted, but another tool undid this connection in JACK. A click removes it from your connections."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deseada, pero otra herramienta deshizo la conexión en JACK. Un clic quita esta conexión del cableado."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voluta, ma la connessione è stata disfatta in JACK da un altro strumento. Un clic rimuove questo collegamento."
+          }
+        }
+      }
+    },
+    "Cette connexion existe dans JACK, faite par un autre outil, mais n'est pas dans le branchement. Un clic l'ajoute.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Verbindung besteht in JACK, von einem anderen Werkzeug hergestellt, steht aber nicht in der Verdrahtung. Ein Klick fügt sie hinzu."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This connection exists in JACK, made by another tool, but is not among your connections. A click adds it."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta conexión existe en JACK, hecha por otra herramienta, pero no está en el cableado. Un clic la añade."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questa connessione esiste in JACK, fatta da un altro strumento, ma non è nel cablaggio. Un clic la aggiunge."
+          }
+        }
+      }
+    },
+    "1 connexion faite par un autre outil (anneau orange) : un clic l'ajoute au branchement.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 Verbindung von einem anderen Werkzeug hergestellt (oranger Ring): Ein Klick fügt sie der Verdrahtung hinzu."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 connection made by another tool (orange ring): a click adds it to your connections."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 conexión hecha por otra herramienta (anillo naranja): un clic la añade al cableado."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 connessione fatta da un altro strumento (anello arancione): un clic la aggiunge al cablaggio."
+          }
+        }
+      }
+    },
+    "%lld connexions faites par un autre outil (anneaux orange) : un clic les ajoute au branchement.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Verbindungen von einem anderen Werkzeug hergestellt (orange Ringe): Ein Klick fügt sie der Verdrahtung hinzu."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld connections made by another tool (orange rings): a click adds them to your connections."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld conexiones hechas por otra herramienta (anillos naranjas): un clic las añade al cableado."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld connessioni fatte da un altro strumento (anelli arancioni): un clic le aggiunge al cablaggio."
+          }
+        }
+      }
+    },
+    "1 connexion du branchement a été défaite dans JACK (cercle en pointillés) : un clic la retire du branchement.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 Verbindung der Verdrahtung wurde in JACK aufgehoben (gepunkteter Kreis): Ein Klick entfernt sie aus der Verdrahtung."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 of your connections was undone in JACK (dotted circle): a click removes it from your connections."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 conexión del cableado se deshizo en JACK (círculo punteado): un clic la quita del cableado."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 connessione del cablaggio è stata disfatta in JACK (cerchio tratteggiato): un clic la rimuove dal cablaggio."
+          }
+        }
+      }
+    },
+    "%lld connexions du branchement ont été défaites dans JACK (cercles en pointillés) : un clic les retire du branchement.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Verbindungen der Verdrahtung wurden in JACK aufgehoben (gepunktete Kreise): Ein Klick entfernt sie aus der Verdrahtung."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of your connections were undone in JACK (dotted circles): a click removes them from your connections."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld conexiones del cableado se deshicieron en JACK (círculos punteados): un clic las quita del cableado."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld connessioni del cablaggio sono state disfatte in JACK (cerchi tratteggiati): un clic le rimuove dal cablaggio."
+          }
+        }
+      }
+    },
     "révision": {
       "localizations": {
         "de": {
