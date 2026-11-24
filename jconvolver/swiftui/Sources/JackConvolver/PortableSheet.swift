@@ -60,8 +60,8 @@ struct PortableExportSheet: View {
                             .lineLimit(1).truncationMode(.head).frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
-                row("Format audio", note: plan?.requiresCAF == true ? "Le fichier dépasse 4 Go : seul le format CAF convient."
-                                                                    : "WAV se lit partout ; CAF n'a pas de limite de taille.") {
+                row("Format audio", note: plan?.requiresCAF == true ? String(localized: "Le fichier dépasse 4 Go : seul le format CAF convient.")
+                                                                    : String(localized: "WAV se lit partout ; CAF n'a pas de limite de taille.")) {
                     Picker("", selection: $options.container) {
                         Text("WAV").tag(PortableOptions.Container.wav).disabled(plan?.requiresCAF == true)
                         Text("CAF").tag(PortableOptions.Container.caf)
@@ -232,7 +232,7 @@ struct PortableExportSheet: View {
     private func summary(_ plan: PortablePlan) -> String {
         let impulses = plan.impulses == 1 ? String(localized: "1 réponse placée") : String(localized: "\(plan.impulses) réponses placées")
         let files = plan.files == 1 ? String(localized: "1 fichier") : String(localized: "\(plan.files) fichiers")
-        var line = "\(impulses), prises dans \(files)"
+        var line = String(localized: "\(impulses), prises dans \(files)")
         if plan.folders > 1 { line += String(localized: " de \(plan.folders) dossiers") }
         line += "."
         if !options.appliesSettings { line += " " + String(localized: "Une réponse utilisée à plusieurs endroits n'est écrite qu'une fois.") }
@@ -248,9 +248,10 @@ struct PortableExportSheet: View {
     }
 
     private func size(_ bytes: Int) -> String {
-        bytes >= 1_000_000_000 ? "\((Double(bytes) / 1e9).formatted(.number.precision(.fractionLength(2)))) Go"
-            : bytes >= 1_000_000 ? "\((Double(bytes) / 1e6).formatted(.number.precision(.fractionLength(1)))) Mo"
-            : "\(max(1, bytes / 1000)) Ko"
+        // The units are the French ones in the source, and written GB, MB and kB in the other languages.
+        bytes >= 1_000_000_000 ? String(localized: "\((Double(bytes) / 1e9).formatted(.number.precision(.fractionLength(2)))) Go")
+            : bytes >= 1_000_000 ? String(localized: "\((Double(bytes) / 1e6).formatted(.number.precision(.fractionLength(1)))) Mo")
+            : String(localized: "\(max(1, bytes / 1000)) Ko")
     }
 
     private func text(for blocker: PortableBlocker) -> String {
@@ -258,7 +259,7 @@ struct PortableExportSheet: View {
         case .noFileImpulse: String(localized: "Aucune réponse ne vient d'un fichier : il n'y a rien à regrouper.")
         case .fileMissing(let path): String(localized: "Fichier introuvable : \((path as NSString).lastPathComponent). Corrigez-le d'abord (voir « à régler »).")
         case .channelMissing(let path, let channel, let channels):
-            String(localized: "La voie \(channel) n'existe pas dans \((path as NSString).lastPathComponent) (\(channels) voie(s)).")
+            String(localized: "La voie \(channel) n'existe pas dans \((path as NSString).lastPathComponent) (voies : \(channels)).")
         case .differentRates(let rates):
             String(localized: "Les fichiers n'ont pas tous la même fréquence (\(rates.map { Int($0).formatted() }.joined(separator: ", ")) Hz) : un fichier audio n'en a qu'une. Convertissez-les d'abord.")
         case .emptyName: String(localized: "Le nom est vide.")

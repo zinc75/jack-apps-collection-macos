@@ -49,8 +49,7 @@ struct ResolvePathsSheet: View {
                                 Label(proposal.isInConfigurationFolder ? String(localized: "dans le dossier du fichier de configuration")
                                                                         : String(localized: "dans le dossier « \(proposal.to) »"), systemImage: "arrow.turn.down.right")
                                     .font(.callout)
-                                Text(proposal.missing.isEmpty ? String(localized: "\(proposal.found.count) fichiers trouvés")
-                                                              : String(localized: "\(proposal.found.count) fichiers trouvés, \(proposal.missing.count) toujours introuvables"))
+                                Text(foundSummary(proposal))
                                     .font(.caption).foregroundStyle(.secondary)
                                 if !proposal.missing.isEmpty {
                                     Text(verbatim: proposal.missing.prefix(4).joined(separator: ", ") + (proposal.missing.count > 4 ? "…" : ""))
@@ -124,4 +123,13 @@ struct LocateButton: View {
             .controlSize(.small).disabled(model.isLocked)
             .help("Choisir le fichier à utiliser à la place de celui qui est introuvable")
     }
+}
+
+
+/// "3 fichiers trouvés, 1 toujours introuvable", with the agreement of the language.
+private func foundSummary(_ proposal: PathProposal) -> String {
+    let found = proposal.found.count, missing = proposal.missing.count
+    let first = found == 1 ? String(localized: "\(found) fichier trouvé") : String(localized: "\(found) fichiers trouvés")
+    if missing == 0 { return first }
+    return first + ", " + (missing == 1 ? String(localized: "\(missing) toujours introuvable") : String(localized: "\(missing) toujours introuvables"))
 }

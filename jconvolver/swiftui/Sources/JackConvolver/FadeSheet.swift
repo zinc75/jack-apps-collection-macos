@@ -100,7 +100,7 @@ struct FadeSheet: View {
     /// The other responses that read the same voie of the same file keep the original: said, without asking.
     private func others(_ context: FadeContext) -> String {
         let names = context.others.prefix(3).map { model.traceFullName($0) }.joined(separator: ", ")
-        let more = context.others.count > 3 ? String(localized: " et \(context.others.count - 3) autre(s)") : ""
+        let more = context.others.count > 3 ? String(localized: " et \(context.others.count - 3) de plus") : ""
         let file = (context.path as NSString).lastPathComponent
         return context.others.count == 1
             ? String(localized: "La voie \(context.channel) de \(file) est aussi utilisée par une autre réponse (\(names)). Elle garde le fichier d'origine : seule celle-ci utilisera le nouveau fichier.")

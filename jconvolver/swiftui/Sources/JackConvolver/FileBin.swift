@@ -39,7 +39,9 @@ struct FileBin: View {
         for file in model.binFiles where filter.isEmpty || file.name.localizedCaseInsensitiveContains(filter) {
             let channels = max(1, file.info.channels)
             let rate = (file.info.sampleRate / 1000).formatted(.number.precision(.fractionLength(0...1)))
-            let detail = String(localized: "\(channels) voie(s) · \(file.info.frames) éch. · \(rate) kHz")
+            let detail = channels == 1
+                ? String(localized: "\(channels) voie · \(file.info.frames) éch. · \(rate) kHz")
+                : String(localized: "\(channels) voies · \(file.info.frames) éch. · \(rate) kHz")
             out.append(Row(id: file.path, items: (1...channels).map { .channel(path: file.path, channel: $0) }, title: file.name, subtitle: detail,
                            file: file, isChild: false, expandable: channels > 1, usage: model.uses(of: file)))
             if channels > 1, model.binExpanded.contains(file.path) {

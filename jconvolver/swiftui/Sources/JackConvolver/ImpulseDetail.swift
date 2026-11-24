@@ -704,7 +704,7 @@ struct ImpulseDetailPage: View {
         let converted = model.pendingConversion.map { Self.kilohertz($0.rate) }
         let names = traces.map { trace -> String in
             guard let converted, !references.isEmpty, trace == model.detail else { return model.traceName(trace) }
-            return String(localized: "Ré-échantillonné · \(converted) kHz")
+            return String(localized: "Rééchantillonné · \(converted) kHz")
         } + references.map(\.name)
         let next = PlotSeriesSet(count: keys.count, accent: accent, names: names)
         for (i, key) in keys.enumerated() {

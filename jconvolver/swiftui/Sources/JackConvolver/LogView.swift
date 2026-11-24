@@ -50,7 +50,7 @@ struct LogView: View {
         case .ended where c.endedOnAProblem: String(localized: "arrêté sur une erreur")
         default: String(localized: "arrêté")
         }
-        return "\(program) · \(state) · " + String(localized: "\(log.warningCount) avertissement(s)") + " · " + String(localized: "\(log.errorCount) erreur(s)")
+        return "\(program) · \(state) · " + (log.warningCount < 2 ? String(localized: "\(log.warningCount) avertissement") : String(localized: "\(log.warningCount) avertissements")) + " · " + (log.errorCount < 2 ? String(localized: "\(log.errorCount) erreur") : String(localized: "\(log.errorCount) erreurs"))
     }
 
     private var entries: some View {

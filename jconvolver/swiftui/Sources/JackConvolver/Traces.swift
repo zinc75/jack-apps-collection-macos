@@ -449,7 +449,7 @@ struct TracesLegend: View {
             .contentShape(Rectangle())
             .onTapGesture(count: 2) { series.solo(value.id) }
             .onTapGesture { item.isVisible.wrappedValue.toggle() }
-            .help(String(localized: "Clic : afficher ou masquer. Double clic : afficher seule, puis tout réafficher."))
+            .help(String(localized: "Clic : afficher ou masquer. Double-clic : afficher seule, puis tout réafficher."))
             if target != nil && !comparing {
                 Button { if let target { model.detail = target } } label: {
                     Image(systemName: edited ? "pencil.circle.fill" : "pencil.circle").font(.system(size: 12))

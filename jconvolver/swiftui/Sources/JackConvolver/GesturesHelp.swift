@@ -69,7 +69,8 @@ struct GesturesSheet: View {
 struct KeyCap: View {
     let text: String
     var body: some View {
-        Text(verbatim: text)
+        // The words ("Clic", "Glisser") are translated; the symbols and letters of the keys are not in the catalogue and stay as they are.
+        Text(LocalizedStringKey(text))
             .font(.system(size: 12, weight: .medium, design: .rounded))
             .padding(.horizontal, 7).padding(.vertical, 2)
             .background(.primary.opacity(0.09), in: RoundedRectangle(cornerRadius: 5))

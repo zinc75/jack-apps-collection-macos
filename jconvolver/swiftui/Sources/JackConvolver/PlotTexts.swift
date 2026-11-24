@@ -27,7 +27,7 @@ extension PlotLabels {
         l.smoothing = String(localized: "Lissage")
         l.noSmoothing = String(localized: "Aucun")
         l.showUnsmoothed = String(localized: "Montrer la courbe brute")
-        l.smoothingHelp = String(localized: "Moyenne la puissance dans une bande d'une fraction d'octave autour de chaque fréquence : ce qu'on lit est l'énergie par bande.")
+        l.smoothingHelp = String(localized: "Fait la moyenne de la puissance dans une bande d'une fraction d'octave autour de chaque fréquence : ce qu'on lit est l'énergie par bande.")
         l.removeDelay = String(localized: "Retirer le retard")
         l.delayFitted = String(localized: "ajusté")
         l.delayGiven = String(localized: "son direct")
@@ -70,8 +70,8 @@ extension PlotLabels {
             PlotGestureSection(String(localized: "Zone et axes"), [
                 PlotGestureItem(String(localized: "Glisser, en mode Zoom"), String(localized: "Trace une zone et zoome dessus")),
                 PlotGestureItem(String(localized: "Glisser sur un axe"), String(localized: "Le milieu le fait glisser, une extrémité change l'échelle (l'autre reste)")),
-                PlotGestureItem(String(localized: "Double clic dans le tracé"), String(localized: "Montre tout")),
-                PlotGestureItem(String(localized: "Double clic sur un axe"), String(localized: "Horizontal : tout montrer. Vertical : ajuster à ce qui est visible")),
+                PlotGestureItem(String(localized: "Double-clic dans le tracé"), String(localized: "Montre tout")),
+                PlotGestureItem(String(localized: "Double-clic sur un axe"), String(localized: "Horizontal : tout montrer. Vertical : ajuster à ce qui est visible")),
             ]),
             PlotGestureSection(String(localized: "Mesure"), [
                 PlotGestureItem(String(localized: "Pointeur sur le tracé"), String(localized: "Réticule avec les valeurs, sur l'échantillon le plus proche quand on peut les distinguer")),

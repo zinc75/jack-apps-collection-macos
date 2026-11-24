@@ -28,13 +28,13 @@ extension ConvProblem {
         case .jackNotRunning:
             return String(localized: "JACK n'est pas lancé : la fréquence et la période ne peuvent pas être vérifiées.")
         case .inputFileChannels(let channels, let expected):
-            return String(localized: "Le fichier d'entrée a \(channels) voie(s) ; la configuration compte \(expected) entrée(s). fconvolver exige le même nombre.")
+            return String(localized: "Voies du fichier d'entrée : \(channels) ; entrées de la configuration : \(expected). fconvolver exige le même nombre.")
         case .latencyAffects(let count):
-            return String(localized: "La compensation de latence supprime ou raccourcit \(count) réponses impulsionnelles.")
+            return count == 1 ? String(localized: "La compensation de latence supprime ou raccourcit 1 réponse impulsionnelle.") : String(localized: "La compensation de latence supprime ou raccourcit \(count) réponses impulsionnelles.")
         case .latencyBeyondFile(let path, let frames, let removed):
             return String(localized: "La compensation de latence retire \(removed) échantillons au début de « \(name(path)) », qui n'en a que \(frames) : cette réponse impulsionnelle restera muette. Donnez-lui un retard, ou baissez la compensation.")
         case .tooManyPorts(let inputs, let outputs, let maximum):
-            return String(localized: "\(inputs) entrées et \(outputs) sorties : au plus \(maximum).")
+            return String(localized: "Entrées : \(inputs) ; sorties : \(outputs) ; au plus \(maximum).")
         case .emptyPortName(let isInput, let index):
             return String(localized: "\(port(isInput, index)) n'a pas de nom.")
         case .duplicatePortName(let isInput, let n, let count):
@@ -50,7 +50,9 @@ extension ConvProblem {
         case .startBeyondEnd(let offset, let frames):
             return String(localized: "Le début (\(offset)) dépasse la fin du fichier (\(frames) échantillons).")
         case .channelMissing(let channel, let channels):
-            return String(localized: "Le fichier n'a que \(channels) voie(s) : la voie \(channel) n'existe pas.")
+            return channels == 1
+                ? String(localized: "Le fichier n'a qu'une voie : la voie \(channel) n'existe pas.")
+                : String(localized: "Le fichier n'a que \(channels) voies : la voie \(channel) n'existe pas.")
         case .hilbertLengthOutOfRange(let length):
             return String(localized: "La longueur d'un filtre de Hilbert va de 64 à 65 536 (ici \(length)).")
         case .hilbertDelayTooSmall(let delay, let minimum):
@@ -64,7 +66,7 @@ extension ConvProblem {
         case .maxLengthTooShort(let m, let needed):
             return String(localized: "La longueur maximale (\(m)) est plus courte que la plus longue réponse impulsionnelle (\(needed)) : elle sera tronquée.")
         case .densityOutOfRange(let d):
-            return String(localized: "La densité (\(d.formatted())) doit être entre 0 et 1.")
+            return String(localized: "La densité (\(d.formatted())) doit être comprise entre 0 et 1.")
         }
     }
 }

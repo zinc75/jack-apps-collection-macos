@@ -94,7 +94,9 @@ extension AppModel {
         if !readable.isEmpty { addToBin(readable) }
         if readable.count < files.count || (files.isEmpty && !urls.isEmpty) {
             message = readable.isEmpty ? String(localized: "Aucun fichier audio lisible dans ce qui a été choisi.")
-                                       : String(localized: "\(files.count - readable.count) fichier(s) ne sont pas des fichiers audio lisibles : ils sont laissés de côté.")
+                                       : files.count - readable.count == 1
+                                       ? String(localized: "Un fichier n'est pas un fichier audio lisible : il est laissé de côté.")
+                                       : String(localized: "\(files.count - readable.count) fichiers ne sont pas des fichiers audio lisibles : ils sont laissés de côté.")
         } else if binFiles.count == before, !readable.isEmpty {
             // Everything was in the list already.
         }
@@ -211,7 +213,9 @@ extension AppModel {
         edit(plan.items.count > 1 ? String(localized: "placement de \(plan.items.count) RI") : String(localized: "placement d'une RI")) {
             summary = $0.apply(stored, partition: partition)
         }
-        if plan.left > 0 { message = String(localized: "\(plan.left) voie(s) n'ont pas trouvé de case : elles sont ignorées.") }
+        if plan.left > 0 { message = plan.left == 1
+            ? String(localized: "Une voie n'a pas trouvé de case : elle est ignorée.")
+            : String(localized: "\(plan.left) voies n'ont pas trouvé de case : elles sont ignorées.") }
         let pairs = plan.items.map(\.pair)
         selection.select(from: ConvPair(input: pairs.map(\.input).min() ?? 0, output: pairs.map(\.output).min() ?? 0),
                          to: ConvPair(input: pairs.map(\.input).max() ?? 0, output: pairs.map(\.output).max() ?? 0))
@@ -277,7 +281,11 @@ extension AppModel {
             selection.select(from: start, to: ConvPair(input: min(start.input + clipboardSize.inputs - 1, document.inputCount - 1),
                                                         output: min(start.output + clipboardSize.outputs - 1, document.outputCount - 1)))
         }
-        if count < items.count { message = String(localized: "\(items.count - count) réponses impulsionnelles n'ont pas trouvé de case : la matrice s'arrête.") }
+        if count < items.count {
+            message = items.count - count == 1
+                ? String(localized: "Une réponse impulsionnelle n'a pas trouvé de case : la matrice s'arrête.")
+                : String(localized: "\(items.count - count) réponses impulsionnelles n'ont pas trouvé de case : la matrice s'arrête.")
+        }
     }
 
     func cutSelection() {

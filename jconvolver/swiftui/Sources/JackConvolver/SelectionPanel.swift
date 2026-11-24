@@ -18,7 +18,7 @@ struct SelectionPanel: View {
 
     private var who: String {
         let s = model.selection, b = s.bounds
-        if case .picked = s.shape { return String(localized: "\(s.count) cases choisies") }
+        if case .picked = s.shape { return s.count == 1 ? String(localized: "1 case choisie") : String(localized: "\(s.count) cases choisies") }
         if s.isSingle { return "\(model.inputLabel(b.firstInput)) → \(model.outputLabel(b.firstOutput))" }
         let outputs = model.document?.outputCount ?? 0, inputs = model.document?.inputCount ?? 0
         if b.firstInput == b.lastInput, b.firstOutput == 0, b.lastOutput == outputs - 1, outputs > 1 {

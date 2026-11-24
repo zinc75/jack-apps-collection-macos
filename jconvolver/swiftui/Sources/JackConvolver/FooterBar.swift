@@ -133,7 +133,7 @@ struct LoadGauges: View {
                 }
                 .buttonStyle(.plain)
             }
-            .help("Coupures audio depuis le lancement. Cliquer sur le nombre pour voir le journal.")
+            .help("Coupures audio depuis le lancement. Cliquez sur le nombre pour voir le journal.")
         }
         .font(.caption)
     }
