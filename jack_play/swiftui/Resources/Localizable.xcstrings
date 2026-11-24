@@ -220,7 +220,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ferma"
+            "value" : "Interrompi"
           }
         }
       }
@@ -264,19 +264,19 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Close the session"
+            "value" : "Close session"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cerrar la sesión"
+            "value" : "Cerrar sesión"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chiudi la sessione"
+            "value" : "Chiudi sessione"
           }
         }
       }
@@ -292,19 +292,19 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Show the window"
+            "value" : "Show window"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mostrar la ventana"
+            "value" : "Mostrar ventana"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mostra la finestra"
+            "value" : "Mostra finestra"
           }
         }
       }
@@ -320,7 +320,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "New session"
+            "value" : "New Session"
           }
         },
         "es" : {
@@ -348,7 +348,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Show all"
+            "value" : "Show All"
           }
         },
         "es" : {
@@ -376,7 +376,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Close all"
+            "value" : "Close All"
           }
         },
         "es" : {
@@ -628,7 +628,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Add to the list of session %lld"
+            "value" : "Add to list of session %lld"
           }
         },
         "es" : {
@@ -678,7 +678,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sie können das Fenster schließen und die Wiedergabe fortsetzen lassen: Die Sitzung bleibt in der Menüleiste, von wo Sie das Fenster wieder öffnen oder die Wiedergabe stoppen können."
+            "value" : "Du kannst das Fenster schließen und die Wiedergabe fortsetzen lassen: Die Sitzung bleibt in der Menüleiste, von wo du das Fenster wieder öffnen oder die Wiedergabe stoppen kannst."
           }
         },
         "en" : {
@@ -690,7 +690,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Puede cerrar la ventana y dejar que la reproducción continúe: la sesión permanece en la barra de menús, desde donde podrá reabrir la ventana o detener la reproducción."
+            "value" : "Puedes cerrar la ventana y dejar que la reproducción continúe: la sesión permanece en la barra de menús, desde donde podrás reabrir la ventana o detener la reproducción."
           }
         },
         "it" : {
@@ -712,19 +712,19 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Close the window"
+            "value" : "Close window"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cerrar la ventana"
+            "value" : "Cerrar ventana"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chiudi la finestra"
+            "value" : "Chiudi finestra"
           }
         }
       }
@@ -752,7 +752,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ferma e chiudi"
+            "value" : "Interrompi e chiudi"
           }
         }
       }
@@ -1138,7 +1138,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld tramas"
+            "value" : "%lld muestras"
           }
         },
         "it" : {
@@ -1496,7 +1496,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Add files to the list"
+            "value" : "Add files to list"
           }
         },
         "es" : {
@@ -1552,7 +1552,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Add to the list"
+            "value" : "Add to list"
           }
         },
         "es" : {
@@ -1614,7 +1614,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apariencia"
+            "value" : "Aspecto"
           }
         },
         "it" : {
@@ -1798,7 +1798,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kein Audio-Eingang im JACK-Graphen."
+            "value" : "Kein Audioeingang im JACK-Graph."
           }
         },
         "en" : {
@@ -1882,7 +1882,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mit dem JACK-Transport läuft die Liste nicht von selbst: der Transport entscheidet. Ein Doppelklick öffnet eine Datei, die dann mit dem Transport läuft."
+            "value" : "Mit dem JACK-Transport läuft die Liste nicht von selbst: Der Transport entscheidet. Ein Doppelklick öffnet eine Datei, die dann mit dem Transport abgespielt wird."
           }
         },
         "en" : {
@@ -1900,7 +1900,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Con il transport JACK la lista non si riproduce da sola: decide il transport. Un doppio clic apre un file, che si riproduce poi con il transport."
+            "value" : "Con il transport JACK la lista non viene riprodotta da sola: decide il transport. Un doppio clic apre un file, che viene poi riprodotto con il transport."
           }
         }
       }
@@ -1938,7 +1938,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Schleife"
+            "value" : "Endlosschleife"
           }
         },
         "en" : {
@@ -1956,7 +1956,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ciclo"
+            "value" : "Loop"
           }
         }
       }
@@ -1966,13 +1966,13 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Schleife und Transport"
+            "value" : "Endlosschleife und Transport"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Loop and transport"
+            "value" : "Loop and Transport"
           }
         },
         "es" : {
@@ -1984,7 +1984,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ciclo e trasporto"
+            "value" : "Loop e transport"
           }
         }
       }
@@ -2134,7 +2134,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Jeder Kanal der Datei wird mit den JACK-Ports Ihrer Wahl verbunden. Die Verbindungen werden für jede Datei gespeichert."
+            "value" : "Jeder Kanal der Datei wird mit den JACK-Ports deiner Wahl verbunden. Die Verbindungen werden für jede Datei gespeichert."
           }
         },
         "en" : {
@@ -2218,7 +2218,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wiedergabeliste wählen"
+            "value" : "Playlist wählen"
           }
         },
         "en" : {
@@ -2230,7 +2230,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Elegir una lista de reproducción"
+            "value" : "Elegir una playlist"
           }
         },
         "it" : {
@@ -2308,7 +2308,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Control the transport"
+            "value" : "Control transport"
           }
         },
         "es" : {
@@ -2320,7 +2320,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Controlla il trasporto"
+            "value" : "Controlla il transport"
           }
         }
       }
@@ -2398,13 +2398,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Color de énfasis"
+            "value" : "Color de contraste"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Colore di risalto"
+            "value" : "Colore dettagli"
           }
         }
       }
@@ -2476,7 +2476,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "In the channel"
+            "value" : "In channel"
           }
         },
         "es" : {
@@ -2650,7 +2650,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Suelte archivos aquí, o elíjalos."
+            "value" : "Suelta aquí los archivos, o elígelos."
           }
         },
         "it" : {
@@ -2722,7 +2722,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ausgeschaltet werden die Pegel nicht mehr gemessen."
+            "value" : "Ist die Option aus, werden die Pegel nicht mehr gemessen."
           }
         },
         "en" : {
@@ -2790,7 +2790,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Guardar la lista…"
+            "value" : "Guardar lista…"
           }
         },
         "it" : {
@@ -3114,7 +3114,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Frequenz"
+            "value" : "Abtastrate"
           }
         },
         "en" : {
@@ -3188,7 +3188,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Indipendente: il file viene riprodotto da solo. Trasporto JACK: parte, si ferma e si sposta con il trasporto condiviso dagli altri client."
+            "value" : "Indipendente: il file viene riprodotto da solo. Transport JACK: parte, si ferma e si sposta con il transport condiviso dagli altri client."
           }
         }
       }
@@ -3294,7 +3294,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "JACK · %@ kHz · %lld tramas"
+            "value" : "JACK · %@ kHz · %lld muestras"
           }
         },
         "it" : {
@@ -3310,7 +3310,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Die Abtastrate der Datei weicht von der von JACK ab: Sie wird umgerechnet."
+            "value" : "Die Abtastrate der Datei weicht von der JACK-Rate ab: Sie wird umgerechnet."
           }
         },
         "en" : {
@@ -3372,7 +3372,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The list is empty"
+            "value" : "Playlist is empty"
           }
         },
         "es" : {
@@ -3580,7 +3580,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "I pulsanti della finestra avviano, fermano e spostano il trasporto. Se disattivato, la finestra si limita a seguirlo."
+            "value" : "I pulsanti della finestra avviano, fermano e spostano il transport. Se disattivato, la finestra si limita a seguirlo."
           }
         }
       }
@@ -3608,7 +3608,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "I pulsanti non controllano il trasporto"
+            "value" : "I pulsanti non controllano il transport"
           }
         }
       }
@@ -3646,7 +3646,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Licence"
+            "value" : "License"
           }
         },
         "de" : {
@@ -3674,7 +3674,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "GPL licence, version 3."
+            "value" : "GPL license, version 3."
           }
         },
         "de" : {
@@ -3708,7 +3708,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Generated command line"
+            "value" : "Generated Command Line"
           }
         },
         "es" : {
@@ -3814,7 +3814,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wiedergabeliste"
+            "value" : "Playlist"
           }
         },
         "en" : {
@@ -3826,7 +3826,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lista de reproducción"
+            "value" : "Playlist"
           }
         },
         "it" : {
@@ -3932,7 +3932,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Change the connections of this file"
+            "value" : "Change connections of this file"
           }
         },
         "es" : {
@@ -3988,7 +3988,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mono to left and right"
+            "value" : "Mono to Left and Right"
           }
         },
         "es" : {
@@ -4178,25 +4178,25 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Name des Players im JACK-Graphen. JACK ergänzt ihn, wenn ihn schon ein anderer Client trägt."
+            "value" : "Name des Players im JACK-Graph. JACK ergänzt ihn, wenn bereits ein anderer Client diesen Namen verwendet."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Name of the player in the JACK graph. JACK completes it if another client already has it."
+            "value" : "Name of the player in the JACK graph. JACK completes it if another client already uses it."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nombre del reproductor en el grafo JACK. JACK lo completa si otro cliente ya lo lleva."
+            "value" : "Nombre del reproductor en el grafo JACK. JACK lo completa si otro cliente ya usa ese nombre."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nome del lettore nel grafo JACK. JACK lo completa se un altro client lo porta già."
+            "value" : "Nome del lettore nel grafo JACK. JACK lo completa se un altro client usa già questo nome."
           }
         }
       }
@@ -4336,7 +4336,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Open a file…"
+            "value" : "Open a File…"
           }
         },
         "es" : {
@@ -4470,7 +4470,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Je größer er ist, desto besser kommt die Wiedergabe mit langsamen Datenträgern zurecht, bei längerem Start. Das Programm erhöht ihn selbst, wenn er für die Periode des JACK-Servers zu klein ist."
+            "value" : "Je größer er ist, desto besser kommt die Wiedergabe mit langsamen Festplatten zurecht, bei längerem Start. Das Programm erhöht ihn selbst, wenn er für die Periode des JACK-Servers zu klein ist."
           }
         },
         "en" : {
@@ -4644,7 +4644,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Remove from the list"
+            "value" : "Remove from list"
           }
         },
         "es" : {
@@ -4672,7 +4672,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Back to the start"
+            "value" : "Back to Start"
           }
         },
         "es" : {
@@ -4896,7 +4896,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Repeat the file"
+            "value" : "Repeat file"
           }
         },
         "es" : {
@@ -4918,7 +4918,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Die Datei oder die ganze Wiedergabeliste ohne Unterbrechung wiederholen."
+            "value" : "Die Datei oder die ganze Playlist ohne Unterbrechung wiederholen."
           }
         },
         "en" : {
@@ -4930,7 +4930,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Repite el archivo, o toda la lista de reproducción, sin interrupciones."
+            "value" : "Repite el archivo, o toda la playlist, sin interrupciones."
           }
         },
         "it" : {
@@ -5008,7 +5008,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Repeat: the list"
+            "value" : "Repeat: list"
           }
         },
         "es" : {
@@ -5036,7 +5036,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Repeat: the file"
+            "value" : "Repeat: file"
           }
         },
         "es" : {
@@ -5104,7 +5104,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nessun effetto con il trasporto JACK: decide il trasporto. Passa alla modalità Indipendente per ripetere."
+            "value" : "Nessun effetto con il transport JACK: decide il transport. Passa alla modalità Indipendente per ripetere."
           }
         }
       }
@@ -5132,7 +5132,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nessun effetto con il trasporto JACK: passa alla modalità Indipendente per ripetere."
+            "value" : "Nessun effetto con il transport JACK: passa alla modalità Indipendente per ripetere."
           }
         }
       }
@@ -5384,7 +5384,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Trasporto"
+            "value" : "Transport"
           }
         }
       }
@@ -5412,7 +5412,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Trasporto JACK"
+            "value" : "Transport JACK"
           }
         }
       }
@@ -5440,7 +5440,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Trasporto JACK: fermo"
+            "value" : "Transport JACK: fermo"
           }
         }
       }
@@ -5468,7 +5468,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Trasporto JACK: in riproduzione"
+            "value" : "Transport JACK: in riproduzione"
           }
         }
       }
@@ -5540,7 +5540,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "To the first outputs"
+            "value" : "To First Outputs"
           }
         },
         "es" : {
@@ -5596,7 +5596,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Clear the List"
+            "value" : "Clear List"
           }
         },
         "es" : {
@@ -5618,7 +5618,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Violett"
+            "value" : "Lila"
           }
         },
         "en" : {
@@ -5680,7 +5680,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Show the List"
+            "value" : "Show List"
           }
         },
         "es" : {
