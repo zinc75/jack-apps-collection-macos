@@ -3,6 +3,8 @@
 import AppearanceKit
 import JConvolverKit
 import MatrixKit
+import AppKit
+import QuartzCore
 import SwiftUI
 
 /// The same on every page: under the sidebar and the page, over the whole width of the window, 98 points high. On the left, two chips side
@@ -150,21 +152,111 @@ struct RoundButton: View {
     @Environment(AppModel.self) private var model
     @Environment(\.appAccentColor) private var accent
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         let running = model.controller.isRunning
         let blocked = !model.isOpen || (!running && model.hasErrors)
         Button { model.toggleRun() } label: {
-            Image(systemName: running ? "stop.fill" : "star.fill")
-                .font(.system(size: 24, weight: .semibold))
-                .foregroundStyle(.white)
+            // The gear turns while the engine runs; a click still stops it (the help says so). The turn is played by Core Animation,
+            // out of SwiftUI: a symbol effect made the whole window redraw at each frame (about 11 % of a core).
+            SpinningGear(spinning: running && !reduceMotion)
                 .frame(width: 62, height: 62)
                 .accentGlassDisc(accent)
         }
         .buttonStyle(PressStyle())
         .disabled(blocked)
         .opacity(blocked ? 0.5 : 1)
+        .accessibilityLabel(Text(LocalizedStringKey(running ? "Arrêter" : "Lancer")))
         .help(running ? "Arrêter" : (model.hasErrors ? "Il reste des points à régler" : "Lancer"))
+    }
+}
+
+/// A white gear that turns forever while `spinning`, with the turn played by Core Animation on a layer, so that the render server
+/// does the work and SwiftUI is not asked to redraw anything. It does not take clicks: the button around it does.
+struct SpinningGear: NSViewRepresentable {
+    var spinning: Bool
+    var pointSize: CGFloat = 32
+    /// Seconds for one turn.
+    var period: Double = 2.4
+
+    func makeNSView(context: Context) -> GearView { GearView(pointSize: pointSize, period: period) }
+    func updateNSView(_ view: GearView, context: Context) { view.setSpinning(spinning) }
+}
+
+final class GearView: NSView {
+    private let gear = CALayer()
+    private let period: Double
+    private var spinning = false
+    private static let key = "spin"
+
+    init(pointSize: CGFloat, period: Double) {
+        self.period = period
+        super.init(frame: .zero)
+        wantsLayer = true
+        layer?.masksToBounds = false
+        let config = NSImage.SymbolConfiguration(pointSize: pointSize, weight: .semibold)
+            .applying(.init(paletteColors: [.white]))
+        if let symbol = NSImage(systemSymbolName: "gearshape.fill", accessibilityDescription: nil)?.withSymbolConfiguration(config) {
+            gear.contents = symbol.cgImage(forProposedRect: nil, context: nil, hints: nil)
+            gear.bounds = CGRect(origin: .zero, size: symbol.size)
+        }
+        gear.contentsGravity = .resizeAspect
+        layer?.addSublayer(gear)
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
+
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
+    override func layout() {
+        super.layout()
+        CATransaction.begin(); CATransaction.setDisableActions(true)
+        gear.position = CGPoint(x: bounds.midX, y: bounds.midY)
+        CATransaction.commit()
+    }
+
+    override func viewDidChangeBackingProperties() {
+        super.viewDidChangeBackingProperties()
+        gear.contentsScale = window?.backingScaleFactor ?? 2
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        gear.contentsScale = window?.backingScaleFactor ?? 2
+        if spinning { startTurning() }      // a layer animation is dropped when the view leaves its window
+    }
+
+    func setSpinning(_ on: Bool) {
+        guard on != spinning else { return }
+        spinning = on
+        on ? startTurning() : stopTurning()
+    }
+
+    private func startTurning() {
+        guard gear.animation(forKey: Self.key) == nil else { return }
+        let turn = CABasicAnimation(keyPath: "transform.rotation.z")
+        turn.fromValue = 0
+        turn.toValue = -2 * Double.pi          // clockwise
+        turn.duration = period
+        turn.repeatCount = .infinity
+        turn.timingFunction = CAMediaTimingFunction(name: .linear)
+        turn.isRemovedOnCompletion = false
+        gear.add(turn, forKey: Self.key)
+    }
+
+    /// Stops where the gear is, with a short slowing down instead of a cut.
+    private func stopTurning() {
+        let angle = (gear.presentation()?.value(forKeyPath: "transform.rotation.z") as? Double) ?? 0
+        gear.removeAnimation(forKey: Self.key)
+        let end = angle - 0.5
+        gear.setValue(end, forKeyPath: "transform.rotation.z")
+        let slow = CABasicAnimation(keyPath: "transform.rotation.z")
+        slow.fromValue = angle
+        slow.toValue = end
+        slow.duration = 0.5
+        slow.timingFunction = CAMediaTimingFunction(name: .easeOut)
+        gear.add(slow, forKey: "slow")
     }
 }
 
