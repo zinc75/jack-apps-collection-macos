@@ -110,6 +110,19 @@ LIC="$APP/Contents/Resources/Licenses"
 if [ -d "$here/../build/licenses" ]; then
   mkdir -p "$LIC"
   cp "$here/../build/licenses/jconvolver-COPYING.txt" "$here/../build/licenses/THIRD-PARTY-LICENSES.txt" "$LIC/"
+  # The application itself also links libsamplerate (to bring an impulse response to the rate of the server); the programs do not.
+  python3 -I - "$here/../../libs/libsamplerate" "$LIC/THIRD-PARTY-LICENSES.txt" <<'PY'
+import pathlib, re, sys
+lib = pathlib.Path(sys.argv[1]); target = pathlib.Path(sys.argv[2])
+readme = (lib / "README.md").read_text(encoding="utf-8")
+version = re.search(r"^\| Version \| version ([^ (|]+)", readme, re.M).group(1)
+source = re.search(r"^\| Source \| (\S+)", readme, re.M).group(1)
+rule = "=" * 72
+text = target.read_text(encoding="utf-8")
+text += (f"\n{rule}\nlibsamplerate {version}, BSD-2-Clause (linked into the application only)\nSource: {source}\n{rule}\n\n"
+         + (lib / "upstream" / "COPYING").read_text(encoding="utf-8", errors="replace").rstrip() + "\n")
+target.write_text(text, encoding="utf-8")
+PY
   cat > "$LIC/SOURCE.txt" <<'TXT'
 Jack Convolver, macOS Edition
 
