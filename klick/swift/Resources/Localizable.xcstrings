@@ -321,7 +321,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Verbinden Sie den Ausgang von Klick mit den gewünschten Ports."
+            "value": "Verbinde den Ausgang von Klick mit den Ports deiner Wahl."
           }
         },
         "it": {
@@ -343,7 +343,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Follow the JACK transport"
+            "value": "Follow JACK transport"
           }
         },
         "de": {
@@ -455,7 +455,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Be the timebase master"
+            "value": "Be timebase master"
           }
         },
         "de": {
@@ -635,7 +635,7 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fermo: il transport JACK non è seguito"
+            "value": "Interrotto: il transport JACK non è seguito"
           }
         },
         "es": {
@@ -763,7 +763,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Licence"
+            "value": "License"
           }
         },
         "de": {
@@ -903,7 +903,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "GPL licence, version 2 or later."
+            "value": "GPL license, version 2 or later."
           }
         },
         "de": {
