@@ -42,6 +42,8 @@ echo "[2/5] Assembling the bundle"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$APP/Contents/Helpers"
 cp "$BIN/$EXECUTABLE" "$APP/Contents/MacOS/$EXECUTABLE"
+# Release: no debug symbols and no local symbols in the executable (about 15 MB less; the signature comes after).
+if [ "$CONFIG" = "release" ]; then strip -S -x "$APP/Contents/MacOS/$EXECUTABLE"; fi
 # The resource bundles of the packages (MatrixKit: the picto of JackMoebius).
 for resource_bundle in "$BIN"/*.bundle; do
   [ -d "$resource_bundle" ] && cp -R "$resource_bundle" "$APP/Contents/Resources/"
