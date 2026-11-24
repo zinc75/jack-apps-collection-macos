@@ -16,7 +16,7 @@ struct FooterBar: View {
             if model.needsConfiguration {
                 Button("Configurer la liaison") { model.page = .network }
                     .buttonStyle(.borderedProminent).accentTint().controlSize(.large)
-                    .help("Saisir l'adresse de la liaison avant de la démarrer.")
+                    .help("Saisissez l'adresse de la liaison avant de la démarrer.")
             } else {
                 RoundButton()
             }
@@ -74,8 +74,8 @@ struct ArmGrid: View {
                     Label("Appliquer", systemImage: "arrow.clockwise")
                 }
                 .buttonStyle(.borderedProminent).tint(.orange).controlSize(.small)
-                .help(direction == .receive ? "Des réglages de réception ont changé : redémarrer ce sens pour les appliquer."
-                                            : "Des réglages d'envoi ont changé : redémarrer ce sens pour les appliquer.")
+                .help(direction == .receive ? "Des réglages de réception ont changé : redémarrez ce sens pour les appliquer."
+                                            : "Des réglages d'envoi ont changé : redémarrez ce sens pour les appliquer.")
             }
         }
     }

@@ -63,7 +63,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gewollt, aber die Verbindung wurde in JACK von einem anderen Werkzeug aufgehoben. Ein Klick entfernt diese Verdrahtung."
+            "value": "Gewollt, aber die Verbindung wurde in JACK von einem anderen Programm aufgehoben. Ein Klick entfernt sie aus deinen Verbindungen."
           }
         },
         "en": {
@@ -75,13 +75,13 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Deseada, pero otra herramienta deshizo la conexión en JACK. Un clic quita esta conexión del cableado."
+            "value": "Deseada, pero otra herramienta deshizo la conexión en JACK. Un clic la quita de tus conexiones."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Voluta, ma la connessione è stata disfatta in JACK da un altro strumento. Un clic rimuove questo collegamento."
+            "value": "Voluta, ma un altro strumento ha disfatto la connessione in JACK. Un clic la rimuove dai tuoi collegamenti."
           }
         }
       }
@@ -91,7 +91,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Diese Verbindung besteht in JACK, von einem anderen Werkzeug hergestellt, steht aber nicht in der Verdrahtung. Ein Klick fügt sie hinzu."
+            "value": "Diese Verbindung besteht in JACK, wurde von einem anderen Programm hergestellt und gehört nicht zu deinen Verbindungen. Ein Klick fügt sie hinzu."
           }
         },
         "en": {
@@ -103,13 +103,13 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Esta conexión existe en JACK, hecha por otra herramienta, pero no está en el cableado. Un clic la añade."
+            "value": "Esta conexión existe en JACK, hecha por otra herramienta, pero no está entre tus conexiones. Un clic la añade."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Questa connessione esiste in JACK, fatta da un altro strumento, ma non è nel cablaggio. Un clic la aggiunge."
+            "value": "Questa connessione esiste in JACK, fatta da un altro strumento, ma non è tra i tuoi collegamenti. Un clic la aggiunge."
           }
         }
       }
@@ -119,7 +119,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "1 Verbindung von einem anderen Werkzeug hergestellt (oranger Ring): Ein Klick fügt sie der Verdrahtung hinzu."
+            "value": "1 Verbindung von einem anderen Programm hergestellt (oranger Ring): Ein Klick übernimmt sie in deine Verbindungen."
           }
         },
         "en": {
@@ -131,13 +131,13 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "1 conexión hecha por otra herramienta (anillo naranja): un clic la añade al cableado."
+            "value": "1 conexión hecha por otra herramienta (anillo naranja): un clic la añade a tus conexiones."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "1 connessione fatta da un altro strumento (anello arancione): un clic la aggiunge al cablaggio."
+            "value": "1 connessione fatta da un altro strumento (anello arancione): un clic la aggiunge ai tuoi collegamenti."
           }
         }
       }
@@ -147,7 +147,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld Verbindungen von einem anderen Werkzeug hergestellt (orange Ringe): Ein Klick fügt sie der Verdrahtung hinzu."
+            "value": "%lld Verbindungen von einem anderen Programm hergestellt (orange Ringe): Ein Klick übernimmt sie in deine Verbindungen."
           }
         },
         "en": {
@@ -159,13 +159,13 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld conexiones hechas por otra herramienta (anillos naranjas): un clic las añade al cableado."
+            "value": "%lld conexiones hechas por otra herramienta (anillos naranjas): un clic las añade a tus conexiones."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld connessioni fatte da un altro strumento (anelli arancioni): un clic le aggiunge al cablaggio."
+            "value": "%lld connessioni fatte da un altro strumento (anelli arancioni): un clic le aggiunge ai tuoi collegamenti."
           }
         }
       }
@@ -175,7 +175,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "1 Verbindung der Verdrahtung wurde in JACK aufgehoben (gepunkteter Kreis): Ein Klick entfernt sie aus der Verdrahtung."
+            "value": "1 deiner Verbindungen wurde in JACK aufgehoben (gepunkteter Kreis): Ein Klick entfernt sie aus deinen Verbindungen."
           }
         },
         "en": {
@@ -187,13 +187,13 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "1 conexión del cableado se deshizo en JACK (círculo punteado): un clic la quita del cableado."
+            "value": "1 de tus conexiones se deshizo en JACK (círculo punteado): un clic la quita de tus conexiones."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "1 connessione del cablaggio è stata disfatta in JACK (cerchio tratteggiato): un clic la rimuove dal cablaggio."
+            "value": "1 dei tuoi collegamenti è stato disfatto in JACK (cerchio tratteggiato): un clic lo rimuove dai tuoi collegamenti."
           }
         }
       }
@@ -203,7 +203,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld Verbindungen der Verdrahtung wurden in JACK aufgehoben (gepunktete Kreise): Ein Klick entfernt sie aus der Verdrahtung."
+            "value": "%lld deiner Verbindungen wurden in JACK aufgehoben (gepunktete Kreise): Ein Klick entfernt sie aus deinen Verbindungen."
           }
         },
         "en": {
@@ -215,13 +215,13 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld conexiones del cableado se deshicieron en JACK (círculos punteados): un clic las quita del cableado."
+            "value": "%lld de tus conexiones se deshicieron en JACK (círculos punteados): un clic las quita de tus conexiones."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld connessioni del cablaggio sono state disfatte in JACK (cerchi tratteggiati): un clic le rimuove dal cablaggio."
+            "value": "%lld dei tuoi collegamenti sono stati disfatti in JACK (cerchi tratteggiati): un clic li rimuove dai tuoi collegamenti."
           }
         }
       }
@@ -489,7 +489,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "16 Bit"
+            "value": "16-Bit"
           }
         },
         "it": {
@@ -517,7 +517,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "24 Bit"
+            "value": "24-Bit"
           }
         },
         "it": {
@@ -557,7 +557,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "24 bits es la opción habitual. El coma flotante de 32 bits conserva el formato interno de JACK, con un caudal de datos mayor."
+            "value": "24 bits es la opción habitual. La coma flotante de 32 bits conserva el formato interno de JACK, con un caudal de datos mayor."
           }
         }
       }
@@ -707,7 +707,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Addresses of this Mac"
+            "value": "Addresses of This Mac"
           }
         },
         "de": {
@@ -819,7 +819,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Add the interface…"
+            "value": "Add Interface…"
           }
         },
         "de": {
@@ -831,13 +831,13 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aggiungi l'interfaccia…"
+            "value": "Aggiungi interfaccia…"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Añadir la interfaz…"
+            "value": "Añadir interfaz…"
           }
         }
       }
@@ -865,7 +865,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apariencia"
+            "value": "Aspecto"
           }
         }
       }
@@ -915,7 +915,7 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ferma"
+            "value": "Interrompi"
           }
         },
         "es": {
@@ -999,7 +999,7 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fermo"
+            "value": "Interrotto"
           }
         },
         "es": {
@@ -1077,7 +1077,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kein Audio-Eingang im JACK-Graphen."
+            "value": "Kein Audioeingang im JACK-Graph."
           }
         },
         "it": {
@@ -1133,7 +1133,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kein Audioausgang im JACK-Graphen."
+            "value": "Kein Audioausgang im JACK-Graph."
           }
         },
         "it": {
@@ -1385,7 +1385,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dieser Mac hört am Netzwerk mit"
+            "value": "Dieser Mac lauscht am Netzwerk"
           }
         },
         "it": {
@@ -1413,7 +1413,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dieser Mac hört am Netzwerk mit und empfängt den Ton eines anderen Macs."
+            "value": "Dieser Mac lauscht am Netzwerk und empfängt den Ton eines anderen Macs."
           }
         },
         "it": {
@@ -1525,13 +1525,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Jeder Eingang von zita-j2n wird mit den JACK-Ports Ihrer Wahl verbunden."
+            "value": "Jeder Eingang von zita-j2n wird mit den JACK-Ports deiner Wahl verbunden."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ogni ingresso di zita-j2n è collegato alle porte JACK a tua scelta."
+            "value": "Ogni ingresso di zita-j2n è collegato alle porte JACK che scegli."
           }
         },
         "es": {
@@ -1553,13 +1553,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Jeder Ausgang von zita-n2j wird mit den JACK-Ports Ihrer Wahl verbunden. Kanäle, die der Sender nicht sendet, bleiben stumm."
+            "value": "Jeder Ausgang von zita-n2j wird mit den JACK-Ports deiner Wahl verbunden. Kanäle, die der Sender nicht sendet, bleiben stumm."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ogni uscita di zita-n2j è collegata alle porte JACK a tua scelta. I canali che il trasmettitore non invia restano silenziosi."
+            "value": "Ogni uscita di zita-n2j è collegata alle porte JACK che scegli. I canali che il trasmettitore non invia restano silenziosi."
           }
         },
         "es": {
@@ -1603,7 +1603,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Choose one of the addresses of this Mac"
+            "value": "Choose one of this Mac's addresses"
           }
         },
         "de": {
@@ -1665,7 +1665,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wählen Sie Empfangen, Senden oder beides."
+            "value": "Wähle „Empfangen“, „Senden“ oder beides."
           }
         },
         "it": {
@@ -1771,7 +1771,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Set up the link"
+            "value": "Set Up Link"
           }
         },
         "de": {
@@ -1827,7 +1827,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Copy the address"
+            "value": "Copy address"
           }
         },
         "de": {
@@ -1839,13 +1839,13 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Copia l'indirizzo"
+            "value": "Copia indirizzo"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Copiar la dirección"
+            "value": "Copiar dirección"
           }
         }
       }
@@ -1923,13 +1923,13 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Colore di risalto"
+            "value": "Colore dettagli"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Color de énfasis"
+            "value": "Color de contraste"
           }
         }
       }
@@ -1995,7 +1995,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "From JACK to the network"
+            "value": "From JACK to network"
           }
         },
         "de": {
@@ -2046,7 +2046,7 @@
         }
       }
     },
-    "Des réglages d'envoi ont changé : redémarrer ce sens pour les appliquer.": {
+    "Des réglages d'envoi ont changé : redémarrez ce sens pour les appliquer.": {
       "localizations": {
         "en": {
           "stringUnit": {
@@ -2057,7 +2057,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sendeeinstellungen wurden geändert: Starten Sie diese Richtung neu, um sie anzuwenden."
+            "value": "Die Sendeeinstellungen wurden geändert: Starte diese Richtung neu, um sie anzuwenden."
           }
         },
         "it": {
@@ -2074,7 +2074,7 @@
         }
       }
     },
-    "Des réglages de réception ont changé : redémarrer ce sens pour les appliquer.": {
+    "Des réglages de réception ont changé : redémarrez ce sens pour les appliquer.": {
       "localizations": {
         "en": {
           "stringUnit": {
@@ -2085,7 +2085,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Empfangseinstellungen wurden geändert: Starten Sie diese Richtung neu, um sie anzuwenden."
+            "value": "Die Empfangseinstellungen wurden geändert: Starte diese Richtung neu, um sie anzuwenden."
           }
         },
         "it": {
@@ -2247,7 +2247,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "From the network to JACK"
+            "value": "From network to JACK"
           }
         },
         "de": {
@@ -2365,7 +2365,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Starten Sie JACK, um die Periode zu erfahren und einen Vorschlag zu erhalten."
+            "value": "Starte JACK, um die Periode zu erfahren und einen Vorschlag zu erhalten."
           }
         },
         "it": {
@@ -2443,7 +2443,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Clear all connections"
+            "value": "Clear All Connections"
           }
         },
         "de": {
@@ -2645,7 +2645,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Das Senden ist angehalten. Starten Sie es mit %@ [unten im Fenster](zita://flash/send)."
+            "value": "Das Senden ist angehalten. Starte es mit %@ [unten im Fenster](zita://flash/send)."
           }
         },
         "it": {
@@ -2657,7 +2657,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "El envío está detenido. Inícielo con %@ [en la parte inferior de la ventana](zita://flash/send)."
+            "value": "El envío está detenido. Inícialo con %@ [en la parte inferior de la ventana](zita://flash/send)."
           }
         }
       }
@@ -2695,7 +2695,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Send a ping"
+            "value": "Send a Ping"
           }
         },
         "de": {
@@ -2735,7 +2735,7 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Errore dell'anello"
+            "value": "Errore del loop"
           }
         },
         "es": {
@@ -3189,7 +3189,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "JACK · %@ kHz · %lld tramas"
+            "value": "JACK · %@ kHz · %lld muestras"
           }
         }
       }
@@ -3227,7 +3227,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reach the receiver"
+            "value": "Reach receiver"
           }
         },
         "de": {
@@ -3407,7 +3407,7 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Il trasmettitore non riceve alcun ritorno dal ricevitore: lo stato e il margine del collegamento si leggono **sul Mac che riceve**. Se l'audio si interrompe all'arrivo, è lì che si regola il buffer."
+            "value": "Il trasmettitore non riceve alcun riscontro dal ricevitore: lo stato e il margine del collegamento si leggono **sul Mac che riceve**. Se l'audio si interrompe all'arrivo, è lì che si regola il buffer."
           }
         },
         "es": {
@@ -3675,7 +3675,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Licence"
+            "value": "License"
           }
         },
         "de": {
@@ -3703,7 +3703,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "GPL licence, version 3 or later."
+            "value": "GPL license, version 3 or later."
           }
         },
         "de": {
@@ -3731,7 +3731,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Generated command line"
+            "value": "Generated Command Line"
           }
         },
         "de": {
@@ -3855,7 +3855,7 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Margine confortevole"
+            "value": "Margine ampio"
           }
         },
         "es": {
@@ -3917,7 +3917,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Margen insuficiente: con un periodo de JACK de %@ tramas se recomienda un búfer adicional de **%lld ms** o más."
+            "value": "Margen insuficiente: con un periodo de JACK de %@ muestras se recomienda un búfer adicional de **%lld ms** o más."
           }
         }
       }
@@ -4269,7 +4269,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Standardmäßig nimmt der Empfänger alle Kanäle des Senders. Um einen großen Stream auf mehrere Empfänger aufzuteilen, wählen Sie nur die Kanäle dieses Empfängers: Die übrigen werden in JACK nicht angelegt."
+            "value": "Standardmäßig nimmt der Empfänger alle Kanäle des Senders. Um einen großen Stream auf mehrere Empfänger aufzuteilen, wähle nur die Kanäle dieses Empfängers: Die übrigen werden in JACK nicht angelegt."
           }
         },
         "it": {
@@ -4319,7 +4319,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "More channels"
+            "value": "More Channels"
           }
         },
         "de": {
@@ -4359,13 +4359,13 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Più è lungo, più la risposta è piatta fino agli acuti, al prezzo di latenza e di calcolo. Automatico: scelto in base alla più bassa delle due frequenze."
+            "value": "Più è lungo, più la risposta in frequenza è piatta fino agli acuti, al prezzo di latenza e di calcolo. Automatico: scelto in base alla più bassa delle due frequenze di campionamento."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cuanto más largo, más plana es la respuesta hasta los agudos, a costa de latencia y de cálculo. Automático: se elige según la más baja de las dos frecuencias."
+            "value": "Cuanto más largo, más plana es la respuesta en frecuencia hasta los agudos, a costa de latencia y de cálculo. Automático: se elige según la más baja de las dos frecuencias de muestreo."
           }
         }
       }
@@ -4505,7 +4505,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Periodo de JACK: %@ tramas (%@ ms). Estimación, no medida: **%lld ms** o más."
+            "value": "Periodo de JACK: %@ muestras (%@ ms). Estimación, no medida: **%lld ms** o más."
           }
         }
       }
@@ -4533,7 +4533,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Periodo de JACK: %@ tramas (%@ ms). Recomendado: **%lld ms** o más."
+            "value": "Periodo de JACK: %@ muestras (%@ ms). Recomendado: **%lld ms** o más."
           }
         }
       }
@@ -4577,7 +4577,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Was möchten Sie tun?"
+            "value": "Was möchtest du tun?"
           }
         },
         "it": {
@@ -4655,7 +4655,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reset"
+            "value": "Reset to Zero"
           }
         },
         "de": {
@@ -4683,7 +4683,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Back to the system input"
+            "value": "Back to system input"
           }
         },
         "de": {
@@ -4711,7 +4711,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Back to the system output"
+            "value": "Back to system output"
           }
         },
         "de": {
@@ -4941,7 +4941,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Der Empfang ist angehalten. Starten Sie ihn mit %@ [unten im Fenster](zita://flash/receive)."
+            "value": "Der Empfang ist angehalten. Starte ihn mit %@ [unten im Fenster](zita://flash/receive)."
           }
         },
         "it": {
@@ -4953,7 +4953,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "La recepción está detenida. Inícielo con %@ [en la parte inferior de la ventana](zita://flash/receive)."
+            "value": "La recepción está detenida. Iníciala con %@ [en la parte inferior de la ventana](zita://flash/receive)."
           }
         }
       }
@@ -5019,7 +5019,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Adjust the buffer"
+            "value": "Adjust Buffer"
           }
         },
         "de": {
@@ -5047,7 +5047,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Set the received channels…"
+            "value": "Set Received Channels…"
           }
         },
         "de": {
@@ -5210,7 +5210,7 @@
         }
       }
     },
-    "Saisir l'adresse de la liaison avant de la démarrer.": {
+    "Saisissez l'adresse de la liaison avant de la démarrer.": {
       "localizations": {
         "en": {
           "stringUnit": {
@@ -5221,7 +5221,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Geben Sie die Adresse der Verbindung ein, bevor Sie sie starten."
+            "value": "Gib die Adresse der Verbindung ein, bevor du sie startest."
           }
         },
         "it": {
@@ -5289,7 +5289,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Saltos"
+            "value": "Saltos (TTL)"
           }
         }
       }
@@ -5663,7 +5663,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "All the sender's channels"
+            "value": "All sender's channels"
           }
         },
         "de": {
@@ -5725,7 +5725,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ein direktes Kabel zwischen zwei Macs hat keinen Adressserver: Geben Sie jedem Mac eine Adresse aus demselben Bereich (zum Beispiel 10.10.10.1 und 10.10.10.2)."
+            "value": "Ein direktes Kabel zwischen zwei Macs hat keinen Adressserver: Gib jedem Mac eine Adresse aus demselben Bereich (zum Beispiel 10.10.10.1 und 10.10.10.2)."
           }
         },
         "it": {
@@ -5809,7 +5809,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Eine Adresse dieses Macs, die Sie dem Sender mitteilen. Eine Multicast-Gruppenadresse ist ebenfalls möglich."
+            "value": "Eine Adresse dieses Macs, die du dem Sender mitteilst. Eine Multicast-Gruppenadresse ist ebenfalls möglich."
           }
         },
         "it": {
@@ -5865,7 +5865,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Eine IPv6-Link-lokale Adresse muss angeben, über welche Schnittstelle dieses Macs sie erreicht wird: Sie endet mit einem „%“ und dem Namen der Schnittstelle."
+            "value": "Eine Link-lokale IPv6-Adresse muss angeben, über welche Schnittstelle dieses Macs sie erreicht wird: Sie endet mit einem „%“ und dem Namen der Schnittstelle."
           }
         },
         "it": {
@@ -5943,7 +5943,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "To the other Mac"
+            "value": "To other Mac"
           }
         },
         "de": {
@@ -6033,7 +6033,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Violett"
+            "value": "Lila"
           }
         },
         "it": {
@@ -6901,7 +6901,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hört auf **%@ : %@**"
+            "value": "Lauscht auf **%@ : %@**"
           }
         },
         "it": {
