@@ -138,6 +138,6 @@ struct ConfigureButton: View {
         Button("Configurer l'enregistrement") { model.view = .channels }
             .buttonStyle(.borderedProminent).accentTint()
             .controlSize(.large)
-            .help("Choisir les sources, puis le dossier, avant le premier enregistrement.")
+            .help("Choisissez les sources, puis le dossier, avant le premier enregistrement.")
     }
 }

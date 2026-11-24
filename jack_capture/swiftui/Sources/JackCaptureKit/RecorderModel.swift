@@ -337,7 +337,7 @@ public final class RecorderModel {
     private func start() {
         stopMonitor()
         guard jackIsAvailable?() ?? graph.isConnected else {
-            errorMessage = String(localized: "JACK n'est pas démarré. Démarrer le serveur JACK, puis recommencer.")
+            errorMessage = String(localized: "JACK n'est pas démarré. Démarrez le serveur JACK, puis recommencez.")
             return
         }
         guard let executable = executable() else {
@@ -357,7 +357,7 @@ public final class RecorderModel {
         // Under a fixed name two sessions would write the same file: one session, one file.
         let fixedTarget = settings.numbering ? nil : settings.folderURL.appendingPathComponent("\(settings.baseName).\(settings.format.fileExtension)")
         if let fixedTarget, !hub.reserve(fixedTarget, for: id) {
-            errorMessage = String(localized: "Un autre enregistrement écrit déjà dans ce fichier. Changer le nom, ou activer la numérotation.")
+            errorMessage = String(localized: "Un autre enregistrement écrit déjà dans ce fichier. Changez le nom, ou activez la numérotation.")
             return
         }
         resetReport()

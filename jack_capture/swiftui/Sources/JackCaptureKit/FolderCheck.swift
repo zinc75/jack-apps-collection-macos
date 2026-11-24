@@ -38,12 +38,12 @@ public enum FolderCheck {
     public static func message(_ problem: Problem, folder: URL) -> String {
         let shown = (folder.path as NSString).abbreviatingWithTildeInPath
         switch problem {
-        case .volumeNotMounted(let name): return String(localized: "Le volume « \(name) » n'est pas monté. Le brancher, ou choisir un autre dossier.")
-        case .notADirectory: return String(localized: "\(shown) n'est pas un dossier. Choisir un autre dossier.")
-        case .notWritable: return String(localized: "Le dossier \(shown) n'est pas accessible en écriture. Choisir un autre dossier.")
+        case .volumeNotMounted(let name): return String(localized: "Le volume « \(name) » n'est pas monté. Branchez-le, ou choisissez un autre dossier.")
+        case .notADirectory: return String(localized: "\(shown) n'est pas un dossier. Choisissez un autre dossier.")
+        case .notWritable: return String(localized: "Le dossier \(shown) n'est pas accessible en écriture. Choisissez un autre dossier.")
         case .noSpace(let free):
             let size = ByteCountFormatter.string(fromByteCount: free, countStyle: .file)
-            return String(localized: "Il ne reste que \(size) sur ce disque : trop peu pour enregistrer. Libérer de la place, ou choisir un autre dossier.")
+            return String(localized: "Il ne reste que \(size) sur ce disque : trop peu pour enregistrer. Libérez de la place, ou choisissez un autre dossier.")
         }
     }
 }

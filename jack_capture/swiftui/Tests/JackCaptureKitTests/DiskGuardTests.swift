@@ -75,7 +75,7 @@ final class DiskReserveTests: XCTestCase {
         XCTAssertTrue(hub.reserve(url, for: first.id))
         second.toggleRecording()
         XCTAssertEqual(second.phase, .configuration)
-        XCTAssertEqual(second.errorMessage, String(localized: "Un autre enregistrement écrit déjà dans ce fichier. Changer le nom, ou activer la numérotation."))
+        XCTAssertEqual(second.errorMessage, String(localized: "Un autre enregistrement écrit déjà dans ce fichier. Changez le nom, ou activez la numérotation."))
         // Once the first is done the file is free again, and the same session may have it.
         hub.release(for: first.id)
         XCTAssertTrue(hub.reserve(url, for: second.id))

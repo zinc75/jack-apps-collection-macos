@@ -318,7 +318,7 @@ SettingsGroup("Démarrage et arrêt") {
 }
                 if section == .advanced {
 SettingsGroup("Avancé") {
-                    OptionRow("Fichier de temps",
+                    OptionRow("Fichier d'horodatage",
                               "Écrit à côté de l'enregistrement un petit fichier texte avec l'heure exacte du premier échantillon, pour caler plusieurs enregistrements.") {
                         Toggle("", isOn: $model.settings.writesTimeFile).labelsHidden().toggleStyle(.switch).accentTint()
                     }

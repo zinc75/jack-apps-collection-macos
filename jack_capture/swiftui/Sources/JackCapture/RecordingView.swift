@@ -44,7 +44,7 @@ struct RecordingView: View {
             } else {
                 VStack(spacing: 10) {
                     ConfigureButton().controlSize(.extraLarge)
-                    Text("Choisir les sources et le dossier avant le premier enregistrement.")
+                    Text("Choisissez les sources et le dossier avant le premier enregistrement.")
                         .font(.callout).foregroundStyle(.secondary)
                 }
             }
@@ -82,7 +82,7 @@ struct RecordingView: View {
     /// Why the levels are not shown yet.
     private var levelsWaiting: LocalizedStringKey {
         if !model.settings.autoConnect { return "Les connexions sont laissées au patchbay : il n'y a pas de sources à prévisualiser." }
-        if SourceAssignment(model.settings.sources, channels: model.settings.channels).usedCount == 0 { return "Choisir des sources dans Voies pour voir leurs niveaux." }
+        if SourceAssignment(model.settings.sources, channels: model.settings.channels).usedCount == 0 { return "Choisissez des sources dans Voies pour voir leurs niveaux." }
         return "En attente de JACK…"
     }
 
@@ -185,7 +185,7 @@ struct RecordingView: View {
                 tile("Tampon mémoire", bufferText, bufferSub)
                 tile("Écrit sur le disque", SizeText.bytes(Double(model.bytesWritten)), "environ \(SizeText.bytes(RecordingEstimate.bytesPerSecond(model.settings, sampleRate: model.sampleRate))) par seconde",
                      extra: model.diskSecondsLeft.flatMap { $0 < 48 * 3600 ? String(localized: "disque : reste \(RecorderModel.remaining($0))") : nil })
-                tile("Incidents", "\(model.status?.xruns ?? 0) xrun", "\(model.status?.overruns ?? 0) débordement")
+                tile("Incidents", IncidentText.xruns(model.status?.xruns ?? 0), localizedSub: IncidentText.overruns(model.status?.overruns ?? 0))
                 tile("Thread disque", (model.status?.diskThreadHighPriority ?? false) ? String(localized: "Priorité haute") : String(localized: "Normale"),
                      "Priorité élevée quand le tampon se remplit.")
             }
@@ -228,7 +228,7 @@ struct RecordingView: View {
     private var armedHint: LocalizedStringKey? {
         guard model.phase == .armed else { return nil }
         switch model.armedReason {
-        case .timemachine?: return "En écoute : appuyer sur le bouton rouge pour démarrer. Le fichier commencera par les dernières secondes déjà écoulées."
+        case .timemachine?: return "En écoute : appuyez sur le bouton rouge pour démarrer. Le fichier commencera par les dernières secondes déjà écoulées."
         case .jack(let what)?: return what == "transport" ? "En attente du démarrage du transport JACK." : "En attente du passage en freewheeling."
         case nil: return nil
         }
@@ -247,11 +247,20 @@ struct RecordingView: View {
     }
 
     private func tile(_ title: LocalizedStringKey, _ value: String, _ sub: LocalizedStringKey, extra: String? = nil) -> some View {
+        tileCard(title, value, Text(sub), extra: extra)
+    }
+
+    /// The same tile, with a second line that is already localized (a count with its agreement).
+    private func tile(_ title: LocalizedStringKey, _ value: String, localizedSub sub: String, extra: String? = nil) -> some View {
+        tileCard(title, value, Text(verbatim: sub), extra: extra)
+    }
+
+    private func tileCard(_ title: LocalizedStringKey, _ value: String, _ sub: Text, extra: String?) -> some View {
         Card {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title).font(.caption).foregroundStyle(.secondary)
                 Text(value).font(.title3).fontWeight(.medium).monospacedDigit()
-                Text(sub).font(.caption).foregroundStyle(.secondary)
+                sub.font(.caption).foregroundStyle(.secondary)
                 if let extra { Text(verbatim: extra).font(.caption).foregroundStyle(.secondary) }
             }
         }

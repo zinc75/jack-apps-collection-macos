@@ -27,7 +27,7 @@ struct RecordingSpecs: View {
                         if let frames = info.frames { row("Trames", Text(verbatim: frames.formatted())) }
                         if let duration = info.duration { row("Durée", Text(verbatim: preciseClock(duration))) }
                         if let bitRate = info.bitRate { row("Débit moyen", Text(verbatim: "\(bitRate.formatted(.number.precision(.fractionLength(0)))) kbit/s")) }
-                        row("Longueur du fichier", Text(verbatim: "\(info.bytes.formatted()) octets"))
+                        row("Longueur du fichier", Text(verbatim: String(localized: "\(info.bytes.formatted()) octets")))
                         if summary.partCount > 1 {
                             row("Fichiers", Text("\(summary.partCount) fichiers"))
                             row("Durée totale", Text(verbatim: preciseClock(summary.duration)))
@@ -43,7 +43,7 @@ struct RecordingSpecs: View {
                         if s.scheduledStop { row("Arrêt programmé", Text(verbatim: TimeSpan.text(s.durationSeconds))) }
                         if s.rotatesFiles { row("Découper en plusieurs fichiers", Text(verbatim: TimeSpan.text(s.rotationSeconds))) }
                         row("Tampon mémoire", Text(verbatim: "\(s.bufferSeconds) s"))
-                        row("Incidents", Text(verbatim: "\(summary.xruns) xrun · \(summary.overruns) \(String(localized: "débordement"))"))
+                        row("Incidents", Text(verbatim: "\(IncidentText.xruns(summary.xruns)) · \(IncidentText.overruns(summary.overruns))"))
                     }
                     .padding(.top, 8)
                     Text(CommandHighlighter.attributed(summary.commandText))

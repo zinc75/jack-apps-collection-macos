@@ -86,13 +86,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Detener la grabación"
+            "value" : "Detener grabación"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ferma la registrazione"
+            "value" : "Interrompi registrazione"
           }
         }
       }
@@ -444,19 +444,19 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Close the session"
+            "value" : "Close session"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cerrar la sesión"
+            "value" : "Cerrar sesión"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chiudi la sessione"
+            "value" : "Chiudi sessione"
           }
         }
       }
@@ -472,19 +472,19 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Show the window"
+            "value" : "Show window"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mostrar la ventana"
+            "value" : "Mostrar ventana"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mostra la finestra"
+            "value" : "Mostra finestra"
           }
         }
       }
@@ -500,7 +500,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "New session"
+            "value" : "New Session"
           }
         },
         "es" : {
@@ -528,7 +528,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Show all"
+            "value" : "Show All"
           }
         },
         "es" : {
@@ -556,7 +556,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Close all"
+            "value" : "Close All"
           }
         },
         "es" : {
@@ -612,19 +612,19 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Close the window"
+            "value" : "Close window"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cerrar la ventana"
+            "value" : "Cerrar ventana"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chiudi la finestra"
+            "value" : "Chiudi finestra"
           }
         }
       }
@@ -652,7 +652,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ferma e chiudi"
+            "value" : "Interrompi e chiudi"
           }
         }
       }
@@ -858,7 +858,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sie können das Fenster schließen und die Aufnahme weiterlaufen lassen: Sie bleibt in der Menüleiste, von wo Sie das Fenster wieder öffnen oder die Aufnahme stoppen können. Beim Stoppen wird die Datei ordnungsgemäß geschlossen."
+            "value" : "Du kannst das Fenster schließen und die Aufnahme weiterlaufen lassen: Sie bleibt in der Menüleiste, von wo du das Fenster wieder öffnen oder die Aufnahme stoppen kannst. Beim Stoppen wird die Datei ordnungsgemäß geschlossen."
           }
         },
         "en" : {
@@ -870,7 +870,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Puede cerrar la ventana y dejar que la grabación continúe: permanece en la barra de menús, desde donde podrá reabrir la ventana o detenerla. Si la detiene, el archivo se cierra correctamente."
+            "value" : "Puedes cerrar la ventana y dejar que la grabación continúe: permanece en la barra de menús, desde donde podrás reabrir la ventana o detenerla. Si la detienes, el archivo se cierra correctamente."
           }
         },
         "it" : {
@@ -1004,7 +1004,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "closing the file"
+            "value" : "closing file"
           }
         },
         "es" : {
@@ -1166,7 +1166,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Freier Platz, den die Festplatte behält, in Gigabyte. Darunter startet keine Aufnahme, und eine laufende wird gestoppt und ihre Datei geschlossen. 0: keine Grenze."
+            "value" : "Freier Speicherplatz, den die Festplatte behält, in Gigabyte. Darunter startet keine Aufnahme, und eine laufende wird gestoppt und ihre Datei geschlossen. 0: keine Grenze."
           }
         },
         "en" : {
@@ -1217,7 +1217,7 @@
         }
       }
     },
-    "Un autre enregistrement écrit déjà dans ce fichier. Changer le nom, ou activer la numérotation." : {
+    "Un autre enregistrement écrit déjà dans ce fichier. Changez le nom, ou activez la numérotation." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1234,7 +1234,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Otra grabación ya escribe en este archivo. Cambie el nombre o active la numeración."
+            "value" : "Otra grabación ya escribe en este archivo. Cambia el nombre o activa la numeración."
           }
         },
         "it" : {
@@ -1385,7 +1385,7 @@
         }
       }
     },
-    "%@ n'est pas un dossier. Choisir un autre dossier." : {
+    "%@ n'est pas un dossier. Choisissez un autre dossier." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1413,7 +1413,7 @@
         }
       }
     },
-    "%lld débordement" : {
+    "%lld overrun" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1586,7 +1586,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "16 Bit"
+            "value" : "16-Bit"
           }
         },
         "en" : {
@@ -1614,7 +1614,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "24 Bit"
+            "value" : "24-Bit"
           }
         },
         "en" : {
@@ -1642,7 +1642,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "32 Bit"
+            "value" : "32-Bit"
           }
         },
         "en" : {
@@ -1726,7 +1726,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "8 Bit"
+            "value" : "8-Bit"
           }
         },
         "en" : {
@@ -1760,7 +1760,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Refresh the JACK graph"
+            "value" : "Refresh JACK graph"
           }
         },
         "es" : {
@@ -2018,7 +2018,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apariencia"
+            "value" : "Aspecto"
           }
         },
         "it" : {
@@ -2118,7 +2118,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Geplantes Ende"
+            "value" : "Geplanter Stopp"
           }
         },
         "en" : {
@@ -2192,7 +2192,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ferma"
+            "value" : "Interrompi"
           }
         }
       }
@@ -2202,13 +2202,13 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Beenden und schließen"
+            "value" : "Stoppen und beenden"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Stop and Quit"
+            "value" : "Stop and quit"
           }
         },
         "es" : {
@@ -2220,7 +2220,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ferma ed esci"
+            "value" : "Interrompi ed esci"
           }
         }
       }
@@ -2230,7 +2230,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aufnahme beenden und Programm schließen? Die Datei wird ordnungsgemäß geschlossen."
+            "value" : "Aufnahme stoppen und beenden? Die Datei wird ordnungsgemäß geschlossen."
           }
         },
         "en" : {
@@ -2426,7 +2426,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kein Audioausgang im JACK-Graphen."
+            "value" : "Kein Audioausgang im JACK-Graph."
           }
         },
         "en" : {
@@ -2701,7 +2701,7 @@
         }
       }
     },
-    "Choisir des sources dans Voies pour voir leurs niveaux." : {
+    "Choisissez des sources dans Voies pour voir leurs niveaux." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2729,35 +2729,7 @@
         }
       }
     },
-    "Choisir les réglages dans Configuration, puis appuyer sur le bouton rouge." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Einstellungen unter Konfiguration wählen, dann die rote Taste drücken."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choose the settings in Configuration, then press the red button."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Elegir los ajustes en Configuración y pulsar el botón rojo."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Scegliere le impostazioni in Configurazione, poi premere il pulsante rosso."
-          }
-        }
-      }
-    },
-    "Choisir les sources et le dossier avant le premier enregistrement." : {
+    "Choisissez les sources et le dossier avant le premier enregistrement." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2785,7 +2757,7 @@
         }
       }
     },
-    "Choisir les sources, puis le dossier, avant le premier enregistrement." : {
+    "Choisissez les sources, puis le dossier, avant le premier enregistrement." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2824,7 +2796,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choose sources…"
+            "value" : "Choose Sources…"
           }
         },
         "es" : {
@@ -3132,7 +3104,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Set up the recording"
+            "value" : "Set Up Recording"
           }
         },
         "es" : {
@@ -3188,7 +3160,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Connected to the system outputs"
+            "value" : "Connected to system outputs"
           }
         },
         "es" : {
@@ -3726,7 +3698,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tasa de bits"
+            "value" : "Velocidad de bits"
           }
         },
         "it" : {
@@ -3888,7 +3860,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Start and stop"
+            "value" : "Start and Stop"
           }
         },
         "es" : {
@@ -4012,7 +3984,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "In attesa dell'avvio del trasporto JACK."
+            "value" : "In attesa dell'avvio del transport JACK."
           }
         }
       }
@@ -4073,12 +4045,12 @@
         }
       }
     },
-    "En écoute : appuyer sur le bouton rouge pour démarrer. Le fichier commencera par les dernières secondes déjà écoulées." : {
+    "En écoute : appuyez sur le bouton rouge pour démarrer. Le fichier commencera par les dernières secondes déjà écoulées." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hört zu: roten Knopf drücken, um zu starten. Die Datei beginnt mit den zuletzt vergangenen Sekunden."
+            "value" : "Abhören läuft: rote Taste drücken, um zu starten. Die Datei beginnt mit den zuletzt vergangenen Sekunden."
           }
         },
         "en" : {
@@ -4196,7 +4168,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Record anyway"
+            "value" : "Record Anyway"
           }
         },
         "es" : {
@@ -4302,7 +4274,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Der Datenträger ist fast voll: die Aufnahme wird gleich enden."
+            "value" : "Die Festplatte ist fast voll: Die Aufnahme wird gleich beendet."
           }
         },
         "en" : {
@@ -4437,34 +4409,6 @@
         }
       }
     },
-    "Fichier de temps" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zeitdatei"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Time file"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Archivo de tiempo"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "File dei tempi"
-          }
-        }
-      }
-    },
     "Fichiers" : {
       "localizations" : {
         "de" : {
@@ -4549,12 +4493,12 @@
         }
       }
     },
-    "Il ne reste que %@ sur ce disque : trop peu pour enregistrer. Libérer de la place, ou choisir un autre dossier." : {
+    "Il ne reste que %@ sur ce disque : trop peu pour enregistrer. Libérez de la place, ou choisissez un autre dossier." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Auf diesem Datenträger sind nur noch %@ frei: zu wenig zum Aufnehmen. Platz schaffen oder einen anderen Ordner wählen."
+            "value" : "Auf dieser Festplatte sind nur noch %@ frei: zu wenig zum Aufnehmen. Platz schaffen oder einen anderen Ordner wählen."
           }
         },
         "en" : {
@@ -4717,7 +4661,7 @@
         }
       }
     },
-    "JACK n'est pas démarré. Démarrer le serveur JACK, puis recommencer." : {
+    "JACK n'est pas démarré. Démarrez le serveur JACK, puis recommencez." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -4818,7 +4762,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "JACK · %@ kHz · %lld tramas"
+            "value" : "JACK · %@ kHz · %lld muestras"
           }
         },
         "it" : {
@@ -4913,7 +4857,7 @@
         }
       }
     },
-    "Le dossier %@ n'est pas accessible en écriture. Choisir un autre dossier." : {
+    "Le dossier %@ n'est pas accessible en écriture. Choisissez un autre dossier." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -5053,7 +4997,7 @@
         }
       }
     },
-    "Le volume « %@ » n'est pas monté. Le brancher, ou choisir un autre dossier." : {
+    "Le volume « %@ » n'est pas monté. Branchez-le, ou choisissez un autre dossier." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -5064,7 +5008,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The volume \"%@\" is not mounted. Plug it in, or choose another folder."
+            "value" : "The volume “%@” is not mounted. Plug it in, or choose another folder."
           }
         },
         "es" : {
@@ -5266,7 +5210,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Los vúmetros están desactivados. Se ajustan en Configuración, Pantalla."
+            "value" : "Los medidores de nivel están desactivados. Se ajustan en Configuración, Visualización."
           }
         },
         "it" : {
@@ -5288,7 +5232,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Generated command line"
+            "value" : "Generated Command Line"
           }
         },
         "es" : {
@@ -5512,13 +5456,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Name the recorder shows under in JACK. Change it to run two at once."
+            "value" : "Name the recorder appears under in JACK. Change it to run two at once."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nombre con el que aparece la grabadora en JACK. Cámbielo para lanzar dos a la vez."
+            "value" : "Nombre con el que aparece la grabadora en JACK. Cámbialo para lanzar dos a la vez."
           }
         },
         "it" : {
@@ -5568,7 +5512,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "New recording"
+            "value" : "New Recording"
           }
         },
         "es" : {
@@ -6128,7 +6072,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Preview the levels before recording"
+            "value" : "Preview levels before recording"
           }
         },
         "es" : {
@@ -6178,7 +6122,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Verbindet die Kanäle beim Start mit den gewählten Quellen. Ausgeschaltet bleiben die Kanäle im Patchbay zu verbinden."
+            "value" : "Verbindet die Kanäle beim Start mit den gewählten Quellen. Ist die Option aus, müssen die Kanäle im Patchbay verbunden werden."
           }
         },
         "en" : {
@@ -6526,7 +6470,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tamaño del búfer entre JACK y el disco, en segundos. Auméntelo si el disco es lento."
+            "value" : "Tamaño del búfer entre JACK y el disco, en segundos. Auméntalo si el disco es lento."
           }
         },
         "it" : {
@@ -6626,13 +6570,13 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alle entfernen"
+            "value" : "Alle löschen"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Clear all"
+            "value" : "Clear All"
           }
         },
         "es" : {
@@ -6666,7 +6610,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tramas"
+            "value" : "Muestras"
           }
         },
         "it" : {
@@ -6940,7 +6884,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Show recording"
+            "value" : "Show Recording"
           }
         },
         "es" : {
@@ -7125,7 +7069,7 @@
         }
       }
     },
-    "débordement" : {
+    "overrun" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -7619,13 +7563,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Color de énfasis"
+            "value" : "Color de contraste"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Colore di risalto"
+            "value" : "Colore dettagli"
           }
         }
       }
@@ -7719,7 +7663,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Violett"
+            "value" : "Lila"
           }
         },
         "en" : {
@@ -7971,7 +7915,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Licence"
+            "value" : "License"
           }
         },
         "de" : {
@@ -8083,7 +8027,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "GPL licence, version 2 or later."
+            "value" : "GPL license, version 2 or later."
           }
         },
         "de" : {
@@ -8130,6 +8074,118 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Documentación de Jack Capture"
+          }
+        }
+      }
+    },
+    "%@ octets" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ Bytes"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ bytes"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ bytes"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ byte"
+          }
+        }
+      }
+    },
+    "%lld overruns" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Überläufe"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld overruns"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld desbordamientos"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld overrun"
+          }
+        }
+      }
+    },
+    "%lld xruns" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Xruns"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld xruns"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld xruns"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld xrun"
+          }
+        }
+      }
+    },
+    "Fichier d'horodatage" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeitstempeldatei"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Timestamp file"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Archivo de marca de tiempo"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "File dell'ora di inizio"
           }
         }
       }
