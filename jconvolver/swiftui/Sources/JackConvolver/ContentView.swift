@@ -79,6 +79,28 @@ struct ContentView: View {
                let i = d.impulses(at: first).firstIndex(where: { if case .file = $0.source { true } else { false } }) {
                 try? await Task.sleep(for: .milliseconds(800)); model.inspect(DetailTarget(pair: first, index: i))
             }
+            // Views that need a state: JACKCONVOLVER_SELECT=<in1>,<out1>,<in2>,<out2> selects a block of cells (numbers from 1);
+            // JACKCONVOLVER_TRACE=<in>,<out>[,<index>] inspects that response, JACKCONVOLVER_TRACES=<in>,<out>;<in>,<out>;... draws several
+            // together; JACKCONVOLVER_FADE=<in>,<out> sets a fade (in samples) on the one that is edited; JACKCONVOLVER_CONVERT=<file>
+            // converts that file to the expected rate; JACKCONVOLVER_SHEET also takes fade, portable, problems, resolver and command.
+            if let v = env["JACKCONVOLVER_SELECT"]?.split(separator: ",").compactMap({ Int($0) }), v.count == 4 {
+                try? await Task.sleep(for: .milliseconds(900))
+                model.selection.select(from: ConvPair(input: v[0] - 1, output: v[1] - 1), to: ConvPair(input: v[2] - 1, output: v[3] - 1))
+            }
+            if let spec = env["JACKCONVOLVER_TRACES"] ?? env["JACKCONVOLVER_TRACE"] {
+                try? await Task.sleep(for: .milliseconds(900))
+                for (n, part) in spec.split(separator: ";").enumerated() {
+                    let v = part.split(separator: ",").compactMap { Int($0) }
+                    guard v.count >= 2 else { continue }
+                    model.inspect(DetailTarget(pair: ConvPair(input: v[0] - 1, output: v[1] - 1), index: v.count > 2 ? v[2] : 0), adding: n > 0)
+                }
+            }
+            if let v = env["JACKCONVOLVER_FADE"]?.split(separator: ",").compactMap({ Int($0) }), v.count == 2 { model.fadeIn = v[0]; model.fadeOut = v[1] }
+            if let path = env["JACKCONVOLVER_CONVERT"] { try? await Task.sleep(for: .seconds(1.5)); model.convertToExpectedRate(path: path) }
+            for (name, open) in [("fade", { model.showsFade = true }), ("portable", { model.showsPortable = true }), ("problems", { model.showsProblems = true }),
+                                 ("resolver", { model.showsResolver = true }), ("command", { model.showsCommand = true })] where env["JACKCONVOLVER_SHEET"] == name {
+                try? await Task.sleep(for: .milliseconds(1500)); open()
+            }
             // JACKCONVOLVER_FAKEDRAG=over|drop: drags the first file of the list over the cell of the third input and third output
             // (what the pointer does), and for "drop" lets go of it.
             if let fake = env["JACKCONVOLVER_FAKEDRAG"], !fake.isEmpty, let file = model.binFiles.first {
@@ -125,7 +147,8 @@ struct ContentView: View {
                 try? String(window.windowNumber).write(toFile: path + ".id", atomically: true, encoding: .utf8)
             }
             try? await Task.sleep(for: .seconds(4))
-            NSApp.terminate(nil)
+            // Not NSApp.terminate: it would ask whether to save a configuration that the view has changed (a conversion, for instance).
+            exit(0)
         }
         #endif
         .onChange(of: model.jack.sampleRate) { _, _ in model.refreshProblems() }

@@ -103,7 +103,14 @@ extension AppModel {
         alert.informativeText = String(localized: "\(used) « \(newName) ». L'original est intact. Le début et la longueur de chaque réponse ont été recalculés pour la nouvelle fréquence, et le gain des coefficients compensé pour que la réponse en fréquence ne change pas.")
         if compared != nil { alert.addButton(withTitle: String(localized: "Comparer avec l'original")) }
         alert.addButton(withTitle: "OK")
-        if alert.runModal() == .alertFirstButtonReturn, let compared {
+        let answer: NSApplication.ModalResponse
+        #if DEBUG
+        // Debug aid: with JACKCONVOLVER_CONVERT the alert is not shown and the comparison is chosen (for the screenshots).
+        if ProcessInfo.processInfo.environment["JACKCONVOLVER_CONVERT"] != nil { answer = .alertFirstButtonReturn } else { answer = alert.runModal() }
+        #else
+        answer = alert.runModal()
+        #endif
+        if answer == .alertFirstButtonReturn, let compared {
             compare(compared.target, with: compared.reference)
             // While it is looked at, the conversion can be kept or refused.
             pendingConversion = PendingConversion(label: label, convertedURL: result.url, created: !result.reused, rate: rate)

@@ -157,6 +157,26 @@ struct ImpulseDetailPage: View {
         commitZone()
     }
 
+    #if DEBUG
+    /// Debug aids: the options of the display (JACKCONVOLVER_GROUPDELAY, _UNWRAP, _REMOVEDELAY, _SMOOTH) are set once the plot is there, as a
+    /// person who clicks them would, so that its vertical axis fits again; JACKCONVOLVER_FITY fits the vertical axis to the curves.
+    private func debugDisplayOptions() async {
+        let env = ProcessInfo.processInfo.environment
+        try? await Task.sleep(for: .seconds(1.5))
+        if env["JACKCONVOLVER_GROUPDELAY"] != nil { controller.display.showGroupDelay = true }
+        if env["JACKCONVOLVER_RESIDUAL"] != nil { showsDifference = true }
+        if env["JACKCONVOLVER_UNWRAP"] != nil { controller.display.unwrapPhase = true }
+        if env["JACKCONVOLVER_REMOVEDELAY"] != nil { controller.display.removeDelay = true }
+        if let text = env["JACKCONVOLVER_SMOOTH"], let value = Int(text), let smoothing = OctaveSmoothing(rawValue: value) {
+            controller.display.smoothing = smoothing
+        }
+        if env["JACKCONVOLVER_FITY"] != nil {
+            try? await Task.sleep(for: .milliseconds(500))
+            controller.autoscaleVertical()
+        }
+    }
+    #endif
+
     private var loadKey: String { "\(resolved?.path ?? "")#\(resolved?.channel ?? 0)" }
     private struct ResponseKey: Hashable { var load: String; var used: Range<Int>? }
 
@@ -268,8 +288,8 @@ struct ImpulseDetailPage: View {
             if let v = env["JACKCONVOLVER_DETAIL"].flatMap(Kind.init(rawValue:)) { kind = v }
             if !(env["JACKCONVOLVER_INSPECTOR"] ?? "").isEmpty { controller.showsInspector = true }
             if let tab = env["JACKCONVOLVER_INSPECTOR_TAB"], !tab.isEmpty { controller.inspectorTab = tab }
-            if !(env["JACKCONVOLVER_GROUPDELAY"] ?? "").isEmpty { controller.display.showGroupDelay = true }
-            if let d = Int(env["JACKCONVOLVER_SMOOTH"] ?? ""), let s = OctaveSmoothing(rawValue: d) { controller.display.smoothing = s }
+            // The options of the display change once the plot is there, so that its vertical axis fits again.
+            Task { await debugDisplayOptions() }
             #endif
         }
     }
