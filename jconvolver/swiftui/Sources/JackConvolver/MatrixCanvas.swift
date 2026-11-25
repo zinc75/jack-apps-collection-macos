@@ -346,15 +346,20 @@ struct MatrixCanvas: View {
         case .block(let b):
             let frame = CGRect(x: labelWidth + CGFloat(b.firstOutput) * cs, y: topMargin + CGFloat(b.firstInput) * cs,
                                width: CGFloat(b.lastOutput - b.firstOutput + 1) * cs, height: CGFloat(b.lastInput - b.firstInput + 1) * cs)
-            context.fill(Path(frame), with: .color(accent.opacity(0.12)))
-            context.stroke(Path(frame.insetBy(dx: 1, dy: 1)), with: .color(accent), lineWidth: 2)
+            drawSelectionFrame(context, frame)
         case .picked(let set):
-            for pair in set {
-                let frame = rect(pair, cs: cs)
-                context.fill(Path(frame), with: .color(accent.opacity(0.12)))
-                context.stroke(Path(frame.insetBy(dx: 1, dy: 1)), with: .color(accent), lineWidth: 2)
-            }
+            for pair in set { drawSelectionFrame(context, rect(pair, cs: cs)) }
         }
+    }
+
+    /// The frame of the selection. It is not drawn in the accent colour: the cells that hold a response are, and a selected cell would look like
+    /// one of them. A light frame with a dark thread inside it reads on the dark and on the light look, on an empty cell and on a full one.
+    private func drawSelectionFrame(_ context: GraphicsContext, _ frame: CGRect) {
+        let dark = context.environment.colorScheme == .dark
+        let ink: Color = dark ? .white : .black
+        context.fill(Path(frame), with: .color(accent.opacity(0.18)))
+        context.stroke(Path(frame.insetBy(dx: 1, dy: 1)), with: .color(ink.opacity(0.95)), lineWidth: 2)
+        context.stroke(Path(frame.insetBy(dx: 2.5, dy: 2.5)), with: .color((dark ? Color.black : Color.white).opacity(0.55)), lineWidth: 1)
     }
 
     /// A cell with something on it: the intensity says the gain, the drawing says the kind.
