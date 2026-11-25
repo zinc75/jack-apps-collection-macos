@@ -1,13 +1,17 @@
 <div align="center">
 
-  <img src="screenshots/icon.png" width="192" alt="Jack Play icon">
-  <h1>Jack Play</h1>
-  <p>A native macOS interface for <code>jack_play</code>, the JACK sound file player (<code>rju-play</code> by Rohan Drape).</p>
-
   ![macOS](https://img.shields.io/badge/macOS-15.0%2B-lightgrey?logo=apple)
   ![Architectures](https://img.shields.io/badge/arm64%20%7C%20x86__64-universal-blue)
   ![License](https://img.shields.io/badge/license-GPL--3.0-green)
   [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?logo=buymeacoffee&logoColor=000000)](https://www.buymeacoffee.com/zinc75)
+
+  <img src="screenshots/icon.png" width="192" alt="Jack Play icon">
+  <h1>Jack Play</h1>
+  <p>A native macOS interface for <code>jack_play</code>, the JACK sound file player (<code>rju-play</code> by Rohan Drape).</p>
+  <p>
+    <img src="../assets/notarized-badge.png" width="15" alt="">
+    <strong>Signed &amp; notarized by Apple</strong>
+  </p>
 
   <img src="screenshots/play.png" width="760" alt="Jack Play playing an 8 channel file">
 
