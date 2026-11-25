@@ -29,11 +29,11 @@ Klick is an unofficial interface. It is part of Jack Apps Collection for macOS. 
 
 Download `Klick-0.13.0-macOS-3.pkg` from the [Releases](https://github.com/zinc75/jack-apps-collection-macos/releases?q=Klick) page and open it. The package is signed and notarized by Apple, so it opens without any Gatekeeper warning. It installs the application in `/Applications/Jack Apps Collection/` and the `klick` program in `/usr/local/bin`.
 
-It needs macOS 15 or later, and [JACK](https://jackaudio.org/downloads/) installed to use the JACK engine. To build from source instead, see [`swift/README.md`](swift/README.md).
+It needs macOS 15 or later, and [JACK](https://jackaudio.org/downloads/) installed to use the JACK engine. The simplest way to get a notarized JACK is [JackMate](https://jackmate.app/install-jack-macos.html#one-clic-method-from-jackmate), which also [starts the server](https://jackmate.app/guide/configuration.html) without the command line. To build from source instead, see [`swift/README.md`](swift/README.md).
 
 ## Play in JACK
 
-Choose JACK as the engine and Klick opens one output port, `Klick:out`, in the server. It connects it to the first two hardware outputs by itself if you want, and a list of the input ports of the server lets you connect it anywhere else, with the icons of the applications when JackMoebius or JACK metadata identifies them. If the server stops, Klick goes back to CoreAudio and offers to try JACK again. The beat lights take the latency that JACK announces into account.
+Choose JACK as the engine and Klick opens one output port, `Klick:out`, in the server. It connects it to the first two hardware outputs by itself if you want, and a list of the input ports of the server lets you connect it anywhere else, with the icons of the applications when [JackMoebius](https://jackmoebius.io) or JACK metadata identifies them. If the server stops, Klick goes back to CoreAudio and offers to try JACK again. The beat lights take the latency that JACK announces into account.
 
 <div align="center">
   <img src="screenshots/output.png" width="760" alt="The Output page with the JACK engine">
@@ -47,7 +47,7 @@ In the advanced options of the Output page, Klick can wait for the JACK transpor
   <img src="screenshots/waiting.png" width="760" alt="Klick waiting for the JACK transport">
 </div>
 
-Klick can also be the timebase master of the transport, giving the other clients its tempo, its meter and the position in bars and beats, as `klick` does. When another client is the timebase master, the metronome takes its tempo and meter and joins the song on the beat; a tempo map keeps its own tempo and says so.
+Klick can also be the timebase master of the transport, giving the other clients its tempo, its meter and the position in bars and beats, as `klick` does. When another client is the timebase master, the metronome takes its tempo and meter and joins the song on the beat; a tempo map keeps its own tempo and says so. The JACK transport is also built into [JackMate](https://jackmate.app/guide/transport.html): play, pause, stop and seek, with bars, timecode or frames, and the tempo.
 
 ## The metronome
 
