@@ -1,13 +1,17 @@
 <div align="center">
 
-  <img src="screenshots/icon.png" width="192" alt="Zita Network Bridge icon">
-  <h1>Zita Network Bridge</h1>
-  <p>A native macOS interface for <code>zita-njbridge</code> by Fons Adriaensen: JACK audio between two Macs over an IP network.</p>
-
   ![macOS](https://img.shields.io/badge/macOS-15.0%2B-lightgrey?logo=apple)
   ![Architectures](https://img.shields.io/badge/arm64%20%7C%20x86__64-universal-blue)
   ![License](https://img.shields.io/badge/license-GPL--3.0%2B-green)
   [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?logo=buymeacoffee&logoColor=000000)](https://www.buymeacoffee.com/zinc75)
+
+  <img src="screenshots/icon.png" width="192" alt="Zita Network Bridge icon">
+  <h1>Zita Network Bridge</h1>
+  <p>A native macOS interface for <code>zita-njbridge</code> by Fons Adriaensen: JACK audio between two Macs over an IP network.</p>
+  <p>
+    <img src="../assets/notarized-badge.png" width="15" alt="">
+    <strong>Signed &amp; notarized by Apple</strong>
+  </p>
 
   <img src="screenshots/link.png" width="620" alt="A link that sends and receives, with the margin of the receiver's buffer">
 
