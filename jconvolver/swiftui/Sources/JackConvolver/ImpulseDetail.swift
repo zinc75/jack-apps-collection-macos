@@ -357,7 +357,7 @@ struct ImpulseDetailPage: View {
             editedTitle(resolved)
             Text("\(model.inputLabel(target.pair.input)) → \(model.outputLabel(target.pair.output))").foregroundStyle(.secondary)
             if let info {
-                Text(verbatim: "\(info.container) · \(info.encoding) · \(Int(info.sampleRate)) Hz · \(info.channels) " + String(localized: "voies"))
+                Text(verbatim: "\(info.container) · \(info.encoding) · \(Int(info.sampleRate)) Hz · \(info.channels) " + (info.channels == 1 ? String(localized: "voie") : String(localized: "voies")))
                     .font(.callout).foregroundStyle(.secondary)
             }
         }
