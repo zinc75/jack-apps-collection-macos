@@ -29,6 +29,14 @@ It needs macOS 15 or later, and [JACK](https://jackaudio.org/downloads/) install
 
 To build from source instead, see [`swiftui/README.md`](swiftui/README.md).
 
+## Use Jack Play with JackMate and JackMoebius
+
+I also develop JackMate ([site](https://jackmate.app), [GitHub](https://github.com/zinc75/JackMate)) and JackMoebius ([site](https://jackmoebius.io), [GitHub](https://github.com/zinc75/JackMoebius)), which are not part of this repository.
+
+JackMate is the simplest way to [install a notarized JACK](https://jackmate.app/install-jack-macos.html#one-clic-method-from-jackmate) and to [start it](https://jackmate.app/guide/configuration.html) without the command line. It shows every client in a [patchbay](https://jackmate.app/guide/patchbay.html), where the connections of Jack Play can be made too, and its [studios](https://jackmate.app/guide/studios.html) save a whole setup, the server settings and the connections, to restore in one click. JackMate is free and open source.
+
+JackMoebius is the modern replacement for JackRouter on macOS: it exposes applications that only speak CoreAudio as JACK clients, one per application and in both directions. Together, JackMoebius and Jack Play can play into an application without native JACK support, a call for example: the application picks the JackMoebius input as its microphone, and the file is played into it. JackMoebius is a commercial app, with a 14-day trial.
+
 ## Connect the outputs
 
 A matrix connects each channel of the file to the JACK inputs of your choice, grouped by client. Applications show their own icon when JackMoebius identifies them, and the shared input of JackMoebius has its own badge. The connections are remembered for each file (its name, size and date) and made again when the ports come back. A connection made or removed elsewhere, in a patchbay for example, is taken into account: the matrix shows what the JACK graph really has. The first time, the channels go to the first outputs of the system.
@@ -39,7 +47,7 @@ A matrix connects each channel of the file to the JACK inputs of your choice, gr
 
 ## Play and watch
 
-The waveform of the file has a time ruler: a click or a drag moves in the file. The output levels of every channel are measured inside the program, just before the ports, on the IEC scale, and shown beside the lane of each channel or under the waveform. A file with many channels (an ambisonic recording, for instance) is shown in columns, each with its own ruler, so that the lanes keep a height that can be read. The levels can be switched off, and are then not measured at all. By default the application plays on its own, so that starting it does not start the other clients of the server; it can also follow the JACK transport, and command it or only watch it. Jack Play opens every format that libsndfile reads (WAV, AIFF, CAF, FLAC, Ogg Vorbis, Opus, MP3 and others), and the Finder offers it for these files and for M3U and M3U8 playlists.
+The waveform of the file has a time ruler: a click or a drag moves in the file. The output levels of every channel are measured inside the program, just before the ports, on the IEC scale, and shown beside the lane of each channel or under the waveform. A file with many channels (an ambisonic recording, for instance) is shown in columns, each with its own ruler, so that the lanes keep a height that can be read. The levels can be switched off, and are then not measured at all. By default the application plays on its own, so that starting it does not start the other clients of the server; it can also follow the JACK transport, and command it or only watch it. The JACK transport is also built into [JackMate](https://jackmate.app/guide/transport.html): play, pause, stop and seek, with bars, timecode or frames, and the tempo. Jack Play opens every format that libsndfile reads (WAV, AIFF, CAF, FLAC, Ogg Vorbis, Opus, MP3 and others), and the Finder offers it for these files and for M3U and M3U8 playlists.
 
 ## Play files one after the other
 
