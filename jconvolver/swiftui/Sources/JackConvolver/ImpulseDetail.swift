@@ -676,7 +676,9 @@ struct ImpulseDetailPage: View {
         guard yScales[.time] ?? .linear == .linear else { return }
         let peak = series.visible.compactMap { loadedTrace($0.id)?.data.samples.lazy.map { abs(Double($0)) }.max() }.max() ?? 0
         guard peak.isFinite else { return }
-        let m = engineView ? peak * 1.05 : max(1.05, peak * 1.05)
+        // The axis is the full scale, so that the level of the file reads against it, unless the response is weak (under -6 dB): it would
+        // then fill a fifth of the plot, and the axis is fitted to its peak, as it is when the gain and the truncation are applied.
+        let m = engineView || peak < 0.5 ? peak * 1.05 : max(1.05, peak * 1.05)
         guard m > 0 else { return }
         let current = time.y.bounds.upperBound
         guard force || abs(current - m) > 1e-9 else { return }
