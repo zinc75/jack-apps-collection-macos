@@ -49,7 +49,7 @@ An address that cannot be one is flagged, an IPv6 link-local address gets the in
   <img src="screenshots/channels.png" width="620" alt="The Channels page">
 </div>
 
-A matrix per direction connects the ports of the programs to the JACK ports of your choice, grouped by client. The connections are remembered and made again each time the link starts. The receiver takes all the channels of the sender, or only the ones chosen, which splits a large stream between several receivers.
+A matrix per direction connects the ports of the programs to the JACK ports of your choice, grouped by client. The connections are remembered and made again each time the link starts. The receiver takes all the channels of the sender, or only the ones chosen, which splits a large stream between several receivers. The connections that other tools make or remove in JACK are shown too, so the wiring on screen is the real one.
 
 ## All the options of the programs
 
