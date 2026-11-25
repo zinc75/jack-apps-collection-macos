@@ -1,13 +1,17 @@
 <div align="center">
 
-  <img src="screenshots/icon.png" width="192" alt="Jack Convolver icon">
-  <h1>Jack Convolver</h1>
-  <p>A native macOS interface for <code>jconvolver</code> and <code>fconvolver</code>, the JACK convolution engine by Fons Adriaensen, and the three programs built for macOS.</p>
-
   ![macOS](https://img.shields.io/badge/macOS-15.0%2B-lightgrey?logo=apple)
   ![Architectures](https://img.shields.io/badge/arm64%20%7C%20x86__64-universal-blue)
   ![License](https://img.shields.io/badge/license-GPL--3.0-green)
   [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?logo=buymeacoffee&logoColor=000000)](https://www.buymeacoffee.com/zinc75)
+
+  <img src="screenshots/icon.png" width="192" alt="Jack Convolver icon">
+  <h1>Jack Convolver</h1>
+  <p>A native macOS interface for <code>jconvolver</code> and <code>fconvolver</code>, the JACK convolution engine by Fons Adriaensen, and the three programs built for macOS.</p>
+  <p>
+    <img src="../assets/notarized-badge.png" width="15" alt="">
+    <strong>Signed &amp; notarized by Apple</strong>
+  </p>
 
   <img src="screenshots/matrix.png" width="760" alt="Jack Convolver with the matrix of an ambisonic encoder of order 5">
 
