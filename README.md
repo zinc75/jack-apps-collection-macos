@@ -54,6 +54,15 @@ Tools are built for Apple Silicon and Intel, and get a SwiftUI application where
   <br><em>Zita Network Bridge: receiving from another Mac, with the buffer margin</em>
 </div>
 
+## Companion apps
+
+I also develop two apps that are not part of this repository, each with its own site and its own GitHub repository. On macOS they make JACK much simpler to use.
+
+| Icon&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Name | Description |
+|---|---|---|
+| <a href="https://jackmate.app"><img src="assets/jackmate-icon.png" width="96" alt="JackMate icon"></a> | [JackMate](https://jackmate.app) · [GitHub](https://github.com/zinc75/JackMate) | The easiest way to [install a notarized JACK](https://jackmate.app/install-jack-macos.html#one-clic-method-from-jackmate) and start it, a [patchbay](https://jackmate.app/guide/patchbay.html) to see and edit every connection, the JACK transport, and studios that save a whole setup to restore in one click. The apps of this collection appear in it as clients. Free and open source (MIT). |
+| <a href="https://jackmoebius.io"><img src="assets/jackmoebius-icon.png" width="96" alt="JackMoebius icon"></a> | [JackMoebius](https://jackmoebius.io) · [GitHub](https://github.com/zinc75/JackMoebius) | The modern replacement for JackRouter on macOS. It exposes applications that only speak CoreAudio as JACK clients, one per application and in both directions, so JACK tools can record them, process them or feed them. A commercial app, signed and notarized by Apple, with a 14-day trial and then a one-time license. |
+
 ## Version numbers
 
 The version number of a package, and of the application inside it, is the version number of the upstream program it is built from. Jack Capture 0.9.73 is `jack_capture` 0.9.73, and Zita Network Bridge 0.4.8 is `zita-njbridge` 0.4.8. The number tells which upstream version the application drives, not how mature the interface is.
