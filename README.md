@@ -76,6 +76,8 @@ The version number of a package, and of the application inside it, is the versio
 
 When the macOS edition is published again for the same upstream version, a revision number is added to the name of the package, as in `JackCapture-0.9.73-macOS-2.pkg`. The About window of each application reads "0.9.73 macOS Edition". Where upstream has no release for a given state, the README of the tool says which commit the version stands for.
 
+The collection has a number of its own, such as 1.0. The first number changes when something breaks, the second when a tool is added or moves to a new upstream version, the third for corrections only.
+
 ## About this repository
 
 Each tool keeps its original sources untouched in `upstream/`, with the changes needed for macOS as patches in `patches/`. Fixes that are not specific to this repository are sent to the original authors.
