@@ -4,7 +4,7 @@
   <h1>Jack Convolver</h1>
   <p>A native macOS interface for <code>jconvolver</code> and <code>fconvolver</code>, the JACK convolution engine by Fons Adriaensen, and the three programs built for macOS.</p>
 
-  ![macOS](https://img.shields.io/badge/macOS-11.0%2B-lightgrey?logo=apple)
+  ![macOS](https://img.shields.io/badge/macOS-15.0%2B-lightgrey?logo=apple)
   ![Architectures](https://img.shields.io/badge/arm64%20%7C%20x86__64-universal-blue)
   ![License](https://img.shields.io/badge/license-GPL--3.0-green)
   [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?logo=buymeacoffee&logoColor=000000)](https://www.buymeacoffee.com/zinc75)
@@ -22,6 +22,16 @@ Two more programs come with it. `fconvolver` does the same processing on sound f
 This edition raises the limit of the matrix from 64 to 128 inputs and 128 outputs, and gives the computation threads the real-time scheduling that macOS needs (see below).
 
 Jack Convolver is an unofficial interface for these programs. It is part of Jack Apps Collection for macOS.
+
+## Install
+
+<p align="center"><a href="https://github.com/zinc75/jack-apps-collection-macos/releases/download/jconvolver-v1.1.0-macOS-2/JackConvolver-1.1.0-macOS-2.pkg"><img src="../assets/install-jackconvolver.svg" width="386" alt="Install Jack Convolver"></a></p>
+
+Download `JackConvolver-1.1.0-macOS-2.pkg` from the [Releases](https://github.com/zinc75/jack-apps-collection-macos/releases?q=jconvolver) page and open it. It installs the application in `/Applications/Jack Apps Collection/` and the programs `jconvolver`, `fconvolver` and `makemulti` in `/usr/local/bin`, with the description of the configuration files, the examples and the licences in `/usr/local/share/doc/jconvolver`.
+
+It needs macOS 15 or later, and [JACK](https://jackaudio.org/downloads/) installed. The programs alone, for macOS 11 and later, are in `jconvolver-1.1.0-macOS.pkg`, on the same page.
+
+To build from source instead, see [`swiftui/README.md`](swiftui/README.md). To build only the programs, build the libraries of `libs/` (`fftw`, `zita-convolver`, `clthreads`, `libsndfile` and its codecs), then run `build_universal.sh` here.
 
 ## The application
 
@@ -137,15 +147,7 @@ A configuration can be exported as one audio file that holds all its responses, 
 </table>
 </div>
 
-To build the application from source, see [`swiftui/README.md`](swiftui/README.md).
-
-## Install the programs
-
-Download `jconvolver-1.1.0-macOS.pkg` from the [Releases](https://github.com/zinc75/jack-apps-collection-macos/releases?q=jconvolver) page and open it. It installs `jconvolver`, `fconvolver` and `makemulti` in `/usr/local/bin`, and the description of the configuration files, the examples and the licences in `/usr/local/share/doc/jconvolver`.
-
-It needs macOS 11 or later, and [JACK](https://jackaudio.org/downloads/) installed. To build from source instead, build the libraries of `libs/` (`fftw`, `zita-convolver`, `clthreads`, `libsndfile` and its codecs), then run `build_universal.sh` here.
-
-## Use
+## Use the programs
 
 Start JACK, then:
 
