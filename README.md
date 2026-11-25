@@ -63,6 +63,13 @@ Each tool in the collection can also be installed on its own, with its own packa
   <br><em>Zita Network Bridge: receiving from another Mac, with the buffer margin</em>
 </div>
 
+---
+
+<div align="center">
+  <a href="jconvolver/"><img src="jconvolver/screenshots/ir-preview.png" width="640" alt="Jack Convolver with the matrix of an ambisonic encoder of order 5 and an impulse response inspected from the list of files"></a>
+  <br><em>Jack Convolver: an ambisonic encoder of order 5, with one of its impulse responses inspected from the list of files</em>
+</div>
+
 ## Companion apps
 
 I also develop two apps that are not part of this repository, each with its own site and its own GitHub repository. On macOS they make JACK much simpler to use.
