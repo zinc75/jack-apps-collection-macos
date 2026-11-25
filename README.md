@@ -6,11 +6,6 @@
   [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?logo=buymeacoffee&logoColor=000000)](https://www.buymeacoffee.com/zinc75)
 
   <img src="assets/collection-banner.png" width="880" alt="Jack Apps Collection for macOS: Jack Capture, Klick, Jack Play, Zita Network Bridge and Jack Convolver">
-  <p>
-    <img src="assets/notarized-badge.png" width="15" alt="">
-    <strong>Signed &amp; notarized by Apple</strong>
-  </p>
-
   <p align="center"><a href="https://github.com/zinc75/jack-apps-collection-macos/releases/download/collection-v1.0/JackAppsCollection-1.0-macOS.pkg"><img src="assets/install-collection.svg" width="406" alt="Install the collection"></a></p>
 
 </div>
