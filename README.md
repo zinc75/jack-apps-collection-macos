@@ -23,7 +23,9 @@ Download `JackAppsCollection-1.0-macOS.pkg` from the [Releases](https://github.c
 
 It needs macOS 15 or later, and JACK installed; [JackMate](https://jackmate.app/install-jack-macos.html#one-clic-method-from-jackmate) is the simplest way to get a notarized JACK, and it also [starts the server](https://jackmate.app/guide/configuration.html).
 
-## Tools
+## Included tools
+
+Each tool in the collection can also be installed on its own, with its own package, if you only need one. Every application and every package is signed and notarized by Apple.
 
 | Icon&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Name | Description | CLI | GUI | Notarized package |
 |---|---|---|---|---|---|
