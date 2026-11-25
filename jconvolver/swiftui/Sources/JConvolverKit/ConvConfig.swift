@@ -221,9 +221,12 @@ public struct ConvConfig: Equatable, Sendable {
 
     /// Where the program looks for a file of impulse responses: an absolute path as it is, else in the folder of the last
     /// `/cd` (which itself may be relative), else in the folder of the configuration file. As `config.cc` does.
+    /// A folder that ends with a slash (`/cd /ir/`) gives `/ir/a.wav`, not `/ir//a.wav`: the same file must have the same path
+    /// whichever way it is reached, since the list of files and the matrix compare paths.
     public static func path(of file: String, directory: String?, configDirectory: String) -> String {
         if file.hasPrefix("/") { return file }
-        return (directory ?? configDirectory) + "/" + file
+        let folder = directory ?? configDirectory
+        return folder.hasSuffix("/") ? folder + file : folder + "/" + file
     }
 }
 

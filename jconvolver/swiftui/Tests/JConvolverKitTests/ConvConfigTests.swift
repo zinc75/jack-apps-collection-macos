@@ -151,6 +151,13 @@ final class ConvConfigTests: XCTestCase {
         XCTAssertEqual(ConvConfig.path(of: "a.wav", directory: nil, configDirectory: "/cfg"), "/cfg/a.wav")
     }
 
+    /// A `/cd` that ends with a slash must not give a double slash: the file would then not be the one the folder scan finds.
+    func testAFolderThatEndsWithASlash() {
+        XCTAssertEqual(ConvConfig.path(of: "a.wav", directory: "/ir/", configDirectory: "/cfg"), "/ir/a.wav")
+        XCTAssertEqual(ConvConfig.path(of: "a.wav", directory: nil, configDirectory: "/cfg/"), "/cfg/a.wav")
+        XCTAssertEqual(ConvConfig.path(of: "a.wav", directory: "/", configDirectory: "/cfg"), "/a.wav")
+    }
+
     // MARK: The examples of the author
 
     func testEveryExampleIsReadAndComesOutAsItWas() throws {
