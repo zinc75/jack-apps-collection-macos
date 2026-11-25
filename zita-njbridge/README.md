@@ -27,6 +27,14 @@ Download `ZitaNetworkBridge-0.4.8-macOS-3.pkg` from the [Releases](https://githu
 
 It needs macOS 15 or later, and [JACK](https://jackaudio.org/downloads/) installed. To build from source instead, see [`swiftui/README.md`](swiftui/README.md).
 
+## Use Zita Network Bridge with JackMate and JackMoebius
+
+I also develop JackMate ([site](https://jackmate.app), [GitHub](https://github.com/zinc75/JackMate)) and JackMoebius ([site](https://jackmoebius.io), [GitHub](https://github.com/zinc75/JackMoebius)), which are not part of this repository.
+
+JackMate is the simplest way to [install a notarized JACK](https://jackmate.app/install-jack-macos.html#one-clic-method-from-jackmate) and to [start it](https://jackmate.app/guide/configuration.html) without the command line. It shows every client in a [patchbay](https://jackmate.app/guide/patchbay.html), where the connections of Zita Network Bridge can be made too, and its [studios](https://jackmate.app/guide/studios.html) save a whole setup, the server settings and the connections, to restore in one click. JackMate is free and open source.
+
+JackMoebius is the modern replacement for JackRouter on macOS: it exposes applications that only speak CoreAudio as JACK clients, one per application and in both directions. Together, JackMoebius and Zita Network Bridge can carry the sound of an application without native JACK support to another Mac: JackMoebius brings it into JACK, and Zita Network Bridge sends it over the network. JackMoebius is a commercial app, with a 14-day trial.
+
 ## Receive, send, or both
 
 Choose what this Mac does with the two switches at the bottom of the window, then start with the round button. The two directions are independent: a Mac can receive from one and send to another at the same time. Each direction has its own state, green once the link is up and orange while it waits for the sender or synchronises, with the same colour on the ring of the button.
