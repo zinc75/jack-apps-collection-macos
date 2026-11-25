@@ -49,6 +49,10 @@ A matrix connects each channel of the file to a JACK output. Applications show t
 
 The Recording page previews the input levels while it waits (this can be turned off). During a recording it shows the elapsed time, a progress bar when a duration is set, the amount written to disk, the state of the memory buffer and the count of xruns and overruns.
 
+## Sessions
+
+Each recording is a session with its own window, so several can be prepared or run at once. Closing the window of a recording that runs offers to let it continue. The session then stays in the menu bar: an icon appears there while a session runs or has no window, and its panel has a row for each session, with buttons to bring its window back, to start or stop it, and to close it. The Dock badge counts the sessions that run.
+
 ## All the options of jack_capture
 
 <div align="center">
@@ -64,7 +68,7 @@ The Recording page previews the input levels while it waits (this can be turned 
 </table>
 </div>
 
-File format and bit depth, folder and automatic numbering, scheduled stop, pre-recording (timemachine), time file, split into several files, memory buffer, OSC control and JACK client name. The generated command line can be shown at any time, and settings are kept between launches.
+File format and bit depth, folder and automatic numbering, scheduled stop, pre-recording (timemachine), time file, split into several files, memory buffer, disk reserve, OSC control and JACK client name. The disk reserve is the free space the disk keeps: below it a recording does not start, and one that runs is stopped with its file closed. The application warns when less than fifteen minutes of space are left at the current rate. The generated command line can be shown at any time, and settings are kept between launches.
 
 The interface is in French, English, German, Italian and Spanish. The German, Italian and Spanish translations were written without a native speaker: corrections and new languages are welcome, see [`CONTRIBUTING.md`](../CONTRIBUTING.md). It needs macOS 15 or later.
 
@@ -89,7 +93,7 @@ Jack Capture is free and open source. If it saves you time, you can buy me a cof
 
 **CLI.** The `jack_capture` program is upstream's, with six small patches. Three make it build and run on macOS: no `sys/sysinfo.h`, no `-latomic`, and a quality-of-service class for the disk thread. Two make the format and library probes use the same compiler and flags as the build, so that a static build finds its codecs. The last one fixes the `.tme` file, where the leading zeros of the nanoseconds were dropped (5 ms read as 0.5 s). The patches are also sent upstream. The program is built as a universal binary, with libsndfile and its FLAC, Ogg Vorbis, Opus and MP3 codecs linked statically.
 
-**GUI.** The application starts `jack_capture` with the options you set and shows what it does. It adds one function that `jack_capture` does not have: the level preview of the inputs while it waits for you to record.
+**GUI.** The application starts `jack_capture` with the options you set and shows what it does. It adds what `jack_capture` does not have: the level preview of the inputs while it waits for you to record, a disk reserve, and sessions that keep recording when their window is closed.
 
 ## Upstream
 
