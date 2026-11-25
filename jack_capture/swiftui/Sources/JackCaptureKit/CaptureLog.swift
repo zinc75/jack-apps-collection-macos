@@ -14,31 +14,6 @@ public struct CaptureStatus: Equatable, Sendable {
     public var xruns: Int
 }
 
-/// The meter scale of jack_capture, taken from meterbridge by Steve Harris: a deflection in percent for a level in dB.
-/// The levels of the console meter are on this scale (1 is 0 dBFS, 0.5 is about -20 dB). It is the scale of the
-/// meters of this interface, and stays here, under the licence of jack_capture, not in MeterKit.
-public struct IECScale: MeterScale {
-    public init() {}
-
-    public func fraction(db: Double) -> Double { Self.fraction(db: db) }
-
-    /// 0...1 for a level in dBFS.
-    public static func fraction(db: Double) -> Double {
-        let def: Double
-        switch db {
-        case ..<(-70): def = 0
-        case ..<(-60): def = (db + 70) * 0.25
-        case ..<(-50): def = (db + 60) * 0.5 + 5
-        case ..<(-40): def = (db + 50) * 0.75 + 7.5
-        case ..<(-30): def = (db + 40) * 1.5 + 15
-        case ..<(-20): def = (db + 30) * 2 + 30
-        case ..<0: def = (db + 20) * 2.5 + 50
-        default: def = 100
-        }
-        return def / 100
-    }
-}
-
 /// What jack_capture says, as the interface understands it.
 public enum CaptureEvent: Equatable, Sendable {
     /// The file the recording is written to.

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+import MeterKit
 import XCTest
 @testable import JackCaptureKit
 
