@@ -33,6 +33,14 @@ It needs macOS 15 or later, and [JACK](https://jackaudio.org/downloads/) install
 
 To build from source instead, see [`swiftui/README.md`](swiftui/README.md). To build only the programs, build the libraries of `libs/` (`fftw`, `zita-convolver`, `clthreads`, `libsndfile` and its codecs), then run `build_universal.sh` here.
 
+## Use Jack Convolver with JackMate and JackMoebius
+
+I also develop JackMate ([site](https://jackmate.app), [GitHub](https://github.com/zinc75/JackMate)) and JackMoebius ([site](https://jackmoebius.io), [GitHub](https://github.com/zinc75/JackMoebius)), which are not part of this repository.
+
+JackMate is the simplest way to [install a notarized JACK](https://jackmate.app/install-jack-macos.html#one-clic-method-from-jackmate) and to [start it](https://jackmate.app/guide/configuration.html) without the command line. It shows every client in a [patchbay](https://jackmate.app/guide/patchbay.html), where the connections of Jack Convolver can be made too, and its [studios](https://jackmate.app/guide/studios.html) save a whole setup, the server settings and the connections, to restore in one click. JackMate is free and open source.
+
+JackMoebius is the modern replacement for JackRouter on macOS: it exposes applications that only speak CoreAudio as JACK clients, one per application and in both directions. Together, JackMoebius and Jack Convolver can put an application without native JACK support through a reverb or a decoder: JackMoebius brings its sound into JACK, Jack Convolver processes it, and the result goes back to the application. JackMoebius is a commercial app, with a 14-day trial.
+
 ## The application
 
 Jack Convolver edits the configuration of `jconvolver` as a matrix: each cell connects an input to an output, and an impulse response dropped on a cell fills it. The engine runs in real time on JACK, or on a sound file with `fconvolver`, without JACK. The configuration stays an ordinary `jconvolver` file, which the application reads and writes as upstream defines it. Each configuration is a session with its own window, and a session keeps running when its window is closed, from the menu bar.
@@ -43,15 +51,19 @@ The screenshots use the filters of an ambisonic encoder of order 5 (36 inputs, 3
 
 Files are dropped on the cells. The list on the left gives the channels of each file, and the number of places where it is used. A response that is used in several places is written once in the configuration: in the encoder below, the hollow cells are copies of the filled ones. A small card under the pointer says what a cell holds, and the cell that is selected has a light frame, so that it does not look like one that holds a response.
 
-<div align="center">
+<p align="center">
   <img src="screenshots/matrix.png" width="760" alt="The matrix of an ambisonic encoder of order 5, with the card of a cell">
-</div>
+</p>
+
+<br>
 
 The same responses are listed in a table, to set the gain, the delay, the start and the length of all of them, or of the selection, at once: the value replaces the ones that are there, or is added to them.
 
-<div align="center">
+<p align="center">
   <img src="screenshots/table.png" width="760" alt="The table of a room made of a reverberation tail and four sources of early reflections">
-</div>
+</p>
+
+<br>
 
 ### Look at a response
 
@@ -70,21 +82,27 @@ Any response that comes from a file can be inspected, alone or with others to co
 </table>
 </div>
 
+<br>
+
 ### Truncate, fade, convert
 
 These three are done on the curve, and no other tool of the collection does them.
 
 The part of the file that the engine reads is set by two handles on the curve, or by typing the values. They are written in the `.conf` file as the start and the length of the response, and the file itself is not touched. Two buttons put them at the start of the attack and at the useful end.
 
-<div align="center">
+<p align="center">
   <img src="screenshots/truncation.png" width="760" alt="Truncation of the response of a chapel, from the attack to the useful end">
-</div>
+</p>
+
+<br>
 
 A fade on the rise and on the fall of the part that is read, a tapered window, keeps the truncation from ending on a step. The preview shows the response with the fade, the rest at zero, and the original in gray. "Apply..." writes a new audio file that the configuration reads in place of the original, which is not modified, and says which other responses of the matrix read the same channel of the same file: they keep the original.
 
-<div align="center">
+<p align="center">
   <img src="screenshots/fade.png" width="760" alt="Preview of a tapered window on the response of a chapel">
-</div>
+</p>
+
+<br>
 
 A file that is not at the rate of the JACK server is reported, with a button that converts it. The copy is written next to the file with the best converter of libsamplerate, put in the matrix in place of the original, and the start and the length of each response are recomputed for the new rate. Before keeping it, the conversion can be compared with the original: both are drawn, and the residual curve shows the difference of the two spectra in twelfths of an octave, 0.54 dB at most here. Rejecting it undoes everything.
 
@@ -108,29 +126,37 @@ Files that are missing, files at another rate than the server, channels that a f
 
 In real time, the ports of the engine are JACK ports named in the configuration, and connected at start to the clients that it names. The connections can also be made in the application while the engine runs: they apply at once, and when it stops they can be written in the configuration. The load of JACK, the load of the engine and the xruns are shown under the window.
 
-<div align="center">
+<p align="center">
   <img src="screenshots/connections.png" width="760" alt="The connections of the engine, with its load and its xruns">
-</div>
+</p>
+
+<br>
 
 On a file, `fconvolver` reads an audio file and writes the convolved one, and the result is shown with its waveform, ready to open or to play.
 
-<div align="center">
+<p align="center">
   <img src="screenshots/file-mode.png" width="760" alt="A sound file processed by fconvolver">
-</div>
+</p>
+
+<br>
 
 ### The configuration file
 
 The configuration is shown by parts (the header, the ports and connections) or as the whole file, which can be edited, or replaced by one that was received. A file that has not been modified is written as it was read. The three values that `jconvolver` reserves its memory with (the partition, the maximum length, the density) can follow the responses that are placed, and the computed values stay shown next to the ones that are written.
 
-<div align="center">
+<p align="center">
   <img src="screenshots/config-text.png" width="760" alt="The text of a configuration file, with its colours">
-</div>
+</p>
+
+<br>
 
 A configuration can be exported as one audio file that holds all its responses, and a configuration file that refers to it, to send them as they are. A response that is used in several places is written once, the original files are not touched, and the two files can come in a `.zip`. The gain, the delay, the start and the length can also be applied to the samples.
 
-<div align="center">
+<p align="center">
   <img src="screenshots/export.png" width="760" alt="Export of a portable version">
-</div>
+</p>
+
+<br>
 
 ### Settings
 
@@ -147,17 +173,39 @@ A configuration can be exported as one audio file that holds all its responses, 
 </table>
 </div>
 
-## Use the programs
+<br>
 
-Start JACK, then:
+## From the command line
+
+The three programs can be used without the application. They are in `/usr/local/bin`, and the description of the configuration file (`README.CONFIG`) and the examples are in `/usr/local/share/doc/jconvolver`.
+
+`jconvolver` runs in real time on JACK. It takes a configuration file, which says which impulse response goes from which input to which output: write your own, or start from an example in the `config-files` folder. Start JACK, then give it the file:
+
+```
+jconvolver my-room.conf
+```
+
+The examples are there to try. `hilbert.conf` needs no impulse response file, for instance:
 
 ```
 jconvolver /usr/local/share/doc/jconvolver/config-files/hilbert.conf
 ```
 
-Connect the ports in your patchbay. Several examples need impulse response files that are not installed: the configuration file says where to download them, and its `/cd` line is the folder where they have to be.
+Several other examples need impulse response files that are not installed: the configuration file says where to download them, and its `/cd` line is the folder where they have to be.
 
-Stop `jconvolver` with Control-C. A plain `kill` ends it in the middle of a cycle of JACK, which makes an xrun for every client of the server.
+Connect the ports in a patchbay, such as the one of [JackMate](https://jackmate.app/guide/patchbay.html). Stop `jconvolver` with Control-C. A plain `kill` ends it in the middle of a cycle of JACK, which makes an xrun for every client of the server.
+
+`fconvolver` does the same processing on sound files, without JACK, with the same configuration file:
+
+```
+fconvolver my-room.conf input.wav output.wav
+```
+
+`makemulti` assembles single channel files into one multichannel file, for the impulse responses:
+
+```
+makemulti --wav --24bit left.wav right.wav room.wav
+```
 
 ## Changes compared with upstream
 
