@@ -31,7 +31,7 @@ To build from source instead, see [`swiftui/README.md`](swiftui/README.md).
 
 ## Connect the outputs
 
-A matrix connects each channel of the file to the JACK inputs of your choice, grouped by client. Applications show their own icon when JackMoebius identifies them, and the shared input of JackMoebius has its own badge. The connections are remembered for each file (its name, size and date) and made again when the ports come back. The first time, the channels go to the first outputs of the system.
+A matrix connects each channel of the file to the JACK inputs of your choice, grouped by client. Applications show their own icon when JackMoebius identifies them, and the shared input of JackMoebius has its own badge. The connections are remembered for each file (its name, size and date) and made again when the ports come back. A connection made or removed elsewhere, in a patchbay for example, is taken into account: the matrix shows what the JACK graph really has. The first time, the channels go to the first outputs of the system.
 
 <div align="center">
   <img src="screenshots/matrix.png" width="640" alt="The outputs matrix">
@@ -39,7 +39,7 @@ A matrix connects each channel of the file to the JACK inputs of your choice, gr
 
 ## Play and watch
 
-The waveform of the file has a time ruler: a click or a drag moves in the file. The output levels of every channel are measured inside the program, just before the ports, on the IEC scale, and shown beside the lane of each channel or under the waveform. A file with many channels (an ambisonic recording, for instance) is shown in columns, each with its own ruler, so that the lanes keep a height that can be read. The levels can be switched off, and are then not measured at all. By default the application plays on its own, so that starting it does not start the other clients of the server; it can also follow the JACK transport, and command it or only watch it.
+The waveform of the file has a time ruler: a click or a drag moves in the file. The output levels of every channel are measured inside the program, just before the ports, on the IEC scale, and shown beside the lane of each channel or under the waveform. A file with many channels (an ambisonic recording, for instance) is shown in columns, each with its own ruler, so that the lanes keep a height that can be read. The levels can be switched off, and are then not measured at all. By default the application plays on its own, so that starting it does not start the other clients of the server; it can also follow the JACK transport, and command it or only watch it. Jack Play opens every format that libsndfile reads (WAV, AIFF, CAF, FLAC, Ogg Vorbis, Opus, MP3 and others), and the Finder offers it for these files and for M3U and M3U8 playlists.
 
 ## Play files one after the other
 
@@ -50,6 +50,10 @@ Each file is played by a program of its own, a JACK client named after its place
 <div align="center">
   <img src="screenshots/playlist.png" width="760" alt="The playlist">
 </div>
+
+## Sessions
+
+Each window is a session with its own player and its own JACK client, numbered so that names never clash. Closing the window of a file that plays offers to let it continue. The session then stays in the menu bar: an icon appears there while a session plays or has no window, and its panel has a row for each session, with buttons to bring its window back, to start or stop it, and to close it. The Dock badge counts the sessions that play.
 
 ## All the options of jack_play
 
