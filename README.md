@@ -1,13 +1,15 @@
 <div align="center">
 
+  ![macOS](https://img.shields.io/badge/macOS-15.0%2B-lightgrey?logo=apple)
+  ![Architectures](https://img.shields.io/badge/arm64%20%7C%20x86__64-universal-blue)
+  ![License](https://img.shields.io/badge/license-per%20tool-green)
+  [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?logo=buymeacoffee&logoColor=000000)](https://www.buymeacoffee.com/zinc75)
+
   <h1>Jack Apps Collection for macOS</h1>
   <p>Useful JACK tools for macOS, and native graphical interfaces for them.</p>
   <p>
     <img src="assets/notarized-badge.png" width="15" alt="">
     <strong>Signed &amp; notarized by Apple</strong>
-  </p>
-  <p>
-    <a href="https://www.buymeacoffee.com/zinc75"><img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?logo=buymeacoffee&logoColor=000000" alt="Buy me a coffee"></a>
   </p>
 
 </div>
