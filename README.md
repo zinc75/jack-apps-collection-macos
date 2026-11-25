@@ -5,8 +5,7 @@
   ![License](https://img.shields.io/badge/license-per%20tool-green)
   [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?logo=buymeacoffee&logoColor=000000)](https://www.buymeacoffee.com/zinc75)
 
-  <h1>Jack Apps Collection for macOS</h1>
-  <p>Useful JACK tools for macOS, and native graphical interfaces for them.</p>
+  <img src="assets/collection-banner.png" width="880" alt="Jack Apps Collection for macOS: Jack Capture, Klick, Jack Play, Zita Network Bridge and Jack Convolver">
   <p>
     <img src="assets/notarized-badge.png" width="15" alt="">
     <strong>Signed &amp; notarized by Apple</strong>
@@ -17,6 +16,14 @@
 ---
 
 Tools are built for Apple Silicon and Intel, and get a SwiftUI application where it makes sense. They are added one at a time, as they are finished.
+
+## Install
+
+<p align="center"><a href="https://github.com/zinc75/jack-apps-collection-macos/releases/download/collection-v1.0/JackAppsCollection-1.0-macOS.pkg"><img src="assets/install-collection.svg" width="406" alt="Install the collection"></a></p>
+
+Download `JackAppsCollection-1.0-macOS.pkg` from the [Releases](https://github.com/zinc75/jack-apps-collection-macos/releases?q=collection) page and open it. It installs the five JACK applications with their command-line programs, and on the Installation Type page you choose which ones. An application that is already installed in a newer version is kept. Each tool also has its own package, in the table below.
+
+It needs macOS 15 or later, and JACK installed; [JackMate](https://jackmate.app/install-jack-macos.html#one-clic-method-from-jackmate) is the simplest way to get a notarized JACK, and it also [starts the server](https://jackmate.app/guide/configuration.html).
 
 ## Tools
 
