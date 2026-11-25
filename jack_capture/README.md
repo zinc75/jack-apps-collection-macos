@@ -33,6 +33,14 @@ It needs macOS 15 or later, and [JACK](https://jackaudio.org/downloads/) install
 
 To build from source instead, see [`swiftui/README.md`](swiftui/README.md).
 
+## Use Jack Capture with JackMate and JackMoebius
+
+I also develop JackMate ([site](https://jackmate.app), [GitHub](https://github.com/zinc75/JackMate)) and JackMoebius ([site](https://jackmoebius.io), [GitHub](https://github.com/zinc75/JackMoebius)), which are not part of this repository.
+
+JackMate is the simplest way to [install a notarized JACK](https://jackmate.app/install-jack-macos.html#one-clic-method-from-jackmate) and to [start it](https://jackmate.app/guide/configuration.html) without the command line. It shows every client in a [patchbay](https://jackmate.app/guide/patchbay.html), where the connections of Jack Capture can be made too, and its [studios](https://jackmate.app/guide/studios.html) save a whole setup, the server settings and the connections, to restore in one click. JackMate is free and open source.
+
+JackMoebius is the modern replacement for JackRouter on macOS: it exposes applications that only speak CoreAudio as JACK clients, one per application and in both directions. Together, JackMoebius and Jack Capture can record what an application without native JACK support plays, a browser or a call for example: JackMoebius brings its sound into JACK, and the application appears as a source in the matrix. JackMoebius is a commercial app, with a 14-day trial.
+
 ## Choose the sources
 
 A matrix connects each channel of the file to a JACK output. Applications show their own icon when JackMoebius or JACK metadata identifies them. A source that is not running yet can be chosen too: it is connected when it appears. Before a recording starts, the application warns if a channel has no source or a chosen source is missing.
