@@ -22,6 +22,8 @@ let package = Package(
         // matrix, MIT, shared with the other tools.
         .package(path: "../../shared/WaveformKit"),
         .package(path: "../../shared/AppearanceKit"),
+        // Looks for a newer release on GitHub and opens its package in the Installer, MIT, shared with the other tools.
+        .package(path: "../../shared/UpdateKit"),
         .package(path: "../../shared/MatrixKit"),
         // The sessions of an application in windows, the menu bar and the Dock, MIT, shared with the other tools.
         .package(path: "../../shared/SessionKit"),
@@ -55,6 +57,7 @@ let package = Package(
                 .product(name: "JackBridge", package: "JackBridge"),
                 .product(name: "WaveformKit", package: "WaveformKit"),
                 .product(name: "AppearanceKit", package: "AppearanceKit"),
+                .product(name: "UpdateKit", package: "UpdateKit"),
                 .product(name: "MatrixKit", package: "MatrixKit"),
                 .product(name: "PlotKit", package: "PlotKit"),
                 .product(name: "SessionKit", package: "SessionKit"),

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import AppearanceKit
+import UpdateKit
 import SessionKit
 import JConvolverKit
 import SwiftUI
@@ -48,6 +49,8 @@ struct JackConvolverApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var hub: AppHub
     @State private var appearance: AppearanceSettings
+    /// The search for a newer release, and its installation from the Installer.
+    @State private var updates: UpdateController
 
     init() {
         CollectionMenus.disableSystemMenuAdditions()
@@ -79,6 +82,17 @@ struct JackConvolverApp: App {
         let appearance = AppearanceSettings(appAccent: .purple, appColor: violet, defaults: defaults)
         AppDelegate.appearance = appearance
         _appearance = State(initialValue: appearance)
+
+        // An installation would cut the convolution: it waits for the sessions to be stopped.
+        let updates = UpdateController(
+            configuration: UpdateConfiguration(
+                appName: "Jack Convolver",
+                repository: "zinc75/jack-apps-collection-macos",
+                tagPrefix: "jconvolver-v",
+                isBusy: { hub.sessionHub.anyRunning }),
+            appearance: appearance)
+        _updates = State(initialValue: updates)
+        updates.startAutomaticChecks()
     }
 
     var body: some Scene {
@@ -99,6 +113,7 @@ struct JackConvolverApp: App {
         .restorationBehavior(.disabled)
         .commands { SessionCommands(hub: hub) }
         .commands { SelectionCommands(hub: hub) }
+        .commands { UpdateCommands(controller: updates) }
         .commands {
             CollectionMenus(
                 about: AboutInfo(
