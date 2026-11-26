@@ -17,6 +17,8 @@ let package = Package(
         .package(path: "../../shared/AppearanceKit"),
         // The sessions of an application in windows, the menu bar and the Dock, MIT, shared with the other tools.
         .package(path: "../../shared/SessionKit"),
+        // Looks for a newer release on GitHub and opens its package in the Installer, MIT, shared with the other tools.
+        .package(path: "../../shared/UpdateKit"),
     ],
     targets: [
         // Logic without any UI: settings, command line, file names, recorder state. Unit tested.
@@ -33,6 +35,7 @@ let package = Package(
                 .product(name: "MeterKit", package: "MeterKit"),
                 .product(name: "AppearanceKit", package: "AppearanceKit"),
                 .product(name: "SessionKit", package: "SessionKit"),
+                .product(name: "UpdateKit", package: "UpdateKit"),
             ],
             swiftSettings: [.unsafeFlags(["-Xfrontend", "-default-isolation", "-Xfrontend", "MainActor"])]
         ),

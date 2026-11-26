@@ -5,6 +5,7 @@ import MatrixKit
 import JackCaptureKit
 import AppearanceKit
 import SessionKit
+import UpdateKit
 
 /// Removes the menus that the system adds by itself and that have nothing left in them (Format, once its commands are gone),
 /// and holds back the quitting while a file is being written.
@@ -61,6 +62,8 @@ struct JackCaptureApp: App {
     /// The sessions: one window each. The settings of the last session come back in the first one; a development run that forces settings does not keep them.
     @State private var sessions: CaptureSessions
     @State private var appearance: AppearanceSettings
+    /// The search for a newer release, and its installation from the Installer.
+    @State private var updates: UpdateController
 
     private static var keepsSettings: Bool {
         #if DEBUG
@@ -103,6 +106,17 @@ struct JackCaptureApp: App {
         let appearance = AppearanceSettings(appAccent: .red, appColor: Color(red: 0.90, green: 0.17, blue: 0.24), defaults: defaults)
         AppDelegate.appearance = appearance
         _appearance = State(initialValue: appearance)
+
+        // An installation would cut a recording: it waits for the sessions to be stopped.
+        let updates = UpdateController(
+            configuration: UpdateConfiguration(
+                appName: "Jack Capture",
+                repository: "zinc75/jack-apps-collection-macos",
+                tagPrefix: "jack_capture-v",
+                isBusy: { sessions.anyRunning }),
+            appearance: appearance)
+        _updates = State(initialValue: updates)
+        updates.startAutomaticChecks()
     }
 
     var body: some Scene {
@@ -123,6 +137,7 @@ struct JackCaptureApp: App {
         // The windows are not brought back at the next launch: a session is something the person starts.
         .restorationBehavior(.disabled)
         .commands { CaptureCommands(hub: sessions) }
+        .commands { UpdateCommands(controller: updates) }
         .commands {
             CollectionMenus(
                 about: AboutInfo(
