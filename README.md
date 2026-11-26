@@ -9,7 +9,7 @@
 
   <br>
 
-  <p align="center"><a href="https://github.com/zinc75/jack-apps-collection-macos/releases/download/collection-v1.0/JackAppsCollection-1.0-macOS.pkg"><img src="assets/install-collection.svg" width="406" alt="Install the collection"></a></p>
+  <p align="center"><a href="https://github.com/zinc75/jack-apps-collection-macos/releases/download/collection-v1.1/JackAppsCollection-1.1-macOS.pkg"><img src="assets/install-collection.svg" width="406" alt="Install the collection"></a></p>
 
 </div>
 
@@ -19,7 +19,7 @@ Tools are built for Apple Silicon and Intel, and get a SwiftUI application where
 
 ## Install
 
-Download `JackAppsCollection-1.0-macOS.pkg` from the [Releases](https://github.com/zinc75/jack-apps-collection-macos/releases?q=collection) page and open it. It installs the five JACK applications with their command-line programs, and on the Installation Type page you choose which ones. An application that is already installed in a newer version is kept. Each tool also has its own package, in the table below.
+Download `JackAppsCollection-1.1-macOS.pkg` from the [Releases](https://github.com/zinc75/jack-apps-collection-macos/releases?q=collection) page and open it. It installs the five JACK applications with their command-line programs, and on the Installation Type page you choose which ones. An application that is already installed in a newer version is kept. Each tool also has its own package, in the table below.
 
 It needs macOS 15 or later, and JACK installed; [JackMate](https://jackmate.app/install-jack-macos.html#one-clic-method-from-jackmate) is the simplest way to get a notarized JACK, and it also [starts the server](https://jackmate.app/guide/configuration.html).
 
