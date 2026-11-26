@@ -66,7 +66,7 @@ struct ZitaNetworkBridgeApp: App {
         }
         #endif
         // The accent of the application is an indigo (provisional, as in the mockup).
-        let appearance = AppearanceSettings(appAccent: .blue, appColor: Color(red: 0.388, green: 0.4, blue: 0.945), defaults: defaults)
+        let appearance = AppearanceSettings(appAccent: .blue, appColor: Color(red: 0.369, green: 0.608, blue: 1.0), defaults: defaults)
         AppDelegate.appearance = appearance
         _appearance = State(initialValue: appearance)
     }
