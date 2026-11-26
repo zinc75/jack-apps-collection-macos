@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import AppearanceKit
+import UpdateKit
 import SwiftUI
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -45,6 +46,8 @@ struct ZitaNetworkBridgeApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var model: AppModel
     @State private var appearance: AppearanceSettings
+    /// The search for a newer release, and its installation from the Installer.
+    @State private var updates: UpdateController
 
     init() {
         CollectionMenus.disableSystemMenuAdditions()
@@ -65,10 +68,21 @@ struct ZitaNetworkBridgeApp: App {
             if let v = env["ZITABRIDGE_ACCENT"] { defaults.set(v, forKey: AppearanceSettings.accentKey) }
         }
         #endif
-        // The accent of the application is an indigo (provisional, as in the mockup).
+        // The accent of the application is a soft sky blue.
         let appearance = AppearanceSettings(appAccent: .blue, appColor: Color(red: 0.369, green: 0.608, blue: 1.0), defaults: defaults)
         AppDelegate.appearance = appearance
         _appearance = State(initialValue: appearance)
+
+        // An installation would cut the sound of a link: it waits for the links to be stopped.
+        let updates = UpdateController(
+            configuration: UpdateConfiguration(
+                appName: "Zita Network Bridge",
+                repository: "zinc75/jack-apps-collection-macos",
+                tagPrefix: "zita-njbridge-v",
+                isBusy: { model.controller.anyArmedRuns }),
+            appearance: appearance)
+        _updates = State(initialValue: updates)
+        updates.startAutomaticChecks()
     }
 
     var body: some Scene {
@@ -110,6 +124,7 @@ struct ZitaNetworkBridgeApp: App {
                 .disabled(model.controller.armedDirections.isEmpty)
             }
         }
+        .commands { UpdateCommands(controller: updates) }
         .commands {
             CollectionMenus(
                 about: AboutInfo(

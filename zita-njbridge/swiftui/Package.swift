@@ -11,6 +11,8 @@ let package = Package(
         .package(path: "../../shared/JackBridge"),
         // The look (dark, system, light) and the accent, and the glass and badges of the matrix, MIT, shared with the other tools.
         .package(path: "../../shared/AppearanceKit"),
+        // Looks for a newer release on GitHub and opens its package in the Installer, MIT, shared with the other tools.
+        .package(path: "../../shared/UpdateKit"),
         .package(path: "../../shared/MatrixKit"),
     ],
     targets: [
@@ -25,6 +27,7 @@ let package = Package(
                 "ZitaBridgeKit",
                 .product(name: "JackBridge", package: "JackBridge"),
                 .product(name: "AppearanceKit", package: "AppearanceKit"),
+                .product(name: "UpdateKit", package: "UpdateKit"),
                 .product(name: "MatrixKit", package: "MatrixKit"),
             ],
             swiftSettings: [.unsafeFlags(["-Xfrontend", "-default-isolation", "-Xfrontend", "MainActor"])]
