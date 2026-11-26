@@ -2634,30 +2634,36 @@
         }
       }
     },
-    "Envoi à l'arrêt. Lancez-le avec %@ [en bas de la fenêtre](zita://flash/send).": {
+    "Envoi à l'arrêt. Lancez-le avec le bouton rond %@ [en bas de la fenêtre](zita://flash/send).": {
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sending is stopped. Start it with %@ [at the bottom of the window](zita://flash/send)."
-          }
-        },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Das Senden ist angehalten. Starte es mit %@ [unten im Fenster](zita://flash/send)."
+            "value": "Das Senden ist angehalten. Starte es mit der runden Schaltfläche %@ [unten im Fenster](zita://flash/send)."
           }
         },
-        "it": {
+        "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "L'invio è fermo. Avvialo con %@ [in basso nella finestra](zita://flash/send)."
+            "value": "Sending is stopped. Start it with the round button %@ [at the bottom of the window](zita://flash/send)."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "El envío está detenido. Inícialo con %@ [en la parte inferior de la ventana](zita://flash/send)."
+            "value": "El envío está detenido. Inícialo con el botón redondo %@ [en la parte inferior de la ventana](zita://flash/send)."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Envoi à l'arrêt. Lancez-le avec le bouton rond %@ [en bas de la fenêtre](zita://flash/send)."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L'invio è fermo. Avvialo con il pulsante rotondo %@ [in basso nella finestra](zita://flash/send)."
           }
         }
       }
@@ -4930,30 +4936,36 @@
         }
       }
     },
-    "Réception à l'arrêt. Lancez-la avec %@ [en bas de la fenêtre](zita://flash/receive).": {
+    "Réception à l'arrêt. Lancez-la avec le bouton rond %@ [en bas de la fenêtre](zita://flash/receive).": {
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reception is stopped. Start it with %@ [at the bottom of the window](zita://flash/receive)."
-          }
-        },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Der Empfang ist angehalten. Starte ihn mit %@ [unten im Fenster](zita://flash/receive)."
+            "value": "Der Empfang ist angehalten. Starte ihn mit der runden Schaltfläche %@ [unten im Fenster](zita://flash/receive)."
           }
         },
-        "it": {
+        "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "La ricezione è ferma. Avviala con %@ [in basso nella finestra](zita://flash/receive)."
+            "value": "Reception is stopped. Start it with the round button %@ [at the bottom of the window](zita://flash/receive)."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "La recepción está detenida. Iníciala con %@ [en la parte inferior de la ventana](zita://flash/receive)."
+            "value": "La recepción está detenida. Iníciala con el botón redondo %@ [en la parte inferior de la ventana](zita://flash/receive)."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réception à l'arrêt. Lancez-la avec le bouton rond %@ [en bas de la fenêtre](zita://flash/receive)."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La ricezione è ferma. Avviala con il pulsante rotondo %@ [in basso nella finestra](zita://flash/receive)."
           }
         }
       }

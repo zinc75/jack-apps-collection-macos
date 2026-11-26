@@ -114,7 +114,7 @@ struct ReceiveBlock: View {
     private func detail(_ state: LinkState) -> Text {
         let r = model.controller.receiver
         switch state {
-        case .stopped: return Text("Réception à l'arrêt. Lancez-la avec \(Image(systemName: "play.fill")) [en bas de la fenêtre](zita://flash/receive).")
+        case .stopped: return Text("Réception à l'arrêt. Lancez-la avec le bouton rond \(Image(systemName: "bolt.fill")) [en bas de la fenêtre](zita://flash/receive).")
         case .waiting:
             if let delay = r.retryDelay { return Text("Nouvel essai dans \(number(delay, digits: 0)) s…") }
             return Text("En attente du premier paquet de l'émetteur…")
@@ -395,7 +395,7 @@ struct SendBlock: View {
         switch state {
         case .linked: return Text("vers \(ShownAddress.other(s.address)) : \(ShownAddress.port(s.port)) · \(s.channels) voies · \(format(s.format))")
         case .failed(let text): return Text(verbatim: text)
-        default: return Text("Envoi à l'arrêt. Lancez-le avec \(Image(systemName: "play.fill")) [en bas de la fenêtre](zita://flash/send).")
+        default: return Text("Envoi à l'arrêt. Lancez-le avec le bouton rond \(Image(systemName: "bolt.fill")) [en bas de la fenêtre](zita://flash/send).")
         }
     }
 

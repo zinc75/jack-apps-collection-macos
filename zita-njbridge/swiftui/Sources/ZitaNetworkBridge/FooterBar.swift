@@ -197,6 +197,7 @@ struct RoundButton: View {
     @Environment(AppModel.self) private var model
     @Environment(\.appAccentColor) private var accent
     @State private var hovered = false
+    @State private var flashing = false
 
     var body: some View {
         let controller = model.controller
@@ -208,10 +209,22 @@ struct RoundButton: View {
                 .foregroundStyle(.white)
                 .frame(width: 62, height: 62)
                 .accentGlassDisc(accent)
-                .scaleEffect(hovered ? 1.05 : 1)
+                .scaleEffect(flashing ? 1.14 : hovered ? 1.05 : 1)
+                .shadow(color: accent.opacity(flashing ? 0.7 : 0), radius: 10)
         }
         .buttonStyle(PressStyle())
         .disabled(armed.isEmpty)
+        // Asked to show itself (a link in a text of a page, which names this button): it swells and glows three times.
+        .onChange(of: model.flashCount) { _, _ in
+            Task {
+                for _ in 0..<3 {
+                    withAnimation(.easeInOut(duration: 0.28)) { flashing = true }
+                    try? await Task.sleep(for: .milliseconds(380))
+                    withAnimation(.easeInOut(duration: 0.28)) { flashing = false }
+                    try? await Task.sleep(for: .milliseconds(300))
+                }
+            }
+        }
         .overlay {
             StateRing(receive: controller.receiveArmed ? model.state(of: .receive) : nil,
                       send: controller.sendArmed ? model.state(of: .send) : nil)
