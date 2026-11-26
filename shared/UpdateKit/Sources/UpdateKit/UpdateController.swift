@@ -267,13 +267,16 @@ public final class UpdateController: ObservableObject {
 
 /// The menu item, under "About": add it to the scene with `.commands { UpdateCommands(controller: updates) }`.
 public struct UpdateCommands: Commands {
-    private let controller: UpdateController
+    private let controller: UpdateController?
 
-    public init(controller: UpdateController) { self.controller = controller }
+    /// With no controller, the menu has no item (an application that does not look for updates).
+    public init(controller: UpdateController?) { self.controller = controller }
 
     public var body: some Commands {
         CommandGroup(after: .appInfo) {
-            Button(String(localized: "Rechercher les mises à jour…")) { controller.checkFromMenu() }
+            if let controller {
+                Button(String(localized: "Rechercher les mises à jour…")) { controller.checkFromMenu() }
+            }
         }
     }
 }

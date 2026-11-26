@@ -6,7 +6,7 @@
 
 The texts of the kit are looked up in the catalog of the application (the keys are the French texts), as the texts of the other kits are.
 A key the catalog already has is left alone (its translation was chosen with the rest of the application); "Fermer" and "révision"
-are the ones of the About panel and must be there already. The file is written as Xcode writes it.
+are the ones of the About panel and must be there already. The file keeps the style it has (Xcode's, or a script's).
 """
 import json
 import pathlib
@@ -31,5 +31,7 @@ for needed in ("Fermer", "révision"):
     if needed not in strings:
         sys.exit(f"missing in the catalog: {needed}")
 
-path.write_text(json.dumps(catalog, indent=2, ensure_ascii=False, separators=(",", " : ")) + "\n", encoding="utf-8")
+# Xcode writes `"key" : value`; a catalog written by a script has `"key": value`. The file keeps the style it has.
+colon = ": " if '"sourceLanguage": ' in path.read_text(encoding="utf-8") else " : "
+path.write_text(json.dumps(catalog, indent=2, ensure_ascii=False, separators=(",", colon)) + "\n", encoding="utf-8")
 print(f"{path}: {added} texts added, {len(fragment) - added} already there")
