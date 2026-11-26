@@ -29,9 +29,9 @@ Jack Convolver is an unofficial interface for these programs. It is part of Jack
 
 ## Install
 
-<p align="center"><a href="https://github.com/zinc75/jack-apps-collection-macos/releases/download/jconvolver-v1.1.0-macOS-2/JackConvolver-1.1.0-macOS-2.pkg"><img src="../assets/install-jackconvolver.svg" width="386" alt="Install Jack Convolver"></a></p>
+<p align="center"><a href="https://github.com/zinc75/jack-apps-collection-macos/releases/download/jconvolver-v1.1.0-macOS-3/JackConvolver-1.1.0-macOS-3.pkg"><img src="../assets/install-jackconvolver.svg" width="386" alt="Install Jack Convolver"></a></p>
 
-Download `JackConvolver-1.1.0-macOS-2.pkg` from the [Releases](https://github.com/zinc75/jack-apps-collection-macos/releases?q=jconvolver) page and open it. It installs the application in `/Applications/Jack Apps Collection/` and the programs `jconvolver`, `fconvolver` and `makemulti` in `/usr/local/bin`, with the description of the configuration files, the examples and the licences in `/usr/local/share/doc/jconvolver`.
+Download `JackConvolver-1.1.0-macOS-3.pkg` from the [Releases](https://github.com/zinc75/jack-apps-collection-macos/releases?q=jconvolver) page and open it. It installs the application in `/Applications/Jack Apps Collection/` and the programs `jconvolver`, `fconvolver` and `makemulti` in `/usr/local/bin`, with the description of the configuration files, the examples and the licences in `/usr/local/share/doc/jconvolver`.
 
 It needs macOS 15 or later, and [JACK](https://jackaudio.org/downloads/) installed. The programs alone, for macOS 11 and later, are in `jconvolver-1.1.0-macOS.pkg`, on the same page.
 
