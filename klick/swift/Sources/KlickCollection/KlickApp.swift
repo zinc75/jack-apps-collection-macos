@@ -32,7 +32,8 @@ struct KlickApp: App {
             accent: .orange,
             accentColor: Color(red: 1.0, green: 0.42, blue: 0.10),
             additionalBackends: [BackendOffer(backend: JackBackend(), interface: JackInterface())],
-            showsCommandLine: true)
+            showsCommandLine: true,
+            updateRepository: "zinc75/jack-apps-collection-macos", updateTagPrefix: "klick-v")
         _application = State(initialValue: KlickApplication(configuration: configuration))
     }
 
