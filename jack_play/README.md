@@ -33,6 +33,8 @@ It needs macOS 15 or later, and [JACK](https://jackaudio.org/downloads/) install
 
 To build from source instead, see [`swiftui/README.md`](swiftui/README.md).
 
+The application looks for a newer version once a day and offers to install it. The package is checked (checksum, signature and notarization) before it opens in the Installer. "Check for Updates…" in the application menu looks at once, and a box in the update panel turns the daily check off.
+
 ## Use Jack Play with JackMate and JackMoebius
 
 I also develop JackMate ([site](https://jackmate.app), [GitHub](https://github.com/zinc75/JackMate)) and JackMoebius ([site](https://jackmoebius.io), [GitHub](https://github.com/zinc75/JackMoebius)), which are not part of this repository.

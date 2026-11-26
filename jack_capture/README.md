@@ -31,6 +31,8 @@ Download `JackCapture-0.9.73-macOS-6.pkg` from the [Releases](https://github.com
 
 It needs macOS 15 or later, and [JACK](https://jackaudio.org/downloads/) installed.
 
+The application looks for a newer version once a day and offers to install it. The package is checked (checksum, signature and notarization) before it opens in the Installer. "Check for Updates…" in the application menu looks at once, and a box in the update panel turns the daily check off.
+
 To build from source instead, see [`swiftui/README.md`](swiftui/README.md).
 
 ## Use Jack Capture with JackMate and JackMoebius

@@ -35,6 +35,8 @@ Download `JackConvolver-1.1.0-macOS-2.pkg` from the [Releases](https://github.co
 
 It needs macOS 15 or later, and [JACK](https://jackaudio.org/downloads/) installed. The programs alone, for macOS 11 and later, are in `jconvolver-1.1.0-macOS.pkg`, on the same page.
 
+The application looks for a newer version once a day and offers to install it. The package is checked (checksum, signature and notarization) before it opens in the Installer. "Check for Updates…" in the application menu looks at once, and a box in the update panel turns the daily check off.
+
 To build from source instead, see [`swiftui/README.md`](swiftui/README.md). To build only the programs, build the libraries of `libs/` (`fftw`, `zita-convolver`, `clthreads`, `libsndfile` and its codecs), then run `build_universal.sh` here.
 
 ## Use Jack Convolver with JackMate and JackMoebius

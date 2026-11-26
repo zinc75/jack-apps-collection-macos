@@ -31,6 +31,8 @@ Download `Klick-0.13.0-macOS-4.pkg` from the [Releases](https://github.com/zinc7
 
 It needs macOS 15 or later, and [JACK](https://jackaudio.org/downloads/) installed to use the JACK engine. The simplest way to get a notarized JACK is [JackMate](https://jackmate.app/install-jack-macos.html#one-clic-method-from-jackmate), which also [starts the server](https://jackmate.app/guide/configuration.html) without the command line. To build from source instead, see [`swift/README.md`](swift/README.md).
 
+The application looks for a newer version once a day and offers to install it. The package is checked (checksum, signature and notarization) before it opens in the Installer. "Check for Updates…" in the application menu looks at once, and a box in the update panel turns the daily check off.
+
 ## Play in JACK
 
 Choose JACK as the engine and Klick opens one output port, `Klick:out`, in the server. It connects it to the first two hardware outputs by itself if you want, and a list of the input ports of the server lets you connect it anywhere else, with the icons of the applications when [JackMoebius](https://jackmoebius.io) or JACK metadata identifies them. If the server stops, Klick goes back to CoreAudio and offers to try JACK again. The beat lights take the latency that JACK announces into account.
