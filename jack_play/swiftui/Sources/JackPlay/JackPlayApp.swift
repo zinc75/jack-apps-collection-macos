@@ -90,7 +90,6 @@ struct JackPlayApp: App {
         // The windows are not brought back at the next launch: a session is something the person starts.
         .restorationBehavior(.disabled)
         .commands { PlayCommands(hub: hub) }
-        .commands { UpdateCommands(controller: updates) }
         .commands {
             CollectionMenus(
                 about: AboutInfo(
@@ -107,6 +106,8 @@ struct JackPlayApp: App {
                 appearance: appearance,
                 documentationTitle: String(localized: "Documentation Jack Play"),
                 documentationURL: URL(string: "https://github.com/zinc75/jack-apps-collection-macos/tree/main/jack_play")!)
+            // After the "About" group that the menus of the collection replace, so that it stays.
+            UpdateCommands(controller: updates)
         }
 
         // The list of the sessions in a window, for the click on the Dock when several have none (the same list as the panel of the menu bar).

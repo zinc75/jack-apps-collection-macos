@@ -124,7 +124,6 @@ struct ZitaNetworkBridgeApp: App {
                 .disabled(model.controller.armedDirections.isEmpty)
             }
         }
-        .commands { UpdateCommands(controller: updates) }
         .commands {
             CollectionMenus(
                 about: AboutInfo(
@@ -140,6 +139,8 @@ struct ZitaNetworkBridgeApp: App {
                 appearance: appearance,
                 documentationTitle: String(localized: "Documentation Zita Network Bridge"),
                 documentationURL: URL(string: "https://github.com/zinc75/jack-apps-collection-macos/tree/main/zita-njbridge")!)
+            // After the "About" group that the menus of the collection replace, so that it stays.
+            UpdateCommands(controller: updates)
         }
     }
 }

@@ -113,7 +113,6 @@ struct JackConvolverApp: App {
         .restorationBehavior(.disabled)
         .commands { SessionCommands(hub: hub) }
         .commands { SelectionCommands(hub: hub) }
-        .commands { UpdateCommands(controller: updates) }
         .commands {
             CollectionMenus(
                 about: AboutInfo(
@@ -129,6 +128,8 @@ struct JackConvolverApp: App {
                 appearance: appearance,
                 documentationTitle: String(localized: "Documentation Jack Convolver"),
                 documentationURL: URL(string: "https://github.com/zinc75/jack-apps-collection-macos/tree/main/jconvolver")!)
+            // After the "About" group that the menus of the collection replace, so that it stays.
+            UpdateCommands(controller: updates)
         }
 
         // The list of the sessions in a window, for the click on the Dock when several have none (the same list as the panel of the menu bar).
