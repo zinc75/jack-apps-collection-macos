@@ -24,6 +24,8 @@ let package = Package(
         .package(path: "../../shared/MeterKit"),
         // The look (dark, system, light) and the accent, and the badges and glass of the matrix, MIT, shared with the other tools.
         .package(path: "../../shared/AppearanceKit"),
+        // Looks for a newer release on GitHub and opens its package in the Installer, MIT, shared with the other tools.
+        .package(path: "../../shared/UpdateKit"),
         .package(path: "../../shared/MatrixKit"),
         // The sessions of an application in windows, the menu bar and the Dock, MIT, shared with the other tools.
         .package(path: "../../shared/SessionKit"),
@@ -47,6 +49,7 @@ let package = Package(
                 "JackPlayKit",
                 .product(name: "SoundFileKit", package: "SoundFileKit"),
                 .product(name: "AppearanceKit", package: "AppearanceKit"),
+                .product(name: "UpdateKit", package: "UpdateKit"),
                 .product(name: "MatrixKit", package: "MatrixKit"),
                 .product(name: "SessionKit", package: "SessionKit"),
                 .product(name: "MeterKit", package: "MeterKit"),

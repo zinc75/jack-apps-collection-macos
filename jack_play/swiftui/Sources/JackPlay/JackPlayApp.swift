@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import AppearanceKit
+import UpdateKit
 import SessionKit
 import SwiftUI
 
@@ -33,6 +34,8 @@ struct JackPlayApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var hub: AppHub
     @State private var appearance: AppearanceSettings
+    /// The search for a newer release, and its installation from the Installer.
+    @State private var updates: UpdateController
 
     init() {
         CollectionMenus.disableSystemMenuAdditions()
@@ -57,6 +60,17 @@ struct JackPlayApp: App {
         let appearance = AppearanceSettings(appAccent: .green, appColor: Color(red: 0.067, green: 0.639, blue: 0.576), defaults: defaults)
         AppDelegate.appearance = appearance
         _appearance = State(initialValue: appearance)
+
+        // An installation would cut a playback: it waits for the sessions to be stopped.
+        let updates = UpdateController(
+            configuration: UpdateConfiguration(
+                appName: "Jack Play",
+                repository: "zinc75/jack-apps-collection-macos",
+                tagPrefix: "jack_play-v",
+                isBusy: { hub.sessionHub.anyRunning }),
+            appearance: appearance)
+        _updates = State(initialValue: updates)
+        updates.startAutomaticChecks()
     }
 
     var body: some Scene {
@@ -76,6 +90,7 @@ struct JackPlayApp: App {
         // The windows are not brought back at the next launch: a session is something the person starts.
         .restorationBehavior(.disabled)
         .commands { PlayCommands(hub: hub) }
+        .commands { UpdateCommands(controller: updates) }
         .commands {
             CollectionMenus(
                 about: AboutInfo(
